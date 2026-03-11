@@ -16,14 +16,19 @@ import io.ably.lib.objects.unit.BufferedObjectOperations
 import io.ably.lib.objects.unit.ObjectsManager
 import io.ably.lib.objects.unit.SyncObjectsDataPool
 import io.ably.lib.objects.unit.getDefaultRealtimeObjectsWithMockedDeps
+import io.ably.lib.objects.unit.getMockRealtimeChannel
 import io.ably.lib.objects.unit.size
 import io.ably.lib.realtime.ChannelState
+import io.ably.lib.types.AblyException
+import io.ably.lib.types.ErrorInfo
 import io.ably.lib.types.ProtocolMessage
+import io.mockk.every
 import io.mockk.verify
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals
-import io.mockk.every
+import kotlin.test.assertNotNull
 
 class DefaultRealtimeObjectsTest {
 
@@ -153,6 +158,104 @@ class DefaultRealtimeObjectsTest {
     verify(exactly = 1) {
       defaultRealtimeObjects.ObjectsManager.handleObjectSyncMessages(listOf(objectSyncMessage), "syncChannelSerial1")
     }
+  }
+
+  @Test
+  fun `(RTO20e1) handleStateChange(DETACHED) fails pending ACK waiters with error 92008`() = runTest {
+    val defaultRealtimeObjects = getDefaultRealtimeObjectsWithMockedDeps()
+
+    // Capture the error passed to failBufferedAcks via a CompletableDeferred
+    val capturedError = CompletableDeferred<AblyException>()
+    every { defaultRealtimeObjects.ObjectsManager.failBufferedAcks(any()) } answers {
+      capturedError.complete(firstArg())
+      callOriginal()
+    }
+
+    defaultRealtimeObjects.handleStateChange(ChannelState.detached, false)
+
+    val error = capturedError.await()
+    assertEquals(92008, error.errorInfo.code) // PublishAndApplyFailedDueToChannelState
+  }
+
+  @Test
+  fun `(RTO20e1) handleStateChange(SUSPENDED) fails pending ACK waiters with error 92008`() = runTest {
+    val defaultRealtimeObjects = getDefaultRealtimeObjectsWithMockedDeps()
+
+    val capturedError = CompletableDeferred<AblyException>()
+    every { defaultRealtimeObjects.ObjectsManager.failBufferedAcks(any()) } answers {
+      capturedError.complete(firstArg())
+      callOriginal()
+    }
+
+    defaultRealtimeObjects.handleStateChange(ChannelState.suspended, false)
+
+    val error = capturedError.await()
+    assertEquals(92008, error.errorInfo.code) // PublishAndApplyFailedDueToChannelState
+  }
+
+  @Test
+  fun `(RTO20e1) handleStateChange(FAILED) fails pending ACK waiters and propagates channel reason`() = runTest {
+    val defaultRealtimeObjects = getDefaultRealtimeObjectsWithMockedDeps()
+
+    // Override the channel returned by the adapter to carry a non-null reason
+    val channelReason = ErrorInfo("channel failed due to auth error", 40100, 401)
+    val channelWithReason = getMockRealtimeChannel("testChannelName")
+    channelWithReason.reason = channelReason
+    every { defaultRealtimeObjects.adapter.getChannel(any()) } returns channelWithReason
+
+    val capturedError = CompletableDeferred<AblyException>()
+    every { defaultRealtimeObjects.ObjectsManager.failBufferedAcks(any()) } answers {
+      capturedError.complete(firstArg())
+      callOriginal()
+    }
+
+    defaultRealtimeObjects.handleStateChange(ChannelState.failed, false)
+
+    val error = capturedError.await()
+    assertEquals(92008, error.errorInfo.code)
+    val causeException = error.cause as? AblyException
+    assertNotNull(causeException, "Error cause must include the channel's reason")
+    assertEquals(channelReason.code, causeException.errorInfo.code)
+    assertEquals(channelReason.message, causeException.errorInfo.message)
+  }
+
+  @Test
+  fun `(RTO4) handleStateChange(SUSPENDED) does NOT clear objects data`() = runTest {
+    val defaultRealtimeObjects = getDefaultRealtimeObjectsWithMockedDeps()
+
+    // Use the failBufferedAcks call as a signal that the state-change coroutine has run to completion
+    val failCalled = CompletableDeferred<Unit>()
+    every { defaultRealtimeObjects.ObjectsManager.failBufferedAcks(any()) } answers {
+      callOriginal()
+      failCalled.complete(Unit)
+    }
+
+    defaultRealtimeObjects.handleStateChange(ChannelState.suspended, false)
+
+    // For SUSPENDED, the coroutine ends immediately after failBufferedAcks (no clear calls)
+    failCalled.await()
+
+    verify(exactly = 0) { defaultRealtimeObjects.objectsPool.clearObjectsData(any()) }
+    verify(exactly = 0) { defaultRealtimeObjects.ObjectsManager.clearSyncObjectsDataPool() }
+  }
+
+  @Test
+  fun `(RTO4) handleStateChange(DETACHED) clears objects data and sync pool`() = runTest {
+    val defaultRealtimeObjects = getDefaultRealtimeObjectsWithMockedDeps()
+
+    // Use clearSyncObjectsDataPool (the last operation in the coroutine) as the completion signal
+    val syncPoolCleared = CompletableDeferred<Unit>()
+    every { defaultRealtimeObjects.ObjectsManager.clearSyncObjectsDataPool() } answers {
+      callOriginal()
+      syncPoolCleared.complete(Unit)
+    }
+
+    defaultRealtimeObjects.handleStateChange(ChannelState.detached, false)
+
+    syncPoolCleared.await()
+
+    verify(exactly = 1) { defaultRealtimeObjects.objectsPool.clearObjectsData(false) }
+    verify(exactly = 1) { defaultRealtimeObjects.ObjectsManager.clearSyncObjectsDataPool() }
   }
 
   @Test

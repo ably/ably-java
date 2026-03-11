@@ -122,6 +122,7 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
    */
   internal fun failBufferedAcks(error: AblyException) {
     syncCompletionWaiter?.completeExceptionally(error)
+    syncCompletionWaiter = null
   }
 
   /**

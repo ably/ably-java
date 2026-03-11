@@ -319,7 +319,11 @@ internal class DefaultRealtimeObjects(internal val channelName: String, internal
         ChannelState.detached,
         ChannelState.suspended,
         ChannelState.failed -> {
-          val errorReason = try { adapter.getChannel(channelName).reason } catch (e: Exception) { null }
+          val errorReason = try {
+            adapter.getChannel(channelName).reason
+          } catch (e: Exception) {
+            null
+          }
           val error = ablyException(
             "publishAndApply could not be applied locally: channel entered $state whilst waiting for objects sync",
             ErrorCode.PublishAndApplyFailedDueToChannelState,
@@ -327,11 +331,12 @@ internal class DefaultRealtimeObjects(internal val channelName: String, internal
             cause = errorReason?.let { AblyException.fromErrorInfo(it) }
           )
           objectsManager.failBufferedAcks(error) // RTO20e1
-          // do not emit data update events as the actual current state of Objects data is unknown when we're in these channel states
-          objectsPool.clearObjectsData(false)
-          objectsManager.clearSyncObjectsDataPool()
+          if (state != ChannelState.suspended) {
+            // do not emit data update events as the actual current state of Objects data is unknown when we're in these channel states
+            objectsPool.clearObjectsData(false)
+            objectsManager.clearSyncObjectsDataPool()
+          }
         }
-
         else -> {
           // No action needed for other states
         }
