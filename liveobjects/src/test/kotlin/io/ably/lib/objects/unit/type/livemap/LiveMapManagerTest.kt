@@ -1,6 +1,7 @@
 package io.ably.lib.objects.unit.type.livemap
 
 import io.ably.lib.objects.*
+import io.ably.lib.objects.MapClear
 import io.ably.lib.objects.MapCreate
 import io.ably.lib.objects.MapRemove
 import io.ably.lib.objects.MapSet
@@ -1128,5 +1129,184 @@ class LiveMapManagerTest {
     // Assert on update field - should show that key1 was removed
     val expectedUpdate = mapOf("key1" to LiveMapUpdate.Change.REMOVED)
     assertEquals(expectedUpdate, update.update)
+  }
+
+  @Test
+  fun `(RTLM24) applyMapClear removes entries older than clear serial`() {
+    val liveMap = getDefaultLiveMapWithMockedDeps()
+    val liveMapManager = liveMap.LiveMapManager
+
+    liveMap.data["key1"] = LiveMapEntry(
+      isTombstoned = false,
+      timeserial = "serial1",
+      data = ObjectData(string = "value1")
+    )
+    liveMap.data["key2"] = LiveMapEntry(
+      isTombstoned = false,
+      timeserial = "serial3",
+      data = ObjectData(string = "value2")
+    )
+
+    val operation = ObjectOperation(
+      action = ObjectOperationAction.MapClear,
+      objectId = "map:testMap@1",
+      mapClear = MapClear
+    )
+
+    // Apply MAP_CLEAR with serial "serial2" — between serial1 and serial3
+    liveMapManager.applyOperation(operation, "serial2", null)
+
+    assertNull(liveMap.data["key1"], "Entry at serial1 should be removed")
+    assertNotNull(liveMap.data["key2"], "Entry at serial3 should be kept")
+    assertEquals("serial2", liveMap.clearTimeserial)
+  }
+
+  @Test
+  fun `(RTLM24c) applyMapClear skips when existing clearTimeserial is newer`() {
+    val liveMap = getDefaultLiveMapWithMockedDeps()
+    val liveMapManager = liveMap.LiveMapManager
+
+    liveMap.data["key1"] = LiveMapEntry(
+      isTombstoned = false,
+      timeserial = "serial1",
+      data = ObjectData(string = "value1")
+    )
+    liveMap.clearTimeserial = "serial3"
+
+    val operation = ObjectOperation(
+      action = ObjectOperationAction.MapClear,
+      objectId = "map:testMap@1",
+      mapClear = MapClear
+    )
+
+    liveMapManager.applyOperation(operation, "serial2", null)
+
+    // clearTimeserial should remain unchanged and data should be untouched
+    assertEquals("serial3", liveMap.clearTimeserial)
+    assertNotNull(liveMap.data["key1"], "Entry should not be removed")
+  }
+
+  @Test
+  fun `(RTLM25) clearTimeserial is set after MAP_CLEAR`() {
+    val liveMap = getDefaultLiveMapWithMockedDeps()
+    val liveMapManager = liveMap.LiveMapManager
+
+    assertNull(liveMap.clearTimeserial)
+
+    val operation = ObjectOperation(
+      action = ObjectOperationAction.MapClear,
+      objectId = "map:testMap@1",
+      mapClear = MapClear
+    )
+
+    liveMapManager.applyOperation(operation, "serial1", null)
+
+    assertEquals("serial1", liveMap.clearTimeserial)
+  }
+
+  @Test
+  fun `(RTLM7h) applyMapSet skips when op serial is less than or equal to clearTimeserial`() {
+    val liveMap = getDefaultLiveMapWithMockedDeps()
+    val liveMapManager = liveMap.LiveMapManager
+
+    liveMap.clearTimeserial = "serial2"
+
+    val operation = ObjectOperation(
+      action = ObjectOperationAction.MapSet,
+      objectId = "map:testMap@1",
+      mapSet = MapSet(key = "key1", value = ObjectData(string = "value1"))
+    )
+
+    liveMapManager.applyOperation(operation, "serial1", null)
+
+    assertNull(liveMap.data["key1"], "Entry should NOT be added when op serial <= clearTimeserial")
+  }
+
+  @Test
+  fun `(RTLM7h) applyMapSet applies when op serial is greater than clearTimeserial`() {
+    val liveMap = getDefaultLiveMapWithMockedDeps()
+    val liveMapManager = liveMap.LiveMapManager
+
+    liveMap.clearTimeserial = "serial1"
+
+    val operation = ObjectOperation(
+      action = ObjectOperationAction.MapSet,
+      objectId = "map:testMap@1",
+      mapSet = MapSet(key = "key1", value = ObjectData(string = "value1"))
+    )
+
+    liveMapManager.applyOperation(operation, "serial2", null)
+
+    assertNotNull(liveMap.data["key1"], "Entry should be added when op serial > clearTimeserial")
+    assertEquals("value1", liveMap.data["key1"]?.data?.string)
+  }
+
+  @Test
+  fun `(RTLM8g) applyMapRemove skips when op serial is less than or equal to clearTimeserial`() {
+    val liveMap = getDefaultLiveMapWithMockedDeps()
+    val liveMapManager = liveMap.LiveMapManager
+
+    liveMap.data["key1"] = LiveMapEntry(
+      isTombstoned = false,
+      timeserial = "serial3",
+      data = ObjectData(string = "value1")
+    )
+    liveMap.clearTimeserial = "serial2"
+
+    val operation = ObjectOperation(
+      action = ObjectOperationAction.MapRemove,
+      objectId = "map:testMap@1",
+      mapRemove = MapRemove(key = "key1")
+    )
+
+    liveMapManager.applyOperation(operation, "serial1", null)
+
+    assertFalse(liveMap.data["key1"]?.isTombstoned == true, "Entry should NOT be tombstoned when op serial <= clearTimeserial")
+  }
+
+  @Test
+  fun `(RTLM6i) applyState sets clearTimeserial from objectState`() {
+    val liveMap = getDefaultLiveMapWithMockedDeps()
+    val liveMapManager = liveMap.LiveMapManager
+
+    val objectState = ObjectState(
+      objectId = "map:testMap@1",
+      map = ObjectsMap(
+        semantics = ObjectsMapSemantics.LWW,
+        entries = emptyMap(),
+        clearTimeserial = "serial1"
+      ),
+      siteTimeserials = emptyMap(),
+      tombstone = false,
+    )
+
+    liveMapManager.applyState(objectState, null)
+
+    assertEquals("serial1", liveMap.clearTimeserial)
+  }
+
+  @Test
+  fun `(RTLM4) clearData resets clearTimeserial`() {
+    val liveMap = getDefaultLiveMapWithMockedDeps()
+
+    liveMap.clearTimeserial = "serial1"
+    liveMap.clearData()
+
+    assertNull(liveMap.clearTimeserial)
+  }
+
+  @Test
+  fun `(RTLM15d8) applyOperation returns true for MAP_CLEAR`() {
+    val liveMap = getDefaultLiveMapWithMockedDeps()
+    val liveMapManager = liveMap.LiveMapManager
+
+    val operation = ObjectOperation(
+      action = ObjectOperationAction.MapClear,
+      objectId = "map:testMap@1",
+      mapClear = MapClear
+    )
+
+    val result = liveMapManager.applyOperation(operation, "serial1", null)
+    assertTrue(result, "applyOperation should return true for MAP_CLEAR")
   }
 }
