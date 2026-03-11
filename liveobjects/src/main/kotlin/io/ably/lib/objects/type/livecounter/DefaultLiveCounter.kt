@@ -1,6 +1,8 @@
 package io.ably.lib.objects.type.livecounter
 
 import io.ably.lib.objects.*
+import io.ably.lib.objects.CounterCreate
+import io.ably.lib.objects.CounterInc
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectState
 import io.ably.lib.objects.type.BaseRealtimeObject
@@ -81,7 +83,7 @@ internal class DefaultLiveCounter private constructor(
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterInc,
         objectId = objectId,
-        counterOp = ObjectsCounterOp(amount = amount)
+        counterInc = CounterInc(number = amount)
       )
     )
 
@@ -124,13 +126,11 @@ internal class DefaultLiveCounter private constructor(
     }
 
     /**
-     * Creates initial value operation for counter creation.
-     * Spec: RTO12f2
+     * Creates initial value payload for counter creation.
+     * Spec: RTO12f12
      */
-    internal fun initialValue(count: Number): CounterCreatePayload {
-      return CounterCreatePayload(
-        counter = ObjectsCounter(count = count.toDouble())
-      )
+    internal fun initialValue(count: Number): CounterCreate {
+      return CounterCreate(count = count.toDouble())
     }
   }
 }

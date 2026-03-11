@@ -197,7 +197,7 @@ class ObjectsManagerTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterCreate,
         objectId = "counter:testObject@1",
-        counterOp = ObjectsCounterOp(amount = 5.0)
+        counterInc = CounterInc(number = 5.0)
       ),
       serial = "serial1",
       siteCode = "site1"
@@ -236,7 +236,7 @@ class ObjectsManagerTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterInc,
         objectId = "counter:test@1",
-        counterOp = ObjectsCounterOp(amount = 5.0)
+        counterInc = CounterInc(number = 5.0)
       ),
       serial = "ser-ack-01",
       siteCode = "site1"
@@ -267,7 +267,7 @@ class ObjectsManagerTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.MapSet,
         objectId = "map:testMap@1",
-        mapOp = ObjectsMapOp(key = "key1", data = ObjectData(value = ObjectValue.String("value1")))
+        mapSet = MapSet(key = "key1", value = ObjectData(string = "value1"))
       ),
       serial = "ser-map-01",
       siteCode = "site1"
@@ -277,7 +277,7 @@ class ObjectsManagerTest {
     objectsManager.applyAckResult(listOf(msg))
 
     // Verify entry was set (LOCAL source)
-    assertEquals("value1", liveMap.data["key1"]?.data?.value?.value,
+    assertEquals("value1", liveMap.data["key1"]?.data?.string,
       "MAP_SET should be applied locally on ACK")
     // Entry timeserial should be updated (within LiveMapManager, regardless of source)
     assertEquals("ser-map-01", liveMap.data["key1"]?.timeserial,
@@ -306,7 +306,7 @@ class ObjectsManagerTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterInc,
         objectId = "counter:test@1",
-        counterOp = ObjectsCounterOp(amount = 5.0)
+        counterInc = CounterInc(number = 5.0)
       ),
       serial = "ser-echo-01",
       siteCode = "site1"
@@ -338,7 +338,7 @@ class ObjectsManagerTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterInc,
         objectId = "counter:test@1",
-        counterOp = ObjectsCounterOp(amount = 3.0)
+        counterInc = CounterInc(number = 3.0)
       ),
       serial = "ser-channel-01",
       siteCode = "site1"
@@ -369,7 +369,7 @@ class ObjectsManagerTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterInc,
         objectId = "counter:test@1",
-        counterOp = ObjectsCounterOp(amount = 5.0)
+        counterInc = CounterInc(number = 5.0)
       ),
       serial = "ser-ack-01",
       siteCode = "site1"
@@ -417,7 +417,7 @@ class ObjectsManagerTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterInc,
         objectId = "counter:test@1",
-        counterOp = ObjectsCounterOp(amount = 5.0)
+        counterInc = CounterInc(number = 5.0)
       ),
       serial = "ser-01",
       siteCode = "site1"
@@ -473,7 +473,7 @@ class ObjectsManagerTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterInc,
         objectId = "counter:test@1",
-        counterOp = ObjectsCounterOp(amount = 3.0)
+        counterInc = CounterInc(number = 3.0)
       ),
       serial = "ser-channel-01",
       siteCode = "site1"
@@ -508,7 +508,7 @@ class ObjectsManagerTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterInc,
         objectId = "counter:test@1",
-        counterOp = ObjectsCounterOp(amount = 5.0)
+        counterInc = CounterInc(number = 5.0)
       ),
       serial = "ser-01",
       siteCode = "site1"
@@ -557,7 +557,7 @@ class ObjectsManagerTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterInc,
         objectId = "counter:test@1",
-        counterOp = ObjectsCounterOp(amount = 5.0)
+        counterInc = CounterInc(number = 5.0)
       ),
       serial = "ser-01",
       siteCode = "site1"
@@ -606,7 +606,7 @@ class ObjectsManagerTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterInc,
         objectId = "counter:test@1",
-        counterOp = ObjectsCounterOp(amount = 5.0)
+        counterInc = CounterInc(number = 5.0)
       )
     )
 
@@ -643,7 +643,7 @@ class ObjectsManagerTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterInc,
         objectId = "counter:test@1",
-        counterOp = ObjectsCounterOp(amount = 5.0)
+        counterInc = CounterInc(number = 5.0)
       )
     )
 

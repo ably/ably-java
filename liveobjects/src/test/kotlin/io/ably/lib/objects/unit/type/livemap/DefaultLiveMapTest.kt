@@ -2,7 +2,9 @@ package io.ably.lib.objects.unit.type.livemap
 
 import io.ably.lib.objects.ObjectsMapSemantics
 import io.ably.lib.objects.ObjectsMap
-import io.ably.lib.objects.ObjectsMapOp
+import io.ably.lib.objects.MapCreate
+import io.ably.lib.objects.MapSet
+import io.ably.lib.objects.MapRemove
 import io.ably.lib.objects.ObjectsOperationSource
 import io.ably.lib.objects.ObjectState
 import io.ably.lib.objects.ObjectMessage
@@ -53,7 +55,7 @@ class DefaultLiveMapTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.MapCreate,
       objectId = "map:testMap@2", // Different objectId
-      map = ObjectsMap(
+      mapCreate = MapCreate(
         semantics = ObjectsMapSemantics.LWW,
         entries = emptyMap()
       )
@@ -88,7 +90,7 @@ class DefaultLiveMapTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.MapCreate,
       objectId = "map:testMap@1", // Matching objectId
-      map = ObjectsMap(
+      mapCreate = MapCreate(
         semantics = ObjectsMapSemantics.LWW,
         entries = emptyMap()
       )
@@ -118,7 +120,7 @@ class DefaultLiveMapTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.MapCreate,
       objectId = "map:testMap@1", // Matching objectId
-      map = ObjectsMap(
+      mapCreate = MapCreate(
         semantics = ObjectsMapSemantics.LWW,
         entries = emptyMap()
       )
@@ -148,7 +150,7 @@ class DefaultLiveMapTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.MapSet,
         objectId = "map:testMap@1",
-        mapOp = ObjectsMapOp(key = "key1", data = io.ably.lib.objects.ObjectData(value = io.ably.lib.objects.ObjectValue.String("value1")))
+        mapSet = io.ably.lib.objects.MapSet(key = "key1", value = io.ably.lib.objects.ObjectData(string = "value1"))
       ),
       serial = "serial1",
       siteCode = "site1"
@@ -158,7 +160,7 @@ class DefaultLiveMapTest {
     val result = liveMap.applyObject(message, ObjectsOperationSource.LOCAL)
 
     assertTrue(result, "applyObject should return true for successful MAP_SET")
-    assertEquals("value1", liveMap.data["key1"]?.data?.value?.value, "map entry should be updated for LOCAL source")
+    assertEquals("value1", liveMap.data["key1"]?.data?.string, "map entry should be updated for LOCAL source")
     assertFalse(liveMap.siteTimeserials.containsKey("site1"),
       "siteTimeserials should NOT be updated for LOCAL source")
   }
@@ -173,7 +175,7 @@ class DefaultLiveMapTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.MapSet,
         objectId = "map:testMap@1",
-        mapOp = ObjectsMapOp(key = "key1", data = io.ably.lib.objects.ObjectData(value = io.ably.lib.objects.ObjectValue.String("value1")))
+        mapSet = io.ably.lib.objects.MapSet(key = "key1", value = io.ably.lib.objects.ObjectData(string = "value1"))
       ),
       serial = "serial1", // Older than "serial5"
       siteCode = "site1"
@@ -196,7 +198,7 @@ class DefaultLiveMapTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.MapSet,
         objectId = "map:testMap@1",
-        mapOp = ObjectsMapOp(key = "key1", data = io.ably.lib.objects.ObjectData(value = io.ably.lib.objects.ObjectValue.String("value1")))
+        mapSet = io.ably.lib.objects.MapSet(key = "key1", value = io.ably.lib.objects.ObjectData(string = "value1"))
       ),
       serial = "serial1",
       siteCode = "site1"
@@ -217,7 +219,7 @@ class DefaultLiveMapTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.MapSet,
         objectId = "map:testMap@1",
-        mapOp = ObjectsMapOp(key = "key1", data = io.ably.lib.objects.ObjectData(value = io.ably.lib.objects.ObjectValue.String("value1")))
+        mapSet = io.ably.lib.objects.MapSet(key = "key1", value = io.ably.lib.objects.ObjectData(string = "value1"))
       ),
       serial = "serial1",
       siteCode = "site1"
@@ -227,7 +229,7 @@ class DefaultLiveMapTest {
     val result = liveMap.applyObject(message, ObjectsOperationSource.CHANNEL)
 
     assertTrue(result, "applyObject should return true for successful MAP_SET")
-    assertEquals("value1", liveMap.data["key1"]?.data?.value?.value)
+    assertEquals("value1", liveMap.data["key1"]?.data?.string)
   }
 
   @Test
@@ -239,7 +241,7 @@ class DefaultLiveMapTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.MapRemove,
         objectId = "map:testMap@1",
-        mapOp = ObjectsMapOp(key = "key1")
+        mapRemove = io.ably.lib.objects.MapRemove(key = "key1")
       ),
       serial = "serial1",
       siteCode = "site1"

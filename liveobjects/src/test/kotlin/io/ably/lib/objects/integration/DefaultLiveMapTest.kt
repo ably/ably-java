@@ -2,7 +2,6 @@ package io.ably.lib.objects.integration
 
 import io.ably.lib.objects.*
 import io.ably.lib.objects.ObjectData
-import io.ably.lib.objects.ObjectValue
 import io.ably.lib.objects.integration.helpers.fixtures.createUserMapObject
 import io.ably.lib.objects.integration.helpers.fixtures.createUserProfileMapObject
 import io.ably.lib.objects.integration.setup.IntegrationTest
@@ -112,9 +111,9 @@ class DefaultLiveMapTest: IntegrationTest() {
     val testMapObjectId = restObjects.createMap(
       channelName,
       data = mapOf(
-        "name" to ObjectData(value = ObjectValue.String("Alice")),
-        "age" to ObjectData(value = ObjectValue.Number(30)),
-        "isActive" to ObjectData(value = ObjectValue.Boolean(true))
+        "name" to ObjectData(string = "Alice"),
+        "age" to ObjectData(number = 30.0),
+        "isActive" to ObjectData(boolean = true)
       )
     )
     restObjects.setMapRef(channelName, "root", "testMap", testMapObjectId)
@@ -131,7 +130,7 @@ class DefaultLiveMapTest: IntegrationTest() {
     assertEquals(true, testMap.get("isActive")?.asBoolean, "Initial active status should be true")
 
     // Step 2: Update an existing field (name from "Alice" to "Bob")
-    restObjects.setMapValue(channelName, testMapObjectId, "name", ObjectValue.String("Bob"))
+    restObjects.setMapValue(channelName, testMapObjectId, "name", ObjectData(string = "Bob"))
     // Wait for the map to be updated
     assertWaiter { testMap.get("name")?.asString == "Bob" }
 
@@ -142,7 +141,7 @@ class DefaultLiveMapTest: IntegrationTest() {
     assertEquals(true, testMap.get("isActive")?.asBoolean, "Active status should remain unchanged")
 
     // Step 3: Add a new field (email)
-    restObjects.setMapValue(channelName, testMapObjectId, "email", ObjectValue.String("bob@example.com"))
+    restObjects.setMapValue(channelName, testMapObjectId, "email", ObjectData(string = "bob@example.com"))
     // Wait for the map to be updated
     assertWaiter { testMap.get("email")?.asString == "bob@example.com" }
 
@@ -154,7 +153,7 @@ class DefaultLiveMapTest: IntegrationTest() {
     assertEquals("bob@example.com", testMap.get("email")?.asString, "Email should be added successfully")
 
     // Step 4: Add another new field with different data type (score as number)
-    restObjects.setMapValue(channelName, testMapObjectId, "score", ObjectValue.Number(85))
+    restObjects.setMapValue(channelName, testMapObjectId, "score", ObjectData(number = 85.0))
     // Wait for the map to be updated
     assertWaiter { testMap.get("score")?.asNumber == 85.0 }
 
@@ -167,7 +166,7 @@ class DefaultLiveMapTest: IntegrationTest() {
     assertEquals(85.0, testMap.get("score")?.asNumber, "Score should be added as numeric value")
 
     // Step 5: Update the boolean field
-    restObjects.setMapValue(channelName, testMapObjectId, "isActive", ObjectValue.Boolean(false))
+    restObjects.setMapValue(channelName, testMapObjectId, "isActive", ObjectData(boolean = false))
     // Wait for the map to be updated
     assertWaiter { testMap.get("isActive")?.asBoolean == false }
 
@@ -357,7 +356,7 @@ class DefaultLiveMapTest: IntegrationTest() {
     val userProfileSubscription = userProfile.subscribe { update -> userProfileUpdates.add(update) }
 
     // Step 1: Update an existing field in the user profile map (change the name)
-    restObjects.setMapValue(channelName, userProfileObjectId, "name", ObjectValue.String("Bob Smith"))
+    restObjects.setMapValue(channelName, userProfileObjectId, "name", ObjectData(string = "Bob Smith"))
 
     // Wait for the update to be received
     assertWaiter { userProfileUpdates.isNotEmpty() }
@@ -374,7 +373,7 @@ class DefaultLiveMapTest: IntegrationTest() {
 
     // Step 2: Update another field in the user profile map (change the email)
     userProfileUpdates.clear()
-    restObjects.setMapValue(channelName, userProfileObjectId, "email", ObjectValue.String("bob@example.com"))
+    restObjects.setMapValue(channelName, userProfileObjectId, "email", ObjectData(string = "bob@example.com"))
 
     // Wait for the second update
     assertWaiter { userProfileUpdates.isNotEmpty() }
@@ -414,7 +413,7 @@ class DefaultLiveMapTest: IntegrationTest() {
     userProfileUpdates.clear()
     userProfileSubscription.unsubscribe()
     // No updates should be received after unsubscribing
-    restObjects.setMapValue(channelName, userProfileObjectId, "country", ObjectValue.String("uk"))
+    restObjects.setMapValue(channelName, userProfileObjectId, "country", ObjectData(string = "uk"))
 
     // Wait for a moment to ensure no updates are received
     assertWaiter { userProfile.size() == 4L }

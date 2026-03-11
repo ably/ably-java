@@ -1,7 +1,7 @@
 package io.ably.lib.objects.unit.type.livecounter
 
-import io.ably.lib.objects.ObjectsCounter
-import io.ably.lib.objects.ObjectsCounterOp
+import io.ably.lib.objects.CounterCreate
+import io.ably.lib.objects.CounterInc
 import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectOperationAction
@@ -49,7 +49,7 @@ class DefaultLiveCounterTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.CounterCreate,
       objectId = "counter:testCounter@2", // Different objectId
-      counter = ObjectsCounter(count = 20.0)
+      counterCreate = CounterCreate(count = 20.0)
     )
 
     val message = ObjectMessage(
@@ -81,7 +81,7 @@ class DefaultLiveCounterTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.CounterCreate,
       objectId = "counter:testCounter@1", // Matching objectId
-      counter = ObjectsCounter(count = 20.0)
+      counterCreate = CounterCreate(count = 20.0)
     )
 
     val message = ObjectMessage(
@@ -108,7 +108,7 @@ class DefaultLiveCounterTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.CounterCreate,
       objectId = "counter:testCounter@1", // Matching objectId
-      counter = ObjectsCounter(count = 20.0)
+      counterCreate = CounterCreate(count = 20.0)
     )
 
     val message = ObjectMessage(
@@ -135,7 +135,7 @@ class DefaultLiveCounterTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterInc,
         objectId = "counter:testCounter@1",
-        counterOp = ObjectsCounterOp(amount = 5.0)
+        counterInc = io.ably.lib.objects.CounterInc(number = 5.0)
       ),
       serial = "serial1",
       siteCode = "site1"
@@ -160,7 +160,7 @@ class DefaultLiveCounterTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterInc,
         objectId = "counter:testCounter@1",
-        counterOp = ObjectsCounterOp(amount = 5.0)
+        counterInc = io.ably.lib.objects.CounterInc(number = 5.0)
       ),
       serial = "serial1", // Older than "serial5"
       siteCode = "site1"
@@ -184,7 +184,7 @@ class DefaultLiveCounterTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterInc,
         objectId = "counter:testCounter@1",
-        counterOp = ObjectsCounterOp(amount = 5.0)
+        counterInc = io.ably.lib.objects.CounterInc(number = 5.0)
       ),
       serial = "serial1",
       siteCode = "site1"
@@ -205,7 +205,7 @@ class DefaultLiveCounterTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterInc,
         objectId = "counter:testCounter@1",
-        counterOp = ObjectsCounterOp(amount = 5.0)
+        counterInc = io.ably.lib.objects.CounterInc(number = 5.0)
       ),
       serial = "serial1",
       siteCode = "site1"
@@ -227,7 +227,7 @@ class DefaultLiveCounterTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterCreate,
         objectId = "counter:testCounter@1",
-        counter = ObjectsCounter(count = 20.0)
+        counterCreate = CounterCreate(count = 20.0)
       ),
       serial = "serial1",
       siteCode = "site1"

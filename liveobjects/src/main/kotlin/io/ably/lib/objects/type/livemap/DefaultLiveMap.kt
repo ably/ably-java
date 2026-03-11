@@ -1,6 +1,9 @@
 package io.ably.lib.objects.type.livemap
 
 import io.ably.lib.objects.*
+import io.ably.lib.objects.MapCreate
+import io.ably.lib.objects.MapRemove
+import io.ably.lib.objects.MapSet
 import io.ably.lib.objects.ObjectsMapSemantics
 import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
@@ -15,6 +18,7 @@ import io.ably.lib.objects.type.map.LiveMapValue
 import io.ably.lib.objects.type.noOp
 import io.ably.lib.util.Log
 import kotlinx.coroutines.runBlocking
+import java.util.Base64
 import java.util.concurrent.ConcurrentHashMap
 import java.util.AbstractMap
 
@@ -128,9 +132,9 @@ internal class DefaultLiveMap private constructor(
       operation = ObjectOperation(
         action = ObjectOperationAction.MapSet,
         objectId = objectId,
-        mapOp = ObjectsMapOp(
+        mapSet = MapSet(
           key = keyName,
-          data = fromLiveMapValue(value)
+          value = fromLiveMapValue(value)
         )
       )
     )
@@ -153,7 +157,7 @@ internal class DefaultLiveMap private constructor(
       operation = ObjectOperation(
         action = ObjectOperationAction.MapRemove,
         objectId = objectId,
-        mapOp = ObjectsMapOp(key = keyName)
+        mapRemove = MapRemove(key = keyName)
       )
     )
 
@@ -196,20 +200,18 @@ internal class DefaultLiveMap private constructor(
     }
 
     /**
-     * Creates an ObjectMap from map entries.
-     * Spec: RTO11f4
+     * Creates a MapCreate payload from map entries.
+     * Spec: RTO11f14
      */
-    internal fun initialValue(entries: MutableMap<String, LiveMapValue>): MapCreatePayload {
-      return MapCreatePayload(
-        map = ObjectsMap(
-          semantics = ObjectsMapSemantics.LWW,
-          entries = entries.mapValues { (_, value) ->
-            ObjectsMapEntry(
-              tombstone = false,
-              data = fromLiveMapValue(value)
-            )
-          }
-        )
+    internal fun initialValue(entries: MutableMap<String, LiveMapValue>): MapCreate {
+      return MapCreate(
+        semantics = ObjectsMapSemantics.LWW,
+        entries = entries.mapValues { (_, value) ->
+          ObjectsMapEntry(
+            tombstone = false,
+            data = fromLiveMapValue(value)
+          )
+        }
       )
     }
 
@@ -218,30 +220,22 @@ internal class DefaultLiveMap private constructor(
      */
     private fun fromLiveMapValue(value: LiveMapValue): ObjectData {
       return when {
-        value.isLiveMap || value.isLiveCounter -> {
+        value.isLiveMap || value.isLiveCounter ->
           ObjectData(objectId = (value.value as BaseRealtimeObject).objectId)
-        }
-        value.isBoolean -> {
-          ObjectData(value = ObjectValue.Boolean(value.asBoolean))
-        }
-        value.isBinary -> {
-          ObjectData(value = ObjectValue.Binary(Binary(value.asBinary)))
-        }
-        value.isNumber -> {
-          ObjectData(value = ObjectValue.Number(value.asNumber))
-        }
-        value.isString -> {
-          ObjectData(value = ObjectValue.String(value.asString))
-        }
-        value.isJsonObject -> {
-          ObjectData(value = ObjectValue.JsonObject(value.asJsonObject))
-        }
-        value.isJsonArray -> {
-          ObjectData(value = ObjectValue.JsonArray(value.asJsonArray))
-        }
-        else -> {
+        value.isBoolean ->
+          ObjectData(boolean = value.asBoolean)
+        value.isBinary ->
+          ObjectData(bytes = Base64.getEncoder().encodeToString(value.asBinary))
+        value.isNumber ->
+          ObjectData(number = value.asNumber.toDouble())
+        value.isString ->
+          ObjectData(string = value.asString)
+        value.isJsonObject ->
+          ObjectData(json = value.asJsonObject)
+        value.isJsonArray ->
+          ObjectData(json = value.asJsonArray)
+        else ->
           throw IllegalArgumentException("Unsupported value type")
-        }
       }
     }
   }

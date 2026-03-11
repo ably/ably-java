@@ -1,11 +1,13 @@
 package io.ably.lib.objects
 
+import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 
 import com.google.gson.annotations.JsonAdapter
 import com.google.gson.annotations.SerializedName
 import io.ably.lib.objects.serialization.ObjectDataJsonSerializer
 import io.ably.lib.objects.serialization.gson
+import java.util.Base64
 
 /**
  * An enum class representing the different actions that can be performed on an object.
@@ -42,57 +44,89 @@ internal data class ObjectData(
    */
   val objectId: String? = null,
 
-  /**
-   * String, number, boolean or binary - a concrete value of the object
-   * Spec: OD2c
-   */
-  val value: ObjectValue? = null,
+  /** String value. Spec: OD2c */
+  val string: String? = null,
+
+  /** Numeric value. Spec: OD2c */
+  val number: Double? = null,
+
+  /** Boolean value. Spec: OD2c */
+  val boolean: Boolean? = null,
+
+  /** Binary value encoded as a base64 string. Spec: OD2c */
+  val bytes: String? = null,
+
+  /** JSON object or array value. Spec: OD2c */
+  val json: JsonElement? = null,
 )
 
 /**
- * Represents a value that can be a String, Number, Boolean, Binary, JsonObject or JsonArray.
- * Provides compile-time type safety through sealed class pattern.
- * Spec: OD2c
+ * Payload for MAP_CREATE operation.
+ * Spec: MCR*
  */
-internal sealed class ObjectValue {
-  abstract val value: Any
-
-  data class String(override val value: kotlin.String) : ObjectValue()
-  data class Number(override val value: kotlin.Number) : ObjectValue()
-  data class Boolean(override val value: kotlin.Boolean) : ObjectValue()
-  data class Binary(override val value: io.ably.lib.objects.Binary) : ObjectValue()
-  data class JsonObject(override val value: com.google.gson.JsonObject) : ObjectValue()
-  data class JsonArray(override val value: com.google.gson.JsonArray) : ObjectValue()
-}
-
-/**
- * A MapOp describes an operation to be applied to a Map object.
- * Spec: OMO1
- */
-internal data class ObjectsMapOp(
-  /**
-   * The key of the map entry to which the operation should be applied.
-   * Spec: OMO2a
-   */
-  val key: String,
-
-  /**
-   * The data that the map entry should contain if the operation is a MAP_SET operation.
-   * Spec: OMO2b
-   */
-  val data: ObjectData? = null
+internal data class MapCreate(
+  val semantics: ObjectsMapSemantics, // MCR2a
+  val entries: Map<String, ObjectsMapEntry> // MCR2b
 )
 
 /**
- * A CounterOp describes an operation to be applied to a Counter object.
- * Spec: OCO1
+ * Payload for MAP_SET operation.
+ * Spec: MST*
  */
-internal data class ObjectsCounterOp(
-  /**
-   * The data value that should be added to the counter
-   * Spec: OCO2a
-   */
-  val amount: Double? = null
+internal data class MapSet(
+  val key: String, // MST2a
+  val value: ObjectData // MST2b - REQUIRED
+)
+
+/**
+ * Payload for MAP_REMOVE operation.
+ * Spec: MRM*
+ */
+internal data class MapRemove(
+  val key: String // MRM2a
+)
+
+/**
+ * Payload for COUNTER_CREATE operation.
+ * Spec: CCR*
+ */
+internal data class CounterCreate(
+  val count: Double // CCR2a - REQUIRED
+)
+
+/**
+ * Payload for COUNTER_INC operation.
+ * Spec: CIN*
+ */
+internal data class CounterInc(
+  val number: Double // CIN2a - REQUIRED
+)
+
+/**
+ * Payload for OBJECT_DELETE operation.
+ * Spec: ODE*
+ * No fields - action is sufficient
+ */
+internal object ObjectDelete
+
+/**
+ * Payload for MAP_CREATE_WITH_OBJECT_ID operation.
+ * Spec: MCRO*
+ */
+internal data class MapCreateWithObjectId(
+  val initialValue: String, // MCRO2a
+  val nonce: String, // MCRO2b
+  @Transient val derivedFrom: MapCreate? = null,
+)
+
+/**
+ * Payload for COUNTER_CREATE_WITH_OBJECT_ID operation.
+ * Spec: CCRO*
+ */
+internal data class CounterCreateWithObjectId(
+  val initialValue: String, // CCRO2a
+  val nonce: String, // CCRO2b
+  @Transient val derivedFrom: CounterCreate? = null,
 )
 
 /**
@@ -175,48 +209,52 @@ internal data class ObjectOperation(
   val objectId: String,
 
   /**
-   * The payload for the operation if it is an operation on a Map object type.
-   * i.e. MAP_SET, MAP_REMOVE.
-   * Spec: OOP3c
+   * Payload for MAP_CREATE operation.
+   * Spec: OOP3j
    */
-  val mapOp: ObjectsMapOp? = null,
+  val mapCreate: MapCreate? = null,
 
   /**
-   * The payload for the operation if it is an operation on a Counter object type.
-   * i.e. COUNTER_INC.
-   * Spec: OOP3d
+   * Payload for MAP_SET operation.
+   * Spec: OOP3k
    */
-  val counterOp: ObjectsCounterOp? = null,
+  val mapSet: MapSet? = null,
 
   /**
-   * The payload for the operation if the operation is MAP_CREATE.
-   * Defines the initial value for the Map object.
-   * Spec: OOP3e
+   * Payload for MAP_REMOVE operation.
+   * Spec: OOP3l
    */
-  val map: ObjectsMap? = null,
+  val mapRemove: MapRemove? = null,
 
   /**
-   * The payload for the operation if the operation is COUNTER_CREATE.
-   * Defines the initial value for the Counter object.
-   * Spec: OOP3f
+   * Payload for COUNTER_CREATE operation.
+   * Spec: OOP3m
    */
-  val counter: ObjectsCounter? = null,
+  val counterCreate: CounterCreate? = null,
 
   /**
-   * The nonce, must be present on create operations. This is the random part
-   * that has been hashed with the type and initial value to create the object ID.
-   * Spec: OOP3g
+   * Payload for COUNTER_INC operation.
+   * Spec: OOP3n
    */
-  val nonce: String? = null,
+  val counterInc: CounterInc? = null,
 
   /**
-   * The initial value json string for the object. This value should be used along with the nonce
-   * and timestamp to create the object ID. Frontdoor will use this to verify the object ID.
-   * After verification the json string will be decoded into the Map or Counter objects and
-   * the initialValue and nonce will be removed.
-   * Spec: OOP3h
+   * Payload for OBJECT_DELETE operation.
+   * Spec: OOP3o
    */
-  val initialValue: String? = null,
+  val objectDelete: ObjectDelete? = null,
+
+  /**
+   * Payload for MAP_CREATE_WITH_OBJECT_ID operation.
+   * Spec: OOP3p
+   */
+  val mapCreateWithObjectId: MapCreateWithObjectId? = null,
+
+  /**
+   * Payload for COUNTER_CREATE_WITH_OBJECT_ID operation.
+   * Spec: OOP3q
+   */
+  val counterCreateWithObjectId: CounterCreateWithObjectId? = null,
 )
 
 /**
@@ -349,7 +387,7 @@ internal data class ObjectMessage(
  * Spec: OM3
  */
 internal fun ObjectMessage.size(): Int {
-  val clientIdSize = clientId?.length ?: 0 // Spec: OM3f
+  val clientIdSize = clientId?.byteSize ?: 0 // Spec: OM3f
   val operationSize = operation?.size() ?: 0 // Spec: OM3b, OOP4
   val objectStateSize = objectState?.size() ?: 0 // Spec: OM3c, OST3
   val extrasSize = extras?.let { gson.toJson(it).length } ?: 0 // Spec: OM3d
@@ -362,12 +400,14 @@ internal fun ObjectMessage.size(): Int {
  * Spec: OOP4
  */
 private fun ObjectOperation.size(): Int {
-  val mapOpSize = mapOp?.size() ?: 0 // Spec: OOP4b, OMO3
-  val counterOpSize = counterOp?.size() ?: 0 // Spec: OOP4c, OCO3
-  val mapSize = map?.size() ?: 0 // Spec: OOP4d, OMP4
-  val counterSize = counter?.size() ?: 0 // Spec: OOP4e, OCN3
+  val mapCreateSize = mapCreate?.size() ?: mapCreateWithObjectId?.derivedFrom?.size() ?: 0
+  val mapSetSize = mapSet?.size() ?: 0
+  val mapRemoveSize = mapRemove?.size() ?: 0
+  val counterCreateSize = counterCreate?.size() ?: counterCreateWithObjectId?.derivedFrom?.size() ?: 0
+  val counterIncSize = counterInc?.size() ?: 0
 
-  return mapOpSize + counterOpSize + mapSize + counterSize
+  return mapCreateSize + mapSetSize + mapRemoveSize +
+    counterCreateSize + counterIncSize
 }
 
 /**
@@ -383,22 +423,52 @@ private fun ObjectState.size(): Int {
 }
 
 /**
- * Calculates the size of an ObjectMapOp in bytes.
- * Spec: OMO3
+ * Calculates the size of a MapCreate payload in bytes.
  */
-private fun ObjectsMapOp.size(): Int {
-  val keySize = key.length // Spec: OMO3d - Size of the key
-  val dataSize = data?.size() ?: 0 // Spec: OMO3b - Size of the data, calculated per "OD3"
-  return keySize + dataSize
+private fun MapCreate.size(): Int {
+  return entries.entries.sumOf { it.key.byteSize + it.value.size() }
 }
 
 /**
- * Calculates the size of a CounterOp in bytes.
- * Spec: OCO3
+ * Calculates the size of a MapSet payload in bytes.
  */
-private fun ObjectsCounterOp.size(): Int {
-  // Size is 8 if amount is a number, 0 if amount is null or omitted
-  return if (amount != null) 8 else 0 // Spec: OCO3a, OCO3b
+private fun MapSet.size(): Int {
+  return key.byteSize + value.size()
+}
+
+/**
+ * Calculates the size of a MapRemove payload in bytes.
+ */
+private fun MapRemove.size(): Int {
+  return key.byteSize
+}
+
+/**
+ * Calculates the size of a CounterCreate payload in bytes.
+ */
+private fun CounterCreate.size(): Int {
+  return 8 // Double is 8 bytes
+}
+
+/**
+ * Calculates the size of a CounterInc payload in bytes.
+ */
+private fun CounterInc.size(): Int {
+  return 8 // Double is 8 bytes
+}
+
+/**
+ * Calculates the size of a MapCreateWithObjectId payload in bytes.
+ */
+private fun MapCreateWithObjectId.size(): Int {
+  return initialValue.byteSize + nonce.byteSize
+}
+
+/**
+ * Calculates the size of a CounterCreateWithObjectId payload in bytes.
+ */
+private fun CounterCreateWithObjectId.size(): Int {
+  return initialValue.byteSize + nonce.byteSize
 }
 
 /**
@@ -437,23 +507,19 @@ private fun ObjectsMapEntry.size(): Int {
  * Spec: OD3
  */
 private fun ObjectData.size(): Int {
-  return value?.size() ?: 0 // Spec: OD3f
-}
-
-/**
- * Calculates the size of an ObjectValue in bytes.
- * Spec: OD3*
- */
-private fun ObjectValue.size(): Int {
-  return when (this) {
-    is ObjectValue.Boolean -> 1 // Spec: OD3b
-    is ObjectValue.Binary -> value.size() // Spec: OD3c
-    is ObjectValue.Number -> 8 // Spec: OD3d
-    is ObjectValue.String -> value.byteSize // Spec: OD3e
-    is ObjectValue.JsonObject, is ObjectValue.JsonArray -> value.toString().byteSize // Spec: OD3e
-  }
+  string?.let { return it.byteSize } // Spec: OD3e
+  number?.let { return 8 } // Spec: OD3d
+  boolean?.let { return 1 } // Spec: OD3b
+  bytes?.let { return Base64.getDecoder().decode(it).size } // Spec: OD3c
+  json?.let { return it.toString().byteSize } // Spec: OD3e
+  return 0
 }
 
 internal fun ObjectData?.isInvalid(): Boolean {
-  return this?.objectId.isNullOrEmpty() && this?.value == null
+  return this?.objectId.isNullOrEmpty() &&
+    this?.string == null &&
+    this?.number == null &&
+    this?.boolean == null &&
+    this?.bytes == null &&
+    this?.json == null
 }

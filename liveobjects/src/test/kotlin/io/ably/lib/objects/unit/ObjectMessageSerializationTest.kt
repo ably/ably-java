@@ -157,10 +157,8 @@ class ObjectMessageSerializationTest {
       connectionId = "test-connection",
       extras = null,
       operation = objectMessage.operation?.copy(
-        initialValue = null, // initialValue set to null
-        mapOp = objectMessage.operation.mapOp?.copy(
-          data = null // objectData set to null
-        )
+        mapCreateWithObjectId = null,
+        mapCreate = null
       ),
       objectState = null,
       serial = null,
