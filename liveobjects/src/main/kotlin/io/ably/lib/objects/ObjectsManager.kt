@@ -77,8 +77,6 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
   internal fun startNewSync(syncId: String?) {
     Log.v(tag, "Starting new sync sequence: syncId=$syncId")
 
-    // need to discard all buffered object operation messages on new sync start
-    bufferedObjectOperations.clear() // RTO5a2b
     syncObjectsDataPool.clear() // RTO5a2a
     currentSyncId = syncId
     syncCompletionWaiter = CompletableDeferred()

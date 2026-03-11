@@ -15,6 +15,7 @@ import io.ably.lib.objects.type.livemap.LiveMapEntry
 import io.ably.lib.objects.unit.BufferedObjectOperations
 import io.ably.lib.objects.unit.ObjectsManager
 import io.ably.lib.objects.unit.SyncObjectsDataPool
+import io.ably.lib.objects.unit.getMockObjectsAdapter
 import io.ably.lib.objects.unit.getDefaultRealtimeObjectsWithMockedDeps
 import io.ably.lib.objects.unit.getMockRealtimeChannel
 import io.ably.lib.objects.unit.size
@@ -26,11 +27,21 @@ import io.mockk.every
 import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 class DefaultRealtimeObjectsTest {
+
+  private val testInstances = mutableListOf<DefaultRealtimeObjects>()
+
+  @After
+  fun tearDown() {
+    val cleanupError = AblyException.fromErrorInfo(ErrorInfo("test cleanup", 500))
+    testInstances.forEach { it.dispose(cleanupError) }
+    testInstances.clear()
+  }
 
   @Test
   fun `(RTO4, RTO4a) When channel ATTACHED with HAS_OBJECTS flag true should start sync sequence`() = runTest {
@@ -74,7 +85,7 @@ class DefaultRealtimeObjectsTest {
     }
 
     assertEquals(0, defaultRealtimeObjects.ObjectsManager.SyncObjectsDataPool.size) // RTO4b3
-    assertEquals(0, defaultRealtimeObjects.ObjectsManager.BufferedObjectOperations.size) // RTO4b5
+    assertEquals(0, defaultRealtimeObjects.ObjectsManager.BufferedObjectOperations.size) // RTO4d
     assertEquals(1, defaultRealtimeObjects.objectsPool.size()) // RTO4b1 - Only root remains
     assertEquals(rootObject, defaultRealtimeObjects.objectsPool.get(ROOT_OBJECT_ID)) // points to previously created root object
     assertEquals(0, rootObject.data.size) // RTO4b2 - root object must be empty
@@ -256,6 +267,147 @@ class DefaultRealtimeObjectsTest {
 
     verify(exactly = 1) { defaultRealtimeObjects.objectsPool.clearObjectsData(false) }
     verify(exactly = 1) { defaultRealtimeObjects.ObjectsManager.clearSyncObjectsDataPool() }
+  }
+
+  @Test
+  fun `(RTO4d) ATTACHED with hasObjects=true still clears bufferedObjectOperations`() = runTest {
+    val defaultRealtimeObjects = getDefaultRealtimeObjectsWithMockedDeps()
+    val manager = defaultRealtimeObjects.ObjectsManager
+
+    // Pre-populate bufferedObjectOperations with a dummy operation
+    @Suppress("UNCHECKED_CAST")
+    (manager.BufferedObjectOperations as MutableList<ObjectMessage>).add(
+      ObjectMessage(
+        id = "pre-attach-op",
+        operation = ObjectOperation(
+          action = ObjectOperationAction.CounterInc,
+          objectId = "counter:test@1",
+          counterOp = ObjectsCounterOp(amount = 5.0)
+        )
+      )
+    )
+    assertEquals(1, manager.BufferedObjectOperations.size)
+
+    // ATTACHED with hasObjects=true — RTO4d must clear the buffer before starting sync
+    defaultRealtimeObjects.handleStateChange(ChannelState.attached, true)
+
+    assertWaiter { defaultRealtimeObjects.state == ObjectsState.Syncing }
+    assertEquals(0, manager.BufferedObjectOperations.size, "RTO4d - buffer must be cleared unconditionally on ATTACHED")
+  }
+
+  @Test
+  fun `(RTO4d) Pre-ATTACHED buffered operations are discarded, not applied after sync`() = runTest {
+    val defaultRealtimeObjects = DefaultRealtimeObjects("testChannel", getMockObjectsAdapter())
+      .also { testInstances.add(it) }
+
+    // Set up a counter in the pool
+    val counter = DefaultLiveCounter.zeroValue("counter:test@1", defaultRealtimeObjects)
+    defaultRealtimeObjects.objectsPool.set("counter:test@1", counter)
+
+    val objectsManager = defaultRealtimeObjects.ObjectsManager
+
+    // Pre-populate bufferedObjectOperations with a COUNTER_INC — simulates an op received before ATTACHED
+    @Suppress("UNCHECKED_CAST")
+    (objectsManager.BufferedObjectOperations as MutableList<ObjectMessage>).add(
+      ObjectMessage(
+        id = "pre-attach-inc",
+        operation = ObjectOperation(
+          action = ObjectOperationAction.CounterInc,
+          objectId = "counter:test@1",
+          counterOp = ObjectsCounterOp(amount = 5.0)
+        )
+      )
+    )
+    assertEquals(1, objectsManager.BufferedObjectOperations.size)
+
+    // ATTACHED with hasObjects=true: RTO4d clears the buffer, then starts sync
+    defaultRealtimeObjects.handleStateChange(ChannelState.attached, true)
+    assertWaiter { defaultRealtimeObjects.state == ObjectsState.Syncing }
+    assertEquals(0, objectsManager.BufferedObjectOperations.size, "buffer must be cleared by RTO4d")
+
+    // Complete sync by calling handleObjectSyncMessages directly (sequentialScope is idle now)
+    objectsManager.handleObjectSyncMessages(
+      listOf(
+        ObjectMessage(
+          id = "sync-msg-1",
+          objectState = ObjectState(
+            objectId = "counter:test@1",
+            tombstone = false,
+            siteTimeserials = mapOf("site1" to "serial1"),
+            counter = ObjectsCounter(count = 0.0)
+          )
+        )
+      ),
+      "sync-id:"  // empty cursor — ends sync (RTO5a4)
+    )
+
+    assertEquals(ObjectsState.Synced, defaultRealtimeObjects.state)
+
+    // The pre-ATTACHED COUNTER_INC was discarded — counter should remain at 0
+    assertEquals(0.0, counter.data.get(), "RTO4d - pre-ATTACHED buffered op must be discarded, not applied after sync")
+  }
+
+  @Test
+  fun `(RTO5a2b removed) Buffered operations survive a server-initiated resync (new OBJECT_SYNC without ATTACHED)`() {
+    val defaultRealtimeObjects = DefaultRealtimeObjects("testChannel", getMockObjectsAdapter())
+      .also { testInstances.add(it) }
+
+    // Set up a counter in the pool
+    val counter = DefaultLiveCounter.zeroValue("counter:test@1", defaultRealtimeObjects)
+    counter.data.set(5.0)
+    defaultRealtimeObjects.objectsPool.set("counter:test@1", counter)
+
+    val objectsManager = defaultRealtimeObjects.ObjectsManager
+
+    // sync-1 is in progress
+    objectsManager.startNewSync("sync-1")
+    assertEquals(ObjectsState.Syncing, defaultRealtimeObjects.state)
+
+    // Buffer a COUNTER_INC during sync-1
+    objectsManager.handleObjectMessages(
+      listOf(
+        ObjectMessage(
+          id = "channel-op-1",
+          operation = ObjectOperation(
+            action = ObjectOperationAction.CounterInc,
+            objectId = "counter:test@1",
+            counterOp = ObjectsCounterOp(amount = 3.0)
+          ),
+          serial = "serial-op-1",
+          siteCode = "site1"
+        )
+      )
+    )
+    assertEquals(1, objectsManager.BufferedObjectOperations.size, "op buffered during sync-1")
+
+    // Server sends a new OBJECT_SYNC with a different sync-id — triggers startNewSync("sync-2") internally
+    // OLD behaviour (RTO5a2b): startNewSync would have cleared bufferedObjectOperations here
+    // NEW behaviour (RTO5a2b removed): buffer is preserved
+    objectsManager.handleObjectSyncMessages(
+      listOf(
+        ObjectMessage(
+          id = "sync2-msg-1",
+          objectState = ObjectState(
+            objectId = "counter:test@1",
+            tombstone = false,
+            siteTimeserials = mapOf("site1" to "resync-serial"),
+            counter = ObjectsCounter(count = 5.0)
+          )
+        )
+      ),
+      "sync-2:cursor-1"  // has cursor — not ending yet
+    )
+
+    assertEquals(1, objectsManager.BufferedObjectOperations.size,
+      "startNewSync must NOT clear bufferedObjectOperations (RTO5a2b removed)")
+
+    // Complete sync-2 (ending serial, no new messages)
+    objectsManager.handleObjectSyncMessages(emptyList(), "sync-2:")
+
+    assertEquals(ObjectsState.Synced, defaultRealtimeObjects.state)
+    // sync-2 restored counter to 5.0; buffered COUNTER_INC (+3.0) applied after sync → 8.0
+    assertEquals(8.0, counter.data.get(),
+      "buffered COUNTER_INC from before server-initiated resync must be applied after sync completes")
   }
 
   @Test
