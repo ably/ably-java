@@ -12,6 +12,7 @@ import io.ably.lib.objects.unit.*
 import io.ably.lib.objects.unit.getDefaultRealtimeObjectsWithMockedDeps
 import io.ably.lib.types.AblyException
 import io.ably.lib.types.ErrorInfo
+import io.ably.lib.util.Log
 import io.mockk.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
@@ -653,6 +654,140 @@ class ObjectsManagerTest {
     assertEquals(0.0, counter.data.get(), "no local apply should happen when serials length mismatches")
     assertTrue(defaultRealtimeObjects.appliedOnAckSerials.isEmpty(),
       "appliedOnAckSerials should be empty when serials length mismatches")
+  }
+
+  @Test
+  fun `(RTO5f2a2) partial sync map entries are merged across two messages with the same objectId`() {
+    val defaultRealtimeObjects = makeRealtimeObjects()
+    val objectsManager = defaultRealtimeObjects.ObjectsManager
+
+    val msg1 = ObjectMessage(
+      id = "msg1",
+      objectState = ObjectState(
+        objectId = "map:test@1",
+        tombstone = false,
+        siteTimeserials = mapOf("site1" to "serial1"),
+        map = ObjectsMap(semantics = ObjectsMapSemantics.LWW, entries = mapOf("key1" to ObjectsMapEntry(data = ObjectData(string = "value1"))))
+      )
+    )
+    val msg2 = ObjectMessage(
+      id = "msg2",
+      objectState = ObjectState(
+        objectId = "map:test@1",
+        tombstone = false,
+        siteTimeserials = mapOf("site1" to "serial2"),
+        map = ObjectsMap(semantics = ObjectsMapSemantics.LWW, entries = mapOf("key2" to ObjectsMapEntry(data = ObjectData(string = "value2"))))
+      )
+    )
+
+    objectsManager.handleObjectSyncMessages(listOf(msg1, msg2), "sync-1:")
+
+    val liveMap = defaultRealtimeObjects.objectsPool.get("map:test@1") as DefaultLiveMap
+    assertNotNull(liveMap.data["key1"], "key1 should be present after merge")
+    assertNotNull(liveMap.data["key2"], "key2 should be present after merge")
+    assertEquals("value1", liveMap.data["key1"]?.data?.string)
+    assertEquals("value2", liveMap.data["key2"]?.data?.string)
+  }
+
+  @Test
+  fun `(RTO5f2a1) tombstone on second partial message replaces pool entry entirely`() {
+    val defaultRealtimeObjects = makeRealtimeObjects()
+    val objectsManager = defaultRealtimeObjects.ObjectsManager
+
+    val msg1 = ObjectMessage(
+      id = "msg1",
+      objectState = ObjectState(
+        objectId = "map:test@1",
+        tombstone = false,
+        siteTimeserials = mapOf("site1" to "serial1"),
+        map = ObjectsMap(semantics = ObjectsMapSemantics.LWW, entries = mapOf("key1" to ObjectsMapEntry(data = ObjectData(string = "value1"))))
+      )
+    )
+    val msg2 = ObjectMessage(
+      id = "msg2",
+      objectState = ObjectState(
+        objectId = "map:test@1",
+        tombstone = true,
+        siteTimeserials = mapOf("site1" to "serial2"),
+        map = ObjectsMap(semantics = ObjectsMapSemantics.LWW, entries = emptyMap())
+      )
+    )
+
+    objectsManager.handleObjectSyncMessages(listOf(msg1, msg2), "sync-1:")
+
+    val liveMap = defaultRealtimeObjects.objectsPool.get("map:test@1") as DefaultLiveMap
+    // After tombstone replaces the entry, the map should have no key1
+    assertNull(liveMap.data["key1"], "key1 should not be present after tombstone replaced the pool entry")
+  }
+
+  @Test
+  fun `(RTO5f2b) partial sync counter message logs error and is skipped`() {
+    val defaultRealtimeObjects = makeRealtimeObjects()
+    val objectsManager = defaultRealtimeObjects.ObjectsManager
+
+    mockkStatic(Log::class)
+    every { Log.e(any(), any<String>()) } returns 0
+
+    val msg1 = ObjectMessage(
+      id = "msg1",
+      objectState = ObjectState(
+        objectId = "counter:test@1",
+        tombstone = false,
+        siteTimeserials = mapOf("site1" to "serial1"),
+        counter = ObjectsCounter(count = 10.0)
+      )
+    )
+    val msg2 = ObjectMessage(
+      id = "msg2",
+      objectState = ObjectState(
+        objectId = "counter:test@1",
+        tombstone = false,
+        siteTimeserials = mapOf("site1" to "serial2"),
+        counter = ObjectsCounter(count = 5.0)
+      )
+    )
+
+    objectsManager.handleObjectSyncMessages(listOf(msg1, msg2), "sync-1:")
+
+    // Pool should contain only msg1 (msg2 skipped)
+    val counter = defaultRealtimeObjects.objectsPool.get("counter:test@1") as DefaultLiveCounter
+    assertEquals(10.0, counter.data.get(), "counter value should be from msg1 only (msg2 skipped)")
+    verify { Log.e(any(), match<String> { it.contains("partial sync message for a counter") }) }
+  }
+
+  @Test
+  fun `(RTO5f2c) partial sync message with unsupported type logs warning and is skipped`() {
+    val defaultRealtimeObjects = makeRealtimeObjects()
+    val objectsManager = defaultRealtimeObjects.ObjectsManager
+
+    mockkStatic(Log::class)
+    every { Log.w(any(), any<String>()) } returns 0
+
+    val msg1 = ObjectMessage(
+      id = "msg1",
+      objectState = ObjectState(
+        objectId = "map:test@1",
+        tombstone = false,
+        siteTimeserials = mapOf("site1" to "serial1"),
+        map = ObjectsMap(semantics = ObjectsMapSemantics.LWW, entries = mapOf("key1" to ObjectsMapEntry(data = ObjectData(string = "value1"))))
+      )
+    )
+    // msg2 has neither map nor counter — hits the else branch (RTO5f2c)
+    val msg2 = ObjectMessage(
+      id = "msg2",
+      objectState = ObjectState(
+        objectId = "map:test@1",
+        tombstone = false,
+        siteTimeserials = mapOf("site1" to "serial2"),
+      )
+    )
+
+    objectsManager.handleObjectSyncMessages(listOf(msg1, msg2), "sync-1:")
+
+    // Pool entry should still be msg1 (msg2 was skipped)
+    val liveMap = defaultRealtimeObjects.objectsPool.get("map:test@1") as DefaultLiveMap
+    assertNotNull(liveMap.data["key1"], "key1 should still be present (msg2 skipped)")
+    verify { Log.w(any(), match<String> { it.contains("unsupported object type") }) }
   }
 
   private fun mockZeroValuedObjects() {

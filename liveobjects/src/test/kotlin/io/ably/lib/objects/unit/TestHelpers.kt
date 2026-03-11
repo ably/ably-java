@@ -68,8 +68,8 @@ internal val BaseRealtimeObject.TombstonedAt: Long?
  * START - DefaultRealtimeObjects dep mocks
  * ======================================
  */
-internal val ObjectsManager.SyncObjectsDataPool: Map<String, ObjectState>
-  get() = this.getPrivateField("syncObjectsDataPool")
+internal val ObjectsManager.SyncObjectsPool: Map<String, ObjectMessage>
+  get() = this.getPrivateField("syncObjectsPool")
 
 internal val ObjectsManager.BufferedObjectOperations: List<ObjectMessage>
   get() = this.getPrivateField("bufferedObjectOperations")
