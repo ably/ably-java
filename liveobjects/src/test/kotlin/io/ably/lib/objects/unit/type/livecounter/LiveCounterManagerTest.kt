@@ -192,11 +192,11 @@ class DefaultLiveCounterManagerTest {
     assertTrue(liveCounter.createOperationIsMerged) // Should be marked as merged
 
     assertEquals(30.0, liveCounter.data.get()) // Should be set to counter count
-    assertTrue(liveCounter.createOperationIsMerged) // RTLC10b - Should be marked as merged
+    assertTrue(liveCounter.createOperationIsMerged) // RTLC16b - Should be marked as merged
   }
 
   @Test
-  fun `(RTLC8, RTLC10, RTLC10a) LiveCounterManager should handle null count in create operation`() {
+  fun `(RTLC8, RTLC16) LiveCounterManager should handle null count in create operation`() {
     val liveCounter = getDefaultLiveCounterWithMockedDeps()
     val liveCounterManager = liveCounter.LiveCounterManager
 
@@ -209,12 +209,11 @@ class DefaultLiveCounterManagerTest {
       counterCreate = null // No count specified
     )
 
-    // RTLC10a - Should default to 0
-    // RTLC10b - Mark as merged
+    // RTLC16a - Should default to 0
     liveCounterManager.applyOperation(operation, null)
 
     assertEquals(10.0, liveCounter.data.get()) // No change (null defaults to 0)
-    assertTrue(liveCounter.createOperationIsMerged) // RTLC10b
+    assertTrue(liveCounter.createOperationIsMerged) // RTLC16b
   }
 
   @Test
@@ -234,7 +233,7 @@ class DefaultLiveCounterManagerTest {
     // RTLC7d2 - Apply counter increment operation
     liveCounterManager.applyOperation(operation, null)
 
-    assertEquals(15.0, liveCounter.data.get()) // RTLC9b - 10 + 5
+    assertEquals(15.0, liveCounter.data.get()) // RTLC9f - 10 + 5
   }
 
   @Test
@@ -261,7 +260,7 @@ class DefaultLiveCounterManagerTest {
 
 
   @Test
-  fun `(RTLC9, RTLC9b) LiveCounterManager should apply counter increment operation correctly`() {
+  fun `(RTLC9, RTLC9f) LiveCounterManager should apply counter increment operation correctly`() {
     val liveCounter = getDefaultLiveCounterWithMockedDeps()
     val liveCounterManager = liveCounter.LiveCounterManager
 
@@ -270,7 +269,7 @@ class DefaultLiveCounterManagerTest {
 
     val counterInc = CounterInc(number = 7.0)
 
-    // RTLC9b - Apply counter increment
+    // RTLC9f - Apply counter increment
     liveCounterManager.applyOperation(ObjectOperation(
       action = ObjectOperationAction.CounterInc,
       objectId = "testCounterId",

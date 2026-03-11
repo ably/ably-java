@@ -201,7 +201,7 @@ internal class DefaultLiveMap private constructor(
 
     /**
      * Creates a MapCreate payload from map entries.
-     * Spec: RTO11f4
+     * Spec: RTO11f14
      */
     internal fun initialValue(entries: MutableMap<String, LiveMapValue>): MapCreate {
       return MapCreate(

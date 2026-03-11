@@ -231,7 +231,7 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
   }
 
   /**
-   * @spec RTLM17 - Merges initial data from create operation
+   * @spec RTLM23 - Merges initial data from create operation
    */
   private fun getEffectiveMapCreate(operation: ObjectOperation): MapCreate? =
     operation.mapCreateWithObjectId?.derivedFrom ?: operation.mapCreate
@@ -244,7 +244,7 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
 
     val aggregatedUpdate = mutableListOf<LiveMapUpdate>()
 
-    // RTLM17a
+    // RTLM23a
     // in order to apply MAP_CREATE op for an existing map, we should merge their underlying entries keys.
     // we can do this by iterating over entries from MAP_CREATE op and apply changes on per-key basis as if we had MAP_SET, MAP_REMOVE operations.
     effectiveMapCreate?.entries?.forEach { (key, entry) ->
@@ -266,7 +266,7 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
       aggregatedUpdate.add(update)
     }
 
-    liveMap.createOperationIsMerged = true // RTLM17b
+    liveMap.createOperationIsMerged = true // RTLM23b
 
     return LiveMapUpdate(
       aggregatedUpdate.map { it.update }.fold(emptyMap()) { acc, map -> acc + map }

@@ -93,7 +93,7 @@ internal class LiveCounterManager(private val liveCounter: DefaultLiveCounter): 
   private fun applyCounterInc(counterInc: CounterInc): LiveCounterUpdate {
     val amount = counterInc.number
     val previousValue = liveCounter.data.get()
-    liveCounter.data.set(previousValue + amount) // RTLC9b
+    liveCounter.data.set(previousValue + amount) // RTLC9f
     return LiveCounterUpdate(amount)
   }
 
@@ -102,7 +102,7 @@ internal class LiveCounterManager(private val liveCounter: DefaultLiveCounter): 
   }
 
   /**
-   * @spec RTLC10 - Merges initial data from create operation
+   * @spec RTLC16 - Merges initial data from create operation
    */
   private fun mergeInitialDataFromCreateOperation(operation: ObjectOperation): LiveCounterUpdate {
     // if a counter object is missing for the COUNTER_CREATE op, the initial value is implicitly 0 in this case.
@@ -113,8 +113,8 @@ internal class LiveCounterManager(private val liveCounter: DefaultLiveCounter): 
       ?: operation.counterCreate?.count
       ?: 0.0
     val previousValue = liveCounter.data.get()
-    liveCounter.data.set(previousValue + count) // RTLC10a
-    liveCounter.createOperationIsMerged = true // RTLC10b
+    liveCounter.data.set(previousValue + count) // RTLC16
+    liveCounter.createOperationIsMerged = true // RTLC16
     return LiveCounterUpdate(count)
   }
 

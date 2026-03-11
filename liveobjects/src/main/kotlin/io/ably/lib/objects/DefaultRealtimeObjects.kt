@@ -112,10 +112,10 @@ internal class DefaultRealtimeObjects(internal val channelName: String, internal
       throw invalidInputError("Map keys should not be empty")
     }
 
-    // RTO11f4 - Create initial value operation
+    // RTO11f14 - Create initial value operation
     val initialMapValue = DefaultLiveMap.initialValue(entries)
 
-    // RTO11f5 - Create initial value JSON string
+    // RTO11f15 - Create initial value JSON string
     val initialValueJSONString = gson.toJson(initialMapValue)
 
     // RTO11f8 - Create object ID from initial value
@@ -150,9 +150,9 @@ internal class DefaultRealtimeObjects(internal val channelName: String, internal
       throw invalidInputError("Counter value should be a valid number")
     }
 
-    // RTO12f2
+    // RTO12f12
     val initialCounterValue = DefaultLiveCounter.initialValue(initialValue)
-    // RTO12f3 - Create initial value operation
+    // RTO12f13 - Create initial value operation
     val initialValueJSONString = gson.toJson(initialCounterValue)
 
     // RTO12f6- Create object ID from initial value

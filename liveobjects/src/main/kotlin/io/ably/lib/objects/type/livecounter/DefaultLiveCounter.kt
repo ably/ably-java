@@ -127,7 +127,7 @@ internal class DefaultLiveCounter private constructor(
 
     /**
      * Creates initial value payload for counter creation.
-     * Spec: RTO12f2
+     * Spec: RTO12f12
      */
     internal fun initialValue(count: Number): CounterCreate {
       return CounterCreate(count = count.toDouble())

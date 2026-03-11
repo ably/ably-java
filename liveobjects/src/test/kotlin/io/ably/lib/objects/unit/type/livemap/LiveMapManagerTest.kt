@@ -325,7 +325,7 @@ class LiveMapManagerTest {
   }
 
   @Test
-  fun `(RTLM16, RTLM16d, RTLM17, OME2d) LiveMapManager should merge initial data from create operation with tombstoned entries`() {
+  fun `(RTLM16, RTLM16d, RTLM23, OME2d) LiveMapManager should merge initial data from create operation with tombstoned entries`() {
     val liveMap = getDefaultLiveMapWithMockedDeps()
     val liveMapManager = liveMap.LiveMapManager
 
@@ -366,11 +366,11 @@ class LiveMapManagerTest {
     liveMapManager.applyOperation(operation, "serial1", null)
 
     assertEquals(3, liveMap.data.size) // Should have all entries
-    assertTrue(liveMap.data["key1"]?.isTombstoned == true) // RTLM17a2 - Should be tombstoned
+    assertTrue(liveMap.data["key1"]?.isTombstoned == true) // RTLM23a2 - Should be tombstoned
     assertEquals(expectedTimestamp, liveMap.data["key1"]?.tombstonedAt) // Should use provided serialTimestamp
-    assertEquals("newValue", liveMap.data["key2"]?.data?.string) // RTLM17a1 - Should be added
-    assertTrue(liveMap.data["key3"]?.isTombstoned == true) // RTLM17a2 - Should be tombstoned
-    assertTrue(liveMap.createOperationIsMerged) // RTLM17b - Should be marked as merged
+    assertEquals("newValue", liveMap.data["key2"]?.data?.string) // RTLM23a1 - Should be added
+    assertTrue(liveMap.data["key3"]?.isTombstoned == true) // RTLM23a2 - Should be tombstoned
+    assertTrue(liveMap.createOperationIsMerged) // RTLM23b - Should be marked as merged
   }
 
   @Test
@@ -573,7 +573,7 @@ class LiveMapManagerTest {
 
 
   @Test
-  fun `(RTLM16, RTLM16d, RTLM17) LiveMapManager should merge initial data from create operation`() {
+  fun `(RTLM16, RTLM16d, RTLM23) LiveMapManager should merge initial data from create operation`() {
     val liveMap = getDefaultLiveMapWithMockedDeps()
     val liveMapManager = liveMap.LiveMapManager
 
@@ -611,10 +611,10 @@ class LiveMapManagerTest {
     liveMapManager.applyOperation(operation, "serial1", null)
 
     assertEquals(3, liveMap.data.size) // Should have all entries
-    assertEquals("createValue", liveMap.data["key1"]?.data?.string) // RTLM17a1 - Should be updated
-    assertEquals("newValue", liveMap.data["key2"]?.data?.string) // RTLM17a1 - Should be added
-    assertTrue(liveMap.data["key3"]?.isTombstoned == true) // RTLM17a2 - Should be tombstoned
-    assertTrue(liveMap.createOperationIsMerged) // RTLM17b - Should be marked as merged
+    assertEquals("createValue", liveMap.data["key1"]?.data?.string) // RTLM23a1 - Should be updated
+    assertEquals("newValue", liveMap.data["key2"]?.data?.string) // RTLM23a1 - Should be added
+    assertTrue(liveMap.data["key3"]?.isTombstoned == true) // RTLM23a2 - Should be tombstoned
+    assertTrue(liveMap.createOperationIsMerged) // RTLM23b - Should be marked as merged
   }
 
   @Test
