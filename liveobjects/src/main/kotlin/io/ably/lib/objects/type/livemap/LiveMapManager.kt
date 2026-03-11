@@ -41,6 +41,8 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
         )
       } // RTLM6c
 
+      liveMap.clearTimeserial = objectState.map?.clearTimeserial  // RTLM6i
+
       // RTLM6d
       objectState.createOp?.let { createOp ->
         mergeInitialDataFromCreateOperation(createOp)
@@ -83,6 +85,11 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
         liveMap.notifyUpdated(update)
         true // RTLM15d5b
       }
+      ObjectOperationAction.MapClear -> {
+        val update = applyMapClear(serial) // RTLM15d8
+        liveMap.notifyUpdated(update) // RTLM15d8a
+        true // RTLM15d8b
+      }
       else -> {
         Log.w(tag, "Invalid ${operation.action} op for LiveMap objectId=${objectId}") // RTLM15d4
         false
@@ -118,6 +125,14 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
       mapSet: MapSet, // RTLM7d1
       timeSerial: String?, // RTLM7d2
   ): LiveMapUpdate {
+    // RTLM7h - skip if operation is older than the last MAP_CLEAR
+    val clearSerial = liveMap.clearTimeserial
+    if (clearSerial != null && (timeSerial == null || clearSerial >= timeSerial)) {
+      Log.v(tag,
+        "Skipping MAP_SET for key=\"${mapSet.key}\": op serial $timeSerial <= clear serial $clearSerial; objectId=$objectId")
+      return noOpMapUpdate
+    }
+
     val existingEntry = liveMap.data[mapSet.key]
 
     // RTLM7a
@@ -170,6 +185,14 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
       timeSerial: String?, // RTLM8c2
       timeStamp: Long?, // RTLM8c3
   ): LiveMapUpdate {
+    // skip if operation is older than the last MAP_CLEAR
+    val clearSerial = liveMap.clearTimeserial
+    if (clearSerial != null && (timeSerial == null || clearSerial >= timeSerial)) {
+      Log.v(tag,
+        "Skipping MAP_REMOVE for key=\"${mapRemove.key}\": op serial $timeSerial <= clear serial $clearSerial; objectId=$objectId")
+      return noOpMapUpdate
+    }
+
     val existingEntry = liveMap.data[mapRemove.key]
 
     // RTLM8a
@@ -210,6 +233,40 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
     }
 
     return LiveMapUpdate(mapOf(mapRemove.key to LiveMapUpdate.Change.REMOVED))
+  }
+
+  /**
+   * @spec RTLM24 - Applies MAP_CLEAR operation to LiveMap
+   */
+  private fun applyMapClear(timeSerial: String?): LiveMapUpdate {
+    val clearSerial = liveMap.clearTimeserial
+
+    // RTLM24a - skip if existing clear serial is strictly newer than incoming op serial
+    if (clearSerial != null && (timeSerial == null || clearSerial > timeSerial)) {
+      Log.v(tag,
+        "Skipping MAP_CLEAR: op serial $timeSerial <= current clear serial $clearSerial; objectId=$objectId")
+      return noOpMapUpdate
+    }
+
+    Log.v(tag,
+      "Updating clearTimeserial; previous=$clearSerial, new=$timeSerial; objectId=$objectId")
+    liveMap.clearTimeserial = timeSerial  // RTLM25
+
+    val update = mutableMapOf<String, LiveMapUpdate.Change>()
+
+    // RTLM24b - remove all entries whose serial is older than (or equal to missing) the clear serial
+    liveMap.data.entries.removeIf {
+      val (key, entry) = it
+      val entrySerial = entry.timeserial
+      if (entrySerial == null || (timeSerial != null && timeSerial > entrySerial)) {
+        update[key] = LiveMapUpdate.Change.REMOVED
+        true
+      } else {
+        false
+      }
+    }
+
+    return LiveMapUpdate(update)
   }
 
   /**
