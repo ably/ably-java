@@ -38,6 +38,9 @@ internal class DefaultLiveMap private constructor(
    */
   internal val data = ConcurrentHashMap<String, LiveMapEntry>()
 
+  /** @spec RTLM25 */
+  internal var clearTimeserial: String? = null
+
   /**
    * LiveMapManager instance for managing LiveMap operations
    */
@@ -174,6 +177,7 @@ internal class DefaultLiveMap private constructor(
   }
 
   override fun clearData(): LiveMapUpdate {
+    clearTimeserial = null  // RTLM4
     return liveMapManager.calculateUpdateFromDataDiff(data.toMap(), emptyMap())
       .apply { data.clear() }
   }
