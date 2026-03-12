@@ -15,7 +15,7 @@ import kotlinx.coroutines.CompletableDeferred
 internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObjects): ObjectsStateCoordinator() {
   private val tag = "ObjectsManager"
   /**
-   * @spec RTO5 - Sync objects data pool for collecting sync messages
+   * @spec RTO5 - Sync objects pool for collecting sync messages
    */
   private val syncObjectsPool = mutableMapOf<String, ObjectMessage>()
   private var currentSyncId: String? = null
@@ -93,7 +93,7 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
     applySync()                                                                    // RTO5c1/2/7
     applyObjectMessages(bufferedObjectOperations, ObjectsOperationSource.CHANNEL) // RTO5c6
     bufferedObjectOperations.clear()                                               // RTO5c5
-    syncObjectsPool.clear()                                                    // RTO5c4
+    syncObjectsPool.clear()                                                        // RTO5c4
     currentSyncId = null                                                           // RTO5c3
     realtimeObjects.appliedOnAckSerials.clear()                                    // RTO5c9
     stateChange(ObjectsState.Synced)                              // RTO5c8
@@ -124,7 +124,7 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
   }
 
   /**
-   * Clears the sync objects data pool.
+   * Clears the sync objects pool.
    * Used by DefaultRealtimeObjects.handleStateChange.
    */
   internal fun clearSyncObjectsPool() {
@@ -166,7 +166,7 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
         existingObjectUpdates.add(Pair(existingObject, update))
       } else { // RTO5c1b
         // RTO5c1b1, RTO5c1b1a, RTO5c1b1b - Create new object and add it to the pool
-        val newObject = createObjectFromState(objectState)
+        val newObject = createObjectFromState(objectState) ?: continue // RTO5c1b1c - skip unsupported
         newObject.applyObjectSync(objectMessage)
         realtimeObjects.objectsPool.set(objectId, newObject)
       }
@@ -291,11 +291,15 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
    *
    * @spec RTO5c1b - Creates objects from object state based on type
    */
-  private fun createObjectFromState(objectState: ObjectState): BaseRealtimeObject {
+  private fun createObjectFromState(objectState: ObjectState): BaseRealtimeObject? {
     return when {
       objectState.counter != null -> DefaultLiveCounter.zeroValue(objectState.objectId, realtimeObjects) // RTO5c1b1a
       objectState.map != null -> DefaultLiveMap.zeroValue(objectState.objectId, realtimeObjects) // RTO5c1b1b
-      else -> throw clientError("Object state must contain either counter or map data") // RTO5c1b1c
+      else -> {
+        // RTO5c1b1c - unsupported object type, skip gracefully
+        Log.w(tag, "Received unsupported object state during OBJECT_SYNC (no counter or map), skipping objectId: ${objectState.objectId}")
+        null
+      }
     }
   }
 

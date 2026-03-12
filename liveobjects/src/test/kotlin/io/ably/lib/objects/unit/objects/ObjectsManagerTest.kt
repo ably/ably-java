@@ -690,6 +690,135 @@ class ObjectsManagerTest {
   }
 
   @Test
+  fun `(RTO5f2a2) partial sync map entries merged across separate protocol messages`() {
+    val defaultRealtimeObjects = makeRealtimeObjects()
+    val objectsManager = defaultRealtimeObjects.ObjectsManager
+
+    val objectId = "map:test@1"
+    val siteTimeserials = mapOf("site1" to "serial1")
+
+    // Protocol message 1: first partial (has cursor → not ending)
+    objectsManager.handleObjectSyncMessages(
+      listOf(
+        ObjectMessage(
+          id = "msg1",
+          objectState = ObjectState(
+            objectId = objectId,
+            tombstone = false,
+            siteTimeserials = siteTimeserials,
+            map = ObjectsMap(
+              semantics = ObjectsMapSemantics.LWW,
+              entries = mapOf("key1" to ObjectsMapEntry(data = ObjectData(string = "value1")))
+            )
+          )
+        )
+      ),
+      "sync-1:cursor1"
+    )
+
+    // Protocol message 2: second partial for same objectId (has cursor → not ending)
+    objectsManager.handleObjectSyncMessages(
+      listOf(
+        ObjectMessage(
+          id = "msg2",
+          objectState = ObjectState(
+            objectId = objectId,
+            tombstone = false,
+            siteTimeserials = siteTimeserials,
+            map = ObjectsMap(
+              semantics = ObjectsMapSemantics.LWW,
+              entries = mapOf("key2" to ObjectsMapEntry(data = ObjectData(string = "value2")))
+            )
+          )
+        )
+      ),
+      "sync-1:cursor2"
+    )
+
+    // Protocol message 3: third partial for same objectId (empty cursor → ends sync)
+    objectsManager.handleObjectSyncMessages(
+      listOf(
+        ObjectMessage(
+          id = "msg3",
+          objectState = ObjectState(
+            objectId = objectId,
+            tombstone = false,
+            siteTimeserials = siteTimeserials,
+            map = ObjectsMap(
+              semantics = ObjectsMapSemantics.LWW,
+              entries = mapOf("key3" to ObjectsMapEntry(data = ObjectData(string = "value3")))
+            )
+          )
+        )
+      ),
+      "sync-1:" // empty cursor → sync ends, applySync() runs
+    )
+
+    // Verify all 3 keys from 3 separate protocol messages are merged into the live map
+    val liveMap = defaultRealtimeObjects.objectsPool.get(objectId) as DefaultLiveMap
+    assertNotNull(liveMap.data["key1"], "key1 from first protocol message should be present")
+    assertNotNull(liveMap.data["key2"], "key2 from second protocol message should be present")
+    assertNotNull(liveMap.data["key3"], "key3 from third protocol message should be present")
+    assertEquals("value1", liveMap.data["key1"]?.data?.string)
+    assertEquals("value2", liveMap.data["key2"]?.data?.string)
+    assertEquals("value3", liveMap.data["key3"]?.data?.string)
+  }
+
+  @Test
+  fun `(RTO5c1b1c) unsupported object type during sync is skipped without breaking other objects`() {
+    val defaultRealtimeObjects = makeRealtimeObjects()
+    val objectsManager = defaultRealtimeObjects.ObjectsManager
+
+    mockkStatic(Log::class)
+    every { Log.w(any(), any<String>()) } returns 0
+
+    // msg1: valid map object
+    val msg1 = ObjectMessage(
+      id = "msg1",
+      objectState = ObjectState(
+        objectId = "map:test@1",
+        tombstone = false,
+        siteTimeserials = mapOf("site1" to "serial1"),
+        map = ObjectsMap(
+          semantics = ObjectsMapSemantics.LWW,
+          entries = mapOf("key1" to ObjectsMapEntry(data = ObjectData(string = "value1")))
+        )
+      )
+    )
+    // msg2: unsupported type (neither counter nor map)
+    val msg2 = ObjectMessage(
+      id = "msg2",
+      objectState = ObjectState(
+        objectId = "unknown:test@2",
+        tombstone = false,
+        siteTimeserials = mapOf("site1" to "serial1"),
+      )
+    )
+    // msg3: valid counter object
+    val msg3 = ObjectMessage(
+      id = "msg3",
+      objectState = ObjectState(
+        objectId = "counter:test@3",
+        tombstone = false,
+        siteTimeserials = mapOf("site1" to "serial1"),
+        counter = ObjectsCounter(count = 42.0)
+      )
+    )
+
+    // Send all three in one sync — msg2 should be skipped, msg1 and msg3 should be applied
+    objectsManager.handleObjectSyncMessages(listOf(msg1, msg2, msg3), "sync-1:")
+
+    val liveMap = defaultRealtimeObjects.objectsPool.get("map:test@1") as DefaultLiveMap
+    assertNotNull(liveMap.data["key1"], "valid map object should be created despite unsupported object in same sync")
+
+    val counter = defaultRealtimeObjects.objectsPool.get("counter:test@3") as DefaultLiveCounter
+    assertEquals(42.0, counter.data.get(), "valid counter should be created despite unsupported object in same sync")
+
+    // Unsupported object should NOT be in the pool
+    assertNull(defaultRealtimeObjects.objectsPool.get("unknown:test@2"), "unsupported object type should not be in pool")
+  }
+
+  @Test
   fun `(RTO5f2a1) tombstone on second partial message replaces pool entry entirely`() {
     val defaultRealtimeObjects = makeRealtimeObjects()
     val objectsManager = defaultRealtimeObjects.ObjectsManager
