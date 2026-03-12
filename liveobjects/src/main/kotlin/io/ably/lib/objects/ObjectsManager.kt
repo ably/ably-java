@@ -15,9 +15,9 @@ import kotlinx.coroutines.CompletableDeferred
 internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObjects): ObjectsStateCoordinator() {
   private val tag = "ObjectsManager"
   /**
-   * @spec RTO5 - Sync objects data pool for collecting sync messages
+   * @spec RTO5 - Sync objects pool for collecting sync messages
    */
-  private val syncObjectsDataPool = mutableMapOf<String, ObjectMessage>()
+  private val syncObjectsPool = mutableMapOf<String, ObjectMessage>()
   private var currentSyncId: String? = null
   /**
    * @spec RTO7 - Buffered object operations during sync
@@ -59,7 +59,7 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
     }
 
     // RTO5a3 - continue current sync sequence
-    applyObjectSyncMessages(objectMessages) // RTO5b
+    applyObjectSyncMessages(objectMessages) // RTO5f
 
     // RTO5a4 - if this is the last (or only) message in a sequence of sync updates, end the sync
     if (syncTracker.hasSyncEnded()) {
@@ -77,7 +77,7 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
   internal fun startNewSync(syncId: String?) {
     Log.v(tag, "Starting new sync sequence: syncId=$syncId")
 
-    syncObjectsDataPool.clear() // RTO5a2a
+    syncObjectsPool.clear() // RTO5a2a
     currentSyncId = syncId
     syncCompletionWaiter = CompletableDeferred()
     stateChange(ObjectsState.Syncing)
@@ -93,7 +93,7 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
     applySync()                                                                    // RTO5c1/2/7
     applyObjectMessages(bufferedObjectOperations, ObjectsOperationSource.CHANNEL) // RTO5c6
     bufferedObjectOperations.clear()                                               // RTO5c5
-    syncObjectsDataPool.clear()                                                    // RTO5c4
+    syncObjectsPool.clear()                                                        // RTO5c4
     currentSyncId = null                                                           // RTO5c3
     realtimeObjects.appliedOnAckSerials.clear()                                    // RTO5c9
     stateChange(ObjectsState.Synced)                              // RTO5c8
@@ -124,11 +124,11 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
   }
 
   /**
-   * Clears the sync objects data pool.
+   * Clears the sync objects pool.
    * Used by DefaultRealtimeObjects.handleStateChange.
    */
-  internal fun clearSyncObjectsDataPool() {
-    syncObjectsDataPool.clear()
+  internal fun clearSyncObjectsPool() {
+    syncObjectsPool.clear()
   }
 
   /**
@@ -145,7 +145,7 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
    * @spec RTO5c - Processes sync data and updates objects pool
    */
   private fun applySync() {
-    if (syncObjectsDataPool.isEmpty()) {
+    if (syncObjectsPool.isEmpty()) {
       return
     }
 
@@ -154,8 +154,8 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
     val existingObjectUpdates = mutableListOf<Pair<BaseRealtimeObject, ObjectUpdate>>()
 
     // RTO5c1
-    for ((objectId, objectMessage) in syncObjectsDataPool) {
-      val objectState = objectMessage.objectState as ObjectState // we have non-null objectState here due to RTO5b
+    for ((objectId, objectMessage) in syncObjectsPool) {
+      val objectState = objectMessage.objectState as ObjectState // we have non-null objectState here due to RTO5f
       receivedObjectIds.add(objectId)
       val existingObject = realtimeObjects.objectsPool.get(objectId)
 
@@ -166,7 +166,7 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
         existingObjectUpdates.add(Pair(existingObject, update))
       } else { // RTO5c1b
         // RTO5c1b1, RTO5c1b1a, RTO5c1b1b - Create new object and add it to the pool
-        val newObject = createObjectFromState(objectState)
+        val newObject = createObjectFromState(objectState) ?: continue // RTO5c1b1c - skip unsupported
         newObject.applyObjectSync(objectMessage)
         realtimeObjects.objectsPool.set(objectId, newObject)
       }
@@ -232,9 +232,9 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
   }
 
   /**
-   * Applies sync messages to sync data pool.
+   * Applies sync messages to sync data pool, merging partial sync messages for the same objectId.
    *
-   * @spec RTO5b - Collects object states during sync sequence
+   * @spec RTO5f - Collects and merges object states during sync sequence
    */
   private fun applyObjectSyncMessages(objectMessages: List<ObjectMessage>) {
     for (objectMessage in objectMessages) {
@@ -244,11 +244,44 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
       }
 
       val objectState: ObjectState = objectMessage.objectState
-      if (objectState.counter != null || objectState.map != null) {
-        syncObjectsDataPool[objectState.objectId] = objectMessage
-      } else {
-        // RTO5c1b1c - object state must contain either counter or map data
-        Log.w(tag, "Object state received without counter or map data, skipping message: ${objectMessage.id}")
+      val objectId = objectState.objectId
+      val existingEntry = syncObjectsPool[objectId]
+
+      if (existingEntry == null) {
+        // RTO5f1 - objectId not in pool, store directly
+        if (objectState.counter != null || objectState.map != null) {
+          syncObjectsPool[objectId] = objectMessage
+        } else {
+          // RTO5c1b1c - object state must contain either counter or map data
+          Log.w(tag, "Object state received without counter or map data, skipping message: ${objectMessage.id}")
+        }
+        continue
+      }
+
+      // RTO5f2 - objectId already in pool; this is a partial sync message, merge based on type
+      when {
+        objectState.map != null -> {
+          // RTO5f2a - map object: merge entries
+          if (objectState.tombstone) {
+            // RTO5f2a1 - tombstone: replace pool entry entirely
+            syncObjectsPool[objectId] = objectMessage
+          } else {
+            // RTO5f2a2 - merge map entries; server guarantees no duplicate keys across partials
+            val existingState = existingEntry.objectState!! // non-null for existing entry
+            val mergedEntries = existingState.map?.entries.orEmpty() + objectState.map.entries.orEmpty()
+            val mergedMap = (existingState.map ?: ObjectsMap()).copy(entries = mergedEntries)
+            val mergedState = existingState.copy(map = mergedMap)
+            syncObjectsPool[objectId] = existingEntry.copy(objectState = mergedState)
+          }
+        }
+        objectState.counter != null -> {
+          // RTO5f2b - counter objects must never be split across messages
+          Log.e(tag, "Received partial sync message for a counter object, skipping: ${objectMessage.id}")
+        }
+        else -> {
+          // RTO5f2c - unsupported type, log warning and skip
+          Log.w(tag, "Received partial sync message for an unsupported object type, skipping: ${objectMessage.id}")
+        }
       }
     }
   }
@@ -258,11 +291,15 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
    *
    * @spec RTO5c1b - Creates objects from object state based on type
    */
-  private fun createObjectFromState(objectState: ObjectState): BaseRealtimeObject {
+  private fun createObjectFromState(objectState: ObjectState): BaseRealtimeObject? {
     return when {
       objectState.counter != null -> DefaultLiveCounter.zeroValue(objectState.objectId, realtimeObjects) // RTO5c1b1a
       objectState.map != null -> DefaultLiveMap.zeroValue(objectState.objectId, realtimeObjects) // RTO5c1b1b
-      else -> throw clientError("Object state must contain either counter or map data") // RTO5c1b1c
+      else -> {
+        // RTO5c1b1c - unsupported object type, skip gracefully
+        Log.w(tag, "Received unsupported object state during OBJECT_SYNC (no counter or map), skipping objectId: ${objectState.objectId}")
+        null
+      }
     }
   }
 
@@ -284,7 +321,7 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
 
   internal fun dispose() {
     syncCompletionWaiter?.cancel()
-    syncObjectsDataPool.clear()
+    syncObjectsPool.clear()
     bufferedObjectOperations.clear()
     disposeObjectsStateListeners()
   }

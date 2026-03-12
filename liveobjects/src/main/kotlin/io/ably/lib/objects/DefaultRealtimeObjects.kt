@@ -315,7 +315,7 @@ internal class DefaultRealtimeObjects(internal val channelName: String, internal
             // if no HAS_OBJECTS flag received on attach, we can end sync sequence immediately and treat it as no objects on a channel.
             // reset the objects pool to its initial state, and emit update events so subscribers to root object get notified about changes.
             objectsPool.resetToInitialPool(true) // RTO4b1, RTO4b2
-            objectsManager.clearSyncObjectsDataPool() // RTO4b3
+            objectsManager.clearSyncObjectsPool() // RTO4b3
             // RTO4b5 removed — buffer already cleared by RTO4d above
             // defer the state change event until the next tick if we started a new sequence just now due to being in initialized state.
             // this allows any event listeners to process the start of the new sequence event that was emitted earlier during this event loop.
@@ -340,7 +340,7 @@ internal class DefaultRealtimeObjects(internal val channelName: String, internal
           if (state != ChannelState.suspended) {
             // do not emit data update events as the actual current state of Objects data is unknown when we're in these channel states
             objectsPool.clearObjectsData(false)
-            objectsManager.clearSyncObjectsDataPool()
+            objectsManager.clearSyncObjectsPool()
           }
         }
         else -> {

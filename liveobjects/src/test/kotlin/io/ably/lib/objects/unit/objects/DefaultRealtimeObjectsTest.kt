@@ -13,7 +13,7 @@ import io.ably.lib.objects.type.livemap.DefaultLiveMap
 import io.ably.lib.objects.type.livemap.LiveMapEntry
 import io.ably.lib.objects.unit.BufferedObjectOperations
 import io.ably.lib.objects.unit.ObjectsManager
-import io.ably.lib.objects.unit.SyncObjectsDataPool
+import io.ably.lib.objects.unit.SyncObjectsPool
 import io.ably.lib.objects.unit.getMockObjectsAdapter
 import io.ably.lib.objects.unit.getDefaultRealtimeObjectsWithMockedDeps
 import io.ably.lib.objects.unit.getMockRealtimeChannel
@@ -83,7 +83,7 @@ class DefaultRealtimeObjectsTest {
       defaultRealtimeObjects.ObjectsManager.endSync()
     }
 
-    assertEquals(0, defaultRealtimeObjects.ObjectsManager.SyncObjectsDataPool.size) // RTO4b3
+    assertEquals(0, defaultRealtimeObjects.ObjectsManager.SyncObjectsPool.size) // RTO4b3
     assertEquals(0, defaultRealtimeObjects.ObjectsManager.BufferedObjectOperations.size) // RTO4d
     assertEquals(1, defaultRealtimeObjects.objectsPool.size()) // RTO4b1 - Only root remains
     assertEquals(rootObject, defaultRealtimeObjects.objectsPool.get(ROOT_OBJECT_ID)) // points to previously created root object
@@ -246,16 +246,16 @@ class DefaultRealtimeObjectsTest {
     failCalled.await()
 
     verify(exactly = 0) { defaultRealtimeObjects.objectsPool.clearObjectsData(any()) }
-    verify(exactly = 0) { defaultRealtimeObjects.ObjectsManager.clearSyncObjectsDataPool() }
+    verify(exactly = 0) { defaultRealtimeObjects.ObjectsManager.clearSyncObjectsPool() }
   }
 
   @Test
   fun `(RTO4) handleStateChange(DETACHED) clears objects data and sync pool`() = runTest {
     val defaultRealtimeObjects = getDefaultRealtimeObjectsWithMockedDeps()
 
-    // Use clearSyncObjectsDataPool (the last operation in the coroutine) as the completion signal
+    // Use clearSyncObjectsPool (the last operation in the coroutine) as the completion signal
     val syncPoolCleared = CompletableDeferred<Unit>()
-    every { defaultRealtimeObjects.ObjectsManager.clearSyncObjectsDataPool() } answers {
+    every { defaultRealtimeObjects.ObjectsManager.clearSyncObjectsPool() } answers {
       callOriginal()
       syncPoolCleared.complete(Unit)
     }
@@ -265,7 +265,7 @@ class DefaultRealtimeObjectsTest {
     syncPoolCleared.await()
 
     verify(exactly = 1) { defaultRealtimeObjects.objectsPool.clearObjectsData(false) }
-    verify(exactly = 1) { defaultRealtimeObjects.ObjectsManager.clearSyncObjectsDataPool() }
+    verify(exactly = 1) { defaultRealtimeObjects.ObjectsManager.clearSyncObjectsPool() }
   }
 
   @Test
@@ -281,7 +281,7 @@ class DefaultRealtimeObjectsTest {
         operation = ObjectOperation(
           action = ObjectOperationAction.CounterInc,
           objectId = "counter:test@1",
-          counterOp = ObjectsCounterOp(amount = 5.0)
+          counterInc = CounterInc(number = 5.0)
         )
       )
     )
@@ -313,7 +313,7 @@ class DefaultRealtimeObjectsTest {
         operation = ObjectOperation(
           action = ObjectOperationAction.CounterInc,
           objectId = "counter:test@1",
-          counterOp = ObjectsCounterOp(amount = 5.0)
+          counterInc = CounterInc(number = 5.0)
         )
       )
     )
@@ -370,7 +370,7 @@ class DefaultRealtimeObjectsTest {
           operation = ObjectOperation(
             action = ObjectOperationAction.CounterInc,
             objectId = "counter:test@1",
-            counterOp = ObjectsCounterOp(amount = 3.0)
+            counterInc = CounterInc(number = 3.0)
           ),
           serial = "serial-op-1",
           siteCode = "site1"

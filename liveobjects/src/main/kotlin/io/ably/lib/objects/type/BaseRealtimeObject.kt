@@ -48,7 +48,7 @@ internal abstract class BaseRealtimeObject(
    * @spec RTLM6/RTLC6 - Overrides ObjectMessage with object data state from sync to LiveMap/LiveCounter
    */
   internal fun applyObjectSync(objectMessage: ObjectMessage): ObjectUpdate {
-    val objectState = objectMessage.objectState as ObjectState // we have non-null objectState here due to RTO5b
+    val objectState = objectMessage.objectState as ObjectState // we have non-null objectState here due to RTO5f
     validate(objectState)
     // object's site serials are still updated even if it is tombstoned, so always use the site serials received from the operation.
     // should default to empty map if site serials do not exist on the object state, so that any future operation may be applied to this object.
