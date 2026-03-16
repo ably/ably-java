@@ -1286,6 +1286,82 @@ class LiveMapManagerTest {
   }
 
   @Test
+  fun `(RTLM6i) applyState resets clearTimeserial to null when objectState has no clearTimeserial`() {
+    val liveMap = getDefaultLiveMapWithMockedDeps()
+    val liveMapManager = liveMap.LiveMapManager
+
+    liveMap.clearTimeserial = "serial1"
+
+    val objectState = ObjectState(
+      objectId = "map:testMap@1",
+      map = ObjectsMap(
+        semantics = ObjectsMapSemantics.LWW,
+        entries = emptyMap(),
+        clearTimeserial = null
+      ),
+      siteTimeserials = emptyMap(),
+      tombstone = false,
+    )
+
+    liveMapManager.applyState(objectState, null)
+
+    assertNull(liveMap.clearTimeserial)
+  }
+
+  @Test
+  fun `(RTLM6i, RTLM6d, RTLM7h) applyState filters createOp entries older than or equal to clearTimeserial`() {
+    val liveMap = getDefaultLiveMapWithMockedDeps()
+    val liveMapManager = liveMap.LiveMapManager
+
+    // createOp has three entries:
+    //   key-null-serial   — no timeserial (treated as pre-clear by RTLM7h)
+    //   key-old-serial    — serial1, strictly older than the clear serial (serial2)
+    //   key-new-serial    — serial3, strictly newer than the clear serial (serial2)
+    val createOp = ObjectOperation(
+      action = ObjectOperationAction.MapCreate,
+      objectId = "map:testMap@1",
+      mapCreate = MapCreate(
+        semantics = ObjectsMapSemantics.LWW,
+        entries = mapOf(
+          "key-null-serial" to ObjectsMapEntry(
+            data = ObjectData(string = "nullSerialValue"),
+            timeserial = null
+          ),
+          "key-old-serial" to ObjectsMapEntry(
+            data = ObjectData(string = "oldSerialValue"),
+            timeserial = "serial1"
+          ),
+          "key-new-serial" to ObjectsMapEntry(
+            data = ObjectData(string = "newSerialValue"),
+            timeserial = "serial3"
+          )
+        )
+      )
+    )
+
+    val objectState = ObjectState(
+      objectId = "map:testMap@1",
+      map = ObjectsMap(
+        semantics = ObjectsMapSemantics.LWW,
+        entries = emptyMap(),
+        clearTimeserial = "serial2" // RTLM6i: set before createOp entries are merged
+      ),
+      createOp = createOp,
+      siteTimeserials = mapOf("site1" to "serial1"),
+      tombstone = false,
+    )
+
+    liveMapManager.applyState(objectState, null)
+
+    // RTLM7h: entries with null or older-than-clear serials must be filtered out
+    assertNull(liveMap.data["key-null-serial"], "Entry with null serial should be filtered by RTLM7h")
+    assertNull(liveMap.data["key-old-serial"], "Entry with serial1 <= clearTimeserial serial2 should be filtered by RTLM7h")
+    // Entry whose serial is strictly newer than clearTimeserial must survive
+    assertNotNull(liveMap.data["key-new-serial"], "Entry with serial3 > clearTimeserial serial2 should be present")
+    assertEquals("newSerialValue", liveMap.data["key-new-serial"]?.data?.string)
+  }
+
+  @Test
   fun `(RTLM4) clearData resets clearTimeserial`() {
     val liveMap = getDefaultLiveMapWithMockedDeps()
 
