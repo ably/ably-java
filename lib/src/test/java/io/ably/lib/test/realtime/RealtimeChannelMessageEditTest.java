@@ -385,13 +385,23 @@ public class RealtimeChannelMessageEditTest extends ParameterizedTest {
         messageAppend.data = "Append data";
         channel.appendMessage(messageAppend);
 
+        appendWaiter.waitFor();
+
         // 3. Verify update
         Message retrieved = waitForUpdatedMessageAppear(channel, serial);
         assertEquals("Expected updated data in history", "Initial dataAppend data", retrieved.data);
         assertEquals("Expected MESSAGE_UPDATE action in history", MessageAction.MESSAGE_UPDATE, retrieved.action);
-        assertEquals("Expected MESSAGE_APPEND action through realtime", MessageAction.MESSAGE_APPEND, appendWaiter.result.action);
-        assertEquals("Expected delta through realtime", "Append data", appendWaiter.result.data);
+        assertEquals("Expected MESSAGE_UPDATE only for the first time from realtime", MessageAction.MESSAGE_UPDATE, appendWaiter.result.action);
+        assertEquals("Expected full message data through realtime", "Initial dataAppend data", appendWaiter.result.data);
 
+        appendWaiter.reset();
+
+        channel.appendMessage(messageAppend);
+
+        appendWaiter.waitFor();
+
+        assertEquals("Expected MESSAGE_APPEND action through realtime", MessageAction.MESSAGE_APPEND, appendWaiter.result.action);
+        assertEquals("Expected only delta through realtime", "Append data", appendWaiter.result.data);
     }
 
     private PaginatedResult<Message> waitForMessageAppearInVersionHistory(Channel channel, String serial, Param[] params, Predicate<Message[]> predicate) throws Exception {
