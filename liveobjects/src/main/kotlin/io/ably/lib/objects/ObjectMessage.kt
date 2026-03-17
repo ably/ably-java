@@ -20,6 +20,7 @@ internal enum class ObjectOperationAction(val code: Int) {
   CounterCreate(3),
   CounterInc(4),
   ObjectDelete(5),
+  MapClear(6),
   Unknown(-1); // code for unknown value during deserialization
 }
 
@@ -110,6 +111,13 @@ internal data class CounterInc(
 internal object ObjectDelete
 
 /**
+ * Payload for MAP_CLEAR operation.
+ * Spec: MCL*
+ * No fields - action is sufficient
+ */
+internal object MapClear
+
+/**
  * Payload for MAP_CREATE_WITH_OBJECT_ID operation.
  * Spec: MCRO*
  */
@@ -176,7 +184,13 @@ internal data class ObjectsMap(
    * The map entries, indexed by key.
    * Spec: OMP3b
    */
-  val entries: Map<String, ObjectsMapEntry>? = null
+  val entries: Map<String, ObjectsMapEntry>? = null,
+
+  /**
+   * The serial value of the last MAP_CLEAR operation applied to the map.
+   * Spec: OMP3c
+   */
+  val clearTimeserial: String? = null,
 )
 
 /**
@@ -255,6 +269,12 @@ internal data class ObjectOperation(
    * Spec: OOP3q
    */
   val counterCreateWithObjectId: CounterCreateWithObjectId? = null,
+
+  /**
+   * Payload for MAP_CLEAR operation.
+   * Spec: OOP3r
+   */
+  val mapClear: MapClear? = null,
 )
 
 /**

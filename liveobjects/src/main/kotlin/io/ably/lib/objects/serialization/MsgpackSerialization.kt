@@ -12,6 +12,7 @@ import io.ably.lib.objects.MapCreate
 import io.ably.lib.objects.MapCreateWithObjectId
 import io.ably.lib.objects.MapRemove
 import io.ably.lib.objects.MapSet
+import io.ably.lib.objects.MapClear
 import io.ably.lib.objects.ObjectDelete
 import io.ably.lib.objects.ObjectsMapSemantics
 import io.ably.lib.objects.ObjectsCounter
@@ -174,6 +175,7 @@ private fun ObjectOperation.writeMsgpack(packer: MessagePacker) {
   if (objectDelete != null) fieldCount++
   if (mapCreateWithObjectId != null) fieldCount++
   if (counterCreateWithObjectId != null) fieldCount++
+  if (mapClear != null) fieldCount++
 
   packer.packMapHeader(fieldCount)
 
@@ -224,6 +226,11 @@ private fun ObjectOperation.writeMsgpack(packer: MessagePacker) {
     counterCreateWithObjectId.writeMsgpack(packer)
   }
 
+  if (mapClear != null) {
+    packer.packString("mapClear")
+    packer.packMapHeader(0) // empty map, no fields
+  }
+
 }
 
 /**
@@ -242,6 +249,7 @@ private fun readObjectOperation(unpacker: MessageUnpacker): ObjectOperation {
   var objectDelete: ObjectDelete? = null
   var mapCreateWithObjectId: MapCreateWithObjectId? = null
   var counterCreateWithObjectId: CounterCreateWithObjectId? = null
+  var mapClear: MapClear? = null
 
   for (i in 0 until fieldCount) {
     val fieldName = unpacker.unpackString().intern()
@@ -271,6 +279,10 @@ private fun readObjectOperation(unpacker: MessageUnpacker): ObjectOperation {
       }
       "mapCreateWithObjectId" -> mapCreateWithObjectId = readMapCreateWithObjectId(unpacker)
       "counterCreateWithObjectId" -> counterCreateWithObjectId = readCounterCreateWithObjectId(unpacker)
+      "mapClear" -> {
+        unpacker.skipValue() // empty map, consume it
+        mapClear = MapClear
+      }
       else -> unpacker.skipValue()
     }
   }
@@ -290,6 +302,7 @@ private fun readObjectOperation(unpacker: MessageUnpacker): ObjectOperation {
     objectDelete = objectDelete,
     mapCreateWithObjectId = mapCreateWithObjectId,
     counterCreateWithObjectId = counterCreateWithObjectId,
+    mapClear = mapClear,
   )
 }
 
@@ -631,6 +644,7 @@ private fun ObjectsMap.writeMsgpack(packer: MessagePacker) {
 
   if (semantics != null) fieldCount++
   if (entries != null) fieldCount++
+  if (clearTimeserial != null) fieldCount++
 
   packer.packMapHeader(fieldCount)
 
@@ -647,6 +661,11 @@ private fun ObjectsMap.writeMsgpack(packer: MessagePacker) {
       value.writeMsgpack(packer)
     }
   }
+
+  if (clearTimeserial != null) {
+    packer.packString("clearTimeserial")
+    packer.packString(clearTimeserial)
+  }
 }
 
 /**
@@ -657,6 +676,7 @@ private fun readObjectMap(unpacker: MessageUnpacker): ObjectsMap {
 
   var semantics: ObjectsMapSemantics? = null
   var entries: Map<String, ObjectsMapEntry>? = null
+  var clearTimeserial: String? = null
 
   for (i in 0 until fieldCount) {
     val fieldName = unpacker.unpackString().intern()
@@ -684,11 +704,12 @@ private fun readObjectMap(unpacker: MessageUnpacker): ObjectsMap {
         }
         entries = tempMap
       }
+      "clearTimeserial" -> clearTimeserial = unpacker.unpackString()
       else -> unpacker.skipValue()
     }
   }
 
-  return ObjectsMap(semantics = semantics, entries = entries)
+  return ObjectsMap(semantics = semantics, entries = entries, clearTimeserial = clearTimeserial)
 }
 
 /**
