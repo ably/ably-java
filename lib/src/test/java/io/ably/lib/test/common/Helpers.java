@@ -956,6 +956,12 @@ public class Helpers {
             } catch(InterruptedException e) {}
         }
 
+        public synchronized void reset() {
+            gotResult = false;
+            result = null;
+            error = null;
+        }
+
         public T result;
         public ErrorInfo error;
         private boolean gotResult = false;
