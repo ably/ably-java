@@ -1,5 +1,16 @@
 # Change Log
 
+## [1.7.0](https://github.com/ably/ably-java/tree/v1.7.0)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.6.1...v1.7.0)
+
+### What's Changed
+
+- Introduce version 6 of the Ably protocol; add operation-specific payload fields to `ObjectOperation` and typed value fields to `ObjectData` [#1195](https://github.com/ably/ably-java/pull/1195) 
+- Add support for partial sync of LiveObjects state [#1197](https://github.com/ably/ably-java/pull/1197) 
+- Introduce ACK-based local application of LiveObjects ops [#1194](https://github.com/ably/ably-java/pull/1194)
+- Add support for server-initiated MAP_CLEAR object operation [#1198](https://github.com/ably/ably-java/pull/1198)
+
 ## [1.6.1](https://github.com/ably/ably-java/tree/v1.6.1)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.6.0...v1.6.1)
