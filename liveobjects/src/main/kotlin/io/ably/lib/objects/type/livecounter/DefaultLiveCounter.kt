@@ -111,7 +111,7 @@ internal class DefaultLiveCounter private constructor(
     liveCounterManager.notify(update as LiveCounterUpdate)
   }
 
-  override fun onGCInterval() {
+  override fun onGCInterval(gcGracePeriod: Long) {
     // Nothing to GC for a counter object
     return
   }
