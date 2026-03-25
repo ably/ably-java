@@ -603,13 +603,15 @@ public class ConnectionManager implements ConnectListener {
 
         protected void enactState() {
             if(change != null) {
+                // RTL3d1: implement the state change first, so channel states are updated
+                // before listeners observe the new connection state
+                states.get(stateIndication.state).enact(stateIndication, change);
+
                 if(change.current != change.previous) {
                     /* broadcast currentState change */
                     connection.onConnectionStateChange(change);
                 }
 
-                /* implement the state change */
-                states.get(stateIndication.state).enact(stateIndication, change);
                 if(currentState.terminal) {
                     clearTransport();
                 }
