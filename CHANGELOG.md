@@ -1,5 +1,14 @@
 # Change Log
 
+## [1.7.1](https://github.com/ably/ably-java/tree/v1.7.1)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.7.0...v1.7.1)
+
+### What's Changed
+
+- Use server-provided GC grace period for LiveObjects garbage collection [#1158](https://github.com/ably/ably-java/pull/1158)
+- Fix channel state updating before connection state listeners are notified (RTL3d1) [#1202](https://github.com/ably/ably-java/pull/1202)
+
 ## [1.7.0](https://github.com/ably/ably-java/tree/v1.7.0)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.6.1...v1.7.0)
