@@ -244,19 +244,13 @@ implementation files('libs/ably-android-1.7.1.aar')
 
 This library uses [semantic versioning](http://semver.org/). For each release, the following needs to be done:
 
-1. Create a branch for the release, named like `release/1.2.4` (where `1.2.4` is what you're releasing, being the new version)
-2. Replace all references of the current version number with the new version number (check the [README.md](./README.md) and [gradle.properties](./gradle.properties)) and commit the changes
-3. Run [`github_changelog_generator`](https://github.com/github-changelog-generator/github-changelog-generator) to automate the update of the [CHANGELOG](./CHANGELOG.md). This may require some manual intervention, both in terms of how the command is run and how the change log file is modified. Your mileage may vary:
-   - The command you will need to run will look something like this: `github_changelog_generator -u ably -p ably-java --since-tag v1.2.3 --output delta.md --token $GITHUB_TOKEN_WITH_REPO_ACCESS`. Generate token [here](https://github.com/settings/tokens/new?description=GitHub%20Changelog%20Generator%20token).
-   - Using the command above, `--output delta.md` writes changes made after `--since-tag` to a new file.
-   - The contents of that new file (`delta.md`) then need to be manually inserted at the top of the `CHANGELOG.md`, changing the "Unreleased" heading and linking with the current version numbers.
-   - Also ensure that the "Full Changelog" link points to the new version tag instead of the `HEAD`.
-4. Commit [CHANGELOG](./CHANGELOG.md)
-5. Make a PR against `main`
-6. Once the PR is approved, merge it into `main`
-7. Create the release and the release tag on Github including populating the release notes
-8. Use the [GitHub action](https://github.com/ably/ably-java/actions/workflows/release.yaml) to publish the release. Run the workflow on the latest release tag.
-9. Create the entry on the [Ably Changelog](https://changelog.ably.com/) (via [headwayapp](https://headwayapp.co/))
+1. Run `/release patch|minor|major` in Claude Code — this creates the release branch, bumps the version in all required files, and populates the [CHANGELOG](./CHANGELOG.md) with merged PRs since the last tag automatically
+2. Review the `### What's Changed` entries in [CHANGELOG.md](./CHANGELOG.md) and adjust if needed, then commit any edits
+3. Make a PR against `main`
+4. Once the PR is approved, merge it into `main`
+5. Create the release and the release tag on Github including populating the release notes
+6. Use the [GitHub action](https://github.com/ably/ably-java/actions/workflows/release.yaml) to publish the release. Run the workflow on the latest release tag.
+7. Create the entry on the [Ably Changelog](https://changelog.ably.com/) (via [headwayapp](https://headwayapp.co/))
 
 ### Signing
 
