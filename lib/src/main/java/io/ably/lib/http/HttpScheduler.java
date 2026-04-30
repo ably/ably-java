@@ -196,14 +196,18 @@ public class HttpScheduler implements AutoCloseable {
 
         @Override
         public void run() {
-            String candidateHost = httpCore.hosts.getPreferredHost();
+            String preferredHost = httpCore.hosts.getPreferredHost();
+            String candidateHost = preferredHost;
             int retryCountRemaining = (httpCore.hosts.fallbackHostsRemaining(candidateHost) > 0) ? httpCore.options.httpMaxRetryCount : 0;
 
             while(!isCancelled) {
                 try {
+                    boolean shouldPersist = !candidateHost.equals(preferredHost);
                     result = httpExecuteWithRetry(candidateHost, path, requireAblyAuth);
                     setResult(result);
-                    httpCore.hosts.setPreferredHost(candidateHost, true);
+                    if (shouldPersist) {
+                        httpCore.hosts.setPreferredHost(candidateHost, true);
+                    }
                     break;
                 } catch (AblyException.HostFailedException e) {
                     if(--retryCountRemaining < 0) {
