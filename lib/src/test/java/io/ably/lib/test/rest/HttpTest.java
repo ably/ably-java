@@ -1477,33 +1477,44 @@ public class HttpTest {
 
         // req3: fire in background — hits pinned fallback, sleeps 200 ms inside listener
         ExecutorService executor = Executors.newSingleThreadExecutor();
-        Future<Long> requestFuture = executor.submit(() -> {
-            try { return client.time(); }
-            catch (AblyException e) { throw new RuntimeException(e); }
-        });
+        try {
+            Future<Long> requestFuture = executor.submit(() -> {
+                try { return client.time(); }
+                catch (AblyException e) { throw new RuntimeException(e); }
+            });
 
-        // Wait until req3 has actually entered the listener before starting the clock
-        assertTrue("Delayed request must start within 5 s", delayedRequestStarted.await(5, TimeUnit.SECONDS));
+            // Wait until req3 has actually entered the listener before starting the clock
+            assertTrue("Delayed request must start within 5 s", delayedRequestStarted.await(5, TimeUnit.SECONDS));
 
-        // Wait 150 ms so that fallbackRetryTimeout (100 ms) expires
-        Thread.sleep(150L);
+            // Wait 150 ms so that fallbackRetryTimeout (100 ms) expires
+            Thread.sleep(150L);
 
-        // req4: timeout expired → primary tried again
-        client.time();
+            // req4: timeout expired → primary tried again
+            client.time();
 
-        // Wait for req3's delayed response to arrive (late fallback success)
-        requestFuture.get(5, TimeUnit.SECONDS);
+            // Wait for req3's delayed response to arrive (late fallback success)
+            requestFuture.get(5, TimeUnit.SECONDS);
 
-        // req5: late success from req3 must NOT have re-pinned the fallback
-        client.time();
+            // req5: late success from req3 must NOT have re-pinned the fallback
+            client.time();
 
-        executor.shutdown();
-
-        assertEquals(5, capturedHosts.size());
-        assertEquals(primaryHost,  capturedHosts.get(0)); // req1 – primary fails
-        assertEquals(fallbackHost, capturedHosts.get(1)); // req2 – fallback pins
-        assertEquals(fallbackHost, capturedHosts.get(2)); // req3 – in-flight fallback
-        assertEquals(primaryHost,  capturedHosts.get(3)); // req4 – timeout expired
-        assertEquals(primaryHost,  capturedHosts.get(4)); // req5 – late success did not re-pin
+            assertEquals(5, capturedHosts.size());
+            assertEquals(primaryHost,  capturedHosts.get(0)); // req1 – primary fails
+            assertEquals(fallbackHost, capturedHosts.get(1)); // req2 – fallback pins
+            assertEquals(fallbackHost, capturedHosts.get(2)); // req3 – in-flight fallback
+            assertEquals(primaryHost,  capturedHosts.get(3)); // req4 – timeout expired
+            assertEquals(primaryHost,  capturedHosts.get(4)); // req5 – late success did not re-pin
+        } finally {
+            executor.shutdown();
+            try {
+                if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                    executor.shutdownNow();
+                    executor.awaitTermination(5, TimeUnit.SECONDS);
+                }
+            } catch (InterruptedException e) {
+                executor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 }
