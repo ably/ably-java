@@ -54,30 +54,15 @@
 				{
 					"clientId": "client_string_0",
 					"data": "This is a string data payload"
-				}
-			]
-		},
-		{
-			"name": "persisted:restpresence_persisted",
-			"presence": [
+				},
 				{
 					"clientId": "client_string_1",
 					"data": "This is a string data payload"
-				}
-			]
-		},
-		{
-			"name": "persisted:restpresence_persisted",
-			"presence": [
+				},
 				{
 					"clientId": "client_string_2",
 					"data": "This is a string data payload"
-				}
-			]
-		},
-		{
-			"name": "persisted:restpresence_persisted",
-			"presence": [
+				},
 				{
 					"clientId": "client_string_3",
 					"data": "This is a string data payload"
