@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.7.2](https://github.com/ably/ably-java/tree/v1.7.2)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.7.1...v1.7.2)
+
+### What's Changed
+
+- Fix preferred host persistence in `HttpScheduler` retry logic [#1206](https://github.com/ably/ably-java/pull/1206)
+
 ## [1.7.1](https://github.com/ably/ably-java/tree/v1.7.1)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.7.0...v1.7.1)
