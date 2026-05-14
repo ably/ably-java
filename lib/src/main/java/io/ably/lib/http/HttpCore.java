@@ -108,9 +108,13 @@ public class HttpCore {
                 proxyAuth = new HttpAuth(proxyUser, proxyPassword, proxyOptions.prefAuthType);
             }
         }
-        HttpEngineFactory engineFactory = HttpEngineFactory.getFirstAvailable();
-        Log.v(TAG, String.format("Using %s HTTP Engine", engineFactory.getEngineType().name()));
-        this.engine = engineFactory.create(new HttpEngineConfig(ClientOptionsUtils.convertToProxyConfig(options)));
+        if (options instanceof DebugOptions && ((DebugOptions) options).httpEngine != null) {
+            this.engine = ((DebugOptions) options).httpEngine;
+        } else {
+            HttpEngineFactory engineFactory = HttpEngineFactory.getFirstAvailable();
+            Log.v(TAG, String.format("Using %s HTTP Engine", engineFactory.getEngineType().name()));
+            this.engine = engineFactory.create(new HttpEngineConfig(ClientOptionsUtils.convertToProxyConfig(options)));
+        }
     }
 
     private HttpCore(HttpCore underlyingHttpCore, Map<String, String> dynamicAgents) {

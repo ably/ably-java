@@ -6,8 +6,10 @@ plugins {
 
 dependencies {
     testImplementation(project(":java"))
+    testImplementation(project(":network-client-core"))
     testImplementation(kotlin("test"))
     testImplementation(libs.mockk)
+    testImplementation(libs.coroutine.core)
     testImplementation(libs.coroutine.test)
 }
 
