@@ -1,5 +1,6 @@
 package io.ably.lib.transport;
 
+import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.network.EngineType;
 import io.ably.lib.network.NotConnectedException;
@@ -70,7 +71,12 @@ public class WebSocketTransport implements ITransport {
     }
 
     private static WebSocketEngine createWebSocketEngine(TransportParams params) {
-        WebSocketEngineFactory engineFactory = WebSocketEngineFactory.getFirstAvailable();
+        WebSocketEngineFactory engineFactory;
+        if (params.options instanceof DebugOptions && ((DebugOptions) params.options).webSocketEngineFactory != null) {
+            engineFactory = ((DebugOptions) params.options).webSocketEngineFactory;
+        } else {
+            engineFactory = WebSocketEngineFactory.getFirstAvailable();
+        }
         Log.v(TAG, String.format("Using %s WebSocket Engine", engineFactory.getEngineType().name()));
         WebSocketEngineConfig.WebSocketEngineConfigBuilder configBuilder = WebSocketEngineConfig.builder();
         configBuilder
