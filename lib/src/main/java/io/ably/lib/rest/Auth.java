@@ -29,6 +29,8 @@ import io.ably.lib.types.Param;
 import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
+import org.jetbrains.annotations.Blocking;
+import org.jetbrains.annotations.NonBlocking;
 
 /**
  * Token-generation and authentication operations for the Ably API.
@@ -663,6 +665,7 @@ public class Auth {
      * @return A {@link TokenDetails} object.
      * @throws AblyException
      */
+    @Blocking
     public TokenDetails authorize(TokenParams params, AuthOptions options) throws AblyException {
         /* Spec: RSA10g */
         if (options != null)
@@ -700,6 +703,7 @@ public class Auth {
      * Alias of authorize() (0.9 RSA10l)
      */
     @Deprecated
+    @Blocking
     public TokenDetails authorise(TokenParams params, AuthOptions options) throws AblyException {
         Log.w(TAG, "authorise() is deprecated and will be removed in 1.0. Please use authorize() instead");
         return authorize(params, options);
@@ -722,6 +726,7 @@ public class Auth {
      * @return A {@link TokenDetails} object.
      * @throws AblyException
      */
+    @Blocking
     public TokenDetails requestToken(TokenParams params, AuthOptions tokenOptions) throws AblyException {
         /* Spec: RSA8e */
         tokenOptions = (tokenOptions == null) ? this.authOptions : tokenOptions.copy();
@@ -885,6 +890,7 @@ public class Auth {
      * @return A {@link TokenRequest} object.
      * @throws AblyException
      */
+    @Blocking
     public TokenRequest createTokenRequest(TokenParams params, AuthOptions options) throws AblyException {
         /* Spec: RSA9h */
         options = (options == null) ? this.authOptions : options.copy();
@@ -1010,6 +1016,7 @@ public class Auth {
      * Please use {@link Auth#renewAuth} instead
      */
     @Deprecated
+    @NonBlocking
     public TokenDetails renew() throws AblyException {
         TokenDetails tokenDetails = assertValidToken(this.tokenParams, this.authOptions, true);
         ably.onAuthUpdated(tokenDetails.token, false);
@@ -1024,6 +1031,7 @@ public class Auth {
      * Please note that completion callback  {@link RenewAuthResult#onCompletion(boolean, TokenDetails, ErrorInfo)}
      *              is called on a background thread.
      */
+    @NonBlocking
     public void renewAuth(RenewAuthResult result) throws AblyException {
         final TokenDetails tokenDetails = assertValidToken(this.tokenParams, this.authOptions, true);
 

@@ -211,6 +211,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * Spec: RTL4d
      * @throws AblyException
      */
+    @NonBlocking
     public void attach() throws AblyException {
         attach(null);
     }
@@ -229,6 +230,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * This listener is invoked on a background thread.
      * @throws AblyException
      */
+    @NonBlocking
     public void attach(CompletionListener listener) throws  AblyException {
         this.attach(false, listener);
     }
@@ -334,6 +336,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * Spec: RTL5e
      * @throws AblyException
      */
+    @NonBlocking
     public void detach() throws AblyException {
         detach(null);
     }
@@ -357,6 +360,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * This listener is invoked on a background thread.
      * @throws AblyException
      */
+    @NonBlocking
     public void detach(CompletionListener listener) throws AblyException {
         clearAttachTimers();
         detachWithTimeout(listener);
@@ -776,6 +780,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * <p>
      * Spec: RTL8a, RTE5
      */
+    @NonBlocking
     public synchronized void unsubscribe() {
         Log.v(TAG, "unsubscribe(); channel = " + this.name);
         listeners.clear();
@@ -804,6 +809,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * This listener is invoked on a background thread.
      * @throws AblyException
      */
+    @NonBlocking
     public synchronized void subscribe(MessageListener listener) throws AblyException {
         Log.v(TAG, "subscribe(); channel = " + this.name);
         listeners.add(listener);
@@ -821,6 +827,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * <p>
      * This listener is invoked on a background thread.
      */
+    @NonBlocking
     public synchronized void unsubscribe(MessageListener listener) {
         Log.v(TAG, "unsubscribe(); channel = " + this.name);
         listeners.remove(listener);
@@ -841,6 +848,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * This listener is invoked on a background thread.
      * @throws AblyException
      */
+    @NonBlocking
     public synchronized void subscribe(String name, MessageListener listener) throws AblyException {
         Log.v(TAG, "subscribe(); channel = " + this.name + "; event = " + name);
         subscribeImpl(name, listener);
@@ -859,6 +867,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * <p>
      * This listener is invoked on a background thread.
      */
+    @NonBlocking
     public synchronized void unsubscribe(String name, MessageListener listener) {
         Log.v(TAG, "unsubscribe(); channel = " + this.name + "; event = " + name);
         unsubscribeImpl(name, listener);
@@ -876,6 +885,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * This listener is invoked on a background thread.
      * @throws AblyException
      */
+    @NonBlocking
     public synchronized void subscribe(String[] names, MessageListener listener) throws AblyException {
         Log.v(TAG, "subscribe(); channel = " + this.name + "; (multiple events)");
         for(String name : names)
@@ -894,6 +904,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * <p>
      * This listener is invoked on a background thread.
      */
+    @NonBlocking
     public synchronized void unsubscribe(String[] names, MessageListener listener) {
         Log.v(TAG, "unsubscribe(); channel = " + this.name + "; (multiple events)");
         for(String name : names)
@@ -1546,6 +1557,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * @return A {@link PaginatedResult} object containing an array of {@link Message} objects.
      * @throws AblyException
      */
+    @Blocking
     public PaginatedResult<Message> history(Param[] params) throws AblyException {
         return historyImpl(ably.http, params).sync();
     }
@@ -1579,6 +1591,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * @param callback Callback with {@link AsyncPaginatedResult} object containing an array of {@link Message} objects.
      * @throws AblyException
      */
+    @NonBlocking
     public void historyAsync(Param[] params, Callback<AsyncPaginatedResult<Message>> callback) {
         historyAsync(ably.http, params, callback);
     }
@@ -1609,6 +1622,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * @param options A {@link ChannelOptions} object.
      * @throws AblyException
      */
+    @NonBlocking
     public void setOptions(ChannelOptions options) throws AblyException {
         this.setOptions(options, null);
     }
@@ -1621,6 +1635,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * @param listener An optional listener may be provided to notify of the success or failure of the operation.
      * @throws AblyException
      */
+    @NonBlocking
     public void setOptions(ChannelOptions options, CompletionListener listener) throws AblyException {
         this.options = options;
         this.messageEditsMixin = new MessageEditsMixin(basePath, ably.options, options, ably.auth);
