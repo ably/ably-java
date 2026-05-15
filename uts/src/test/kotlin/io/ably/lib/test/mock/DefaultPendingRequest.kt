@@ -4,13 +4,13 @@ import io.ably.lib.network.FailedConnectionException
 import io.ably.lib.network.HttpBody
 import io.ably.lib.network.HttpRequest
 import io.ably.lib.network.HttpResponse
+import kotlinx.coroutines.CompletableDeferred
 import java.net.SocketTimeoutException
 import java.time.Duration
-import java.util.concurrent.CompletableFuture
 
-internal class PendingRequestImpl(
+internal class DefaultPendingRequest(
     private val request: HttpRequest,
-    private val future: CompletableFuture<HttpResponse>,
+    private val deferred: CompletableDeferred<HttpResponse>,
 ) : PendingRequest {
     override val url get() = request.url
     override val method get() = request.method
@@ -22,7 +22,7 @@ internal class PendingRequestImpl(
             is ByteArray -> body
             else -> body.toString().toByteArray(Charsets.UTF_8)
         }
-        future.complete(
+        deferred.complete(
             HttpResponse.builder()
                 .code(status)
                 .message("")
@@ -36,10 +36,10 @@ internal class PendingRequestImpl(
         Thread {
             Thread.sleep(delay.toMillis())
             respondWith(status, body)
-        }.start()
+        }.apply { isDaemon = true }.start()
     }
 
     override fun respondWithTimeout() {
-        future.completeExceptionally(FailedConnectionException(SocketTimeoutException("Connection timed out")))
+        deferred.completeExceptionally(FailedConnectionException(SocketTimeoutException("Connection timed out")))
     }
 }

@@ -5,36 +5,62 @@ import io.ably.lib.network.HttpCall
 import io.ably.lib.network.HttpEngine
 import io.ably.lib.network.HttpRequest
 import io.ably.lib.network.HttpResponse
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutionException
+import io.ably.lib.types.ProtocolMessage
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.runBlocking
+import java.io.IOException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 
-internal class MockHttpEngine(private val onRequest: (PendingRequest) -> Unit) : HttpEngine {
-    override fun call(request: HttpRequest): HttpCall = MockHttpCall(request, onRequest)
+internal class MockHttpEngine(
+    private val onConnect: (PendingConnection) -> Unit,
+    private val onRequest: (PendingRequest) -> Unit,
+) : HttpEngine {
+    override fun call(request: HttpRequest): HttpCall = MockHttpCall(request, onConnect, onRequest)
     override fun isUsingProxy() = false
 }
 
 internal class MockHttpCall(
     private val request: HttpRequest,
+    private val onConnect: (PendingConnection) -> Unit,
     private val onRequest: (PendingRequest) -> Unit,
 ) : HttpCall {
-    private val future = CompletableFuture<HttpResponse>()
+    @Volatile private var connDeferred: CompletableDeferred<Unit>? = null
+    @Volatile private var respDeferred: CompletableDeferred<HttpResponse>? = null
 
-    override fun execute(): HttpResponse {
-        val pending = PendingRequestImpl(request, future)
-        onRequest(pending)
-        return try {
-            future.get()
-        } catch (e: ExecutionException) {
-            val cause = e.cause
-            if (cause is FailedConnectionException) throw cause
-            throw FailedConnectionException(cause ?: e)
-        } catch (e: InterruptedException) {
-            Thread.currentThread().interrupt()
-            throw FailedConnectionException(e)
-        }
+    override fun execute(): HttpResponse = runBlocking {
+        // Phase 1 — connection
+        val cd = CompletableDeferred<Unit>().also { connDeferred = it }
+        val url = request.url
+        val tls = url.protocol == "https"
+        val port = if (url.port != -1) url.port else if (tls) 443 else 80
+        onConnect(DefaultHttpPendingConnection(url.host, port, tls, cd))
+        cd.await()
+
+        // Phase 2 — request
+        val rd = CompletableDeferred<HttpResponse>().also { respDeferred = it }
+        onRequest(DefaultPendingRequest(request, rd))
+        rd.await()
     }
 
     override fun cancel() {
-        future.cancel(true)
+        connDeferred?.cancel()
+        respDeferred?.cancel()
     }
+}
+
+internal class DefaultHttpPendingConnection(
+    override val host: String,
+    override val port: Int,
+    override val tls: Boolean,
+    private val deferred: CompletableDeferred<Unit>,
+) : PendingConnection {
+    override fun respondWithSuccess() { deferred.complete(Unit) }
+    override fun respondWithSuccess(message: ProtocolMessage) = respondWithSuccess()
+    override fun respondWithRefused() { deferred.completeExceptionally(
+        FailedConnectionException(IOException("Connection refused to $host:$port"))) }
+    override fun respondWithTimeout() { deferred.completeExceptionally(
+        FailedConnectionException(SocketTimeoutException("Connection timed out to $host:$port"))) }
+    override fun respondWithDnsError() { deferred.completeExceptionally(
+        FailedConnectionException(UnknownHostException(host))) }
 }

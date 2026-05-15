@@ -10,16 +10,26 @@ import java.net.URI
 
 internal class MockWebSocketEngineFactory(
     private val onConnect: (PendingConnection) -> Unit,
+    private val onConnected: (WebSocketListener) -> Unit = {},
+    private val onTextFrame: (String) -> Unit = {},
+    private val onBinaryFrame: (ByteArray) -> Unit = {},
+    private val onClientClose: (Int, String) -> Unit = { _, _ -> },
 ) : WebSocketEngineFactory {
-    override fun create(config: WebSocketEngineConfig): WebSocketEngine = MockWebSocketEngine(onConnect)
+    override fun create(config: WebSocketEngineConfig): WebSocketEngine =
+        MockWebSocketEngine(onConnect, onConnected, onTextFrame, onBinaryFrame, onClientClose)
+
     override fun getEngineType(): EngineType = EngineType.DEFAULT
 }
 
 internal class MockWebSocketEngine(
     private val onConnect: (PendingConnection) -> Unit,
+    private val onConnected: (WebSocketListener) -> Unit,
+    private val onTextFrame: (String) -> Unit,
+    private val onBinaryFrame: (ByteArray) -> Unit,
+    private val onClientClose: (Int, String) -> Unit,
 ) : WebSocketEngine {
     override fun create(url: String, listener: WebSocketListener): WebSocketClient =
-        MockWebSocketClient(url, listener, onConnect)
+        MockWebSocketClient(url, listener, onConnect, onConnected, onTextFrame, onBinaryFrame, onClientClose)
 
     override fun isPingListenerSupported() = false
 }
@@ -28,17 +38,21 @@ internal class MockWebSocketClient(
     private val url: String,
     private val listener: WebSocketListener,
     private val onConnect: (PendingConnection) -> Unit,
+    private val onConnected: (WebSocketListener) -> Unit,
+    private val onTextFrame: (String) -> Unit,
+    private val onBinaryFrame: (ByteArray) -> Unit,
+    private val onClientClose: (Int, String) -> Unit,
 ) : WebSocketClient {
     override fun connect() {
         val uri = URI(url.substringBefore('?'))
         val tls = uri.scheme == "wss"
         val port = if (uri.port == -1) (if (tls) 443 else 80) else uri.port
-        onConnect(PendingConnectionImpl(uri.host, port, tls, listener))
+        onConnect(DefaultPendingConnection(uri.host, port, tls, listener, onConnected))
     }
 
     override fun close() {}
-    override fun close(code: Int, reason: String) {}
-    override fun cancel(code: Int, reason: String) {}
-    override fun send(message: ByteArray) {}
-    override fun send(message: String) {}
+    override fun close(code: Int, reason: String) { onClientClose(code, reason) }
+    override fun cancel(code: Int, reason: String) { onClientClose(code, reason) }
+    override fun send(message: ByteArray) { onBinaryFrame(message) }
+    override fun send(message: String) { onTextFrame(message) }
 }
