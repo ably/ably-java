@@ -3,6 +3,8 @@ package io.ably.lib.transport;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.util.Clock;
+import io.ably.lib.util.SystemClock;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -23,6 +25,7 @@ public class Hosts {
     private final long fallbackRetryTimeout;
 
     private final Preferred preferred = new Preferred();
+    private final Clock clock;
 
     /**
      * Create Hosts object
@@ -77,6 +80,7 @@ public class Hosts {
         /* RSC15a: shuffle the fallback hosts. */
         Collections.shuffle(Arrays.asList(fallbackHosts));
         fallbackRetryTimeout = options.fallbackRetryTimeout;
+        this.clock = SystemClock.clockFrom(options);
     }
 
     /**
@@ -91,7 +95,7 @@ public class Hosts {
             /* a successful request against the primary host; reset */
             preferred.clear();
         } else {
-            preferred.setHost(prefHost, temporary ? System.currentTimeMillis() + fallbackRetryTimeout : 0);
+            preferred.setHost(prefHost, temporary ? clock.currentTimeMillis() + fallbackRetryTimeout : 0);
         }
     }
 
@@ -106,7 +110,7 @@ public class Hosts {
      * Get preferred host name (taking into account any affinity to a fallback: see RSC15f)
      */
     public synchronized String getPreferredHost() {
-        final String host = preferred.getHostOrClearIfExpired();
+        final String host = preferred.getHostOrClearIfExpired(clock);
         return (host == null) ? primaryHost : host;
     }
 
@@ -128,7 +132,7 @@ public class Hosts {
             if (!primaryHostIsDefault && !fallbackHostsUseDefault && fallbackHostsIsDefault)
                 return null;
             idx = 0;
-        } else if(lastHost.equals(preferred.getHostOrClearIfExpired())) {
+        } else if(lastHost.equals(preferred.getHostOrClearIfExpired(clock))) {
             /* RSC15f: there was a failure on an unexpired, cached fallback; so try again using the primary */
             preferred.clear();
             return primaryHost;
@@ -174,8 +178,8 @@ public class Hosts {
             this.expiry = expiry;
         }
 
-        public String getHostOrClearIfExpired() {
-            if(expiry > 0 && expiry <= System.currentTimeMillis()) {
+        public String getHostOrClearIfExpired(Clock clock) {
+            if(expiry > 0 && expiry <= clock.currentTimeMillis()) {
                 clear(); // expired, so reset
             }
             return host;

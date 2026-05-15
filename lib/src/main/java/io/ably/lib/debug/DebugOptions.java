@@ -4,11 +4,14 @@ import java.util.List;
 import java.util.Map;
 
 import io.ably.lib.http.HttpCore;
+import io.ably.lib.network.HttpEngine;
 import io.ably.lib.network.HttpRequest;
+import io.ably.lib.network.WebSocketEngineFactory;
 import io.ably.lib.transport.ITransport;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.util.Clock;
 
 public class DebugOptions extends ClientOptions {
     public interface RawProtocolListener {
@@ -31,12 +34,18 @@ public class DebugOptions extends ClientOptions {
     public RawProtocolListener protocolListener;
     public RawHttpListener httpListener;
     public ITransport.Factory transportFactory;
+    public HttpEngine httpEngine;
+    public WebSocketEngineFactory webSocketEngineFactory;
+    public Clock clock;
 
     public DebugOptions copy() {
         DebugOptions copied = new DebugOptions();
         copied.protocolListener = protocolListener;
         copied.httpListener = httpListener;
         copied.transportFactory = transportFactory;
+        copied.httpEngine = httpEngine;
+        copied.webSocketEngineFactory = webSocketEngineFactory;
+        copied.clock = clock;
         copied.clientId = clientId;
         copied.logLevel = logLevel;
         copied.logHandler = logHandler;

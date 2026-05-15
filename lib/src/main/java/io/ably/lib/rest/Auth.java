@@ -27,8 +27,10 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.NonRetriableTokenException;
 import io.ably.lib.types.Param;
 import io.ably.lib.util.Base64Coder;
+import io.ably.lib.util.Clock;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
+import io.ably.lib.util.SystemClock;
 
 /**
  * Token-generation and authentication operations for the Ably API.
@@ -921,7 +923,7 @@ public class Auth {
         if(request.timestamp == 0) {
             if(options.queryTime) {
                 long oldNanoTimeDelta = nanoTimeDelta;
-                long currentNanoTimeDelta = System.currentTimeMillis() - System.nanoTime()/(1000*1000);
+                long currentNanoTimeDelta = clock.currentTimeMillis() - System.nanoTime()/(1000*1000);
 
                 if (timeDelta != Long.MAX_VALUE) {
                     /* system time changed by more than 500ms since last time? */
@@ -1036,7 +1038,7 @@ public class Auth {
             clearTokenDetails();
     }
 
-    public static long timestamp() { return System.currentTimeMillis(); }
+    public long timestamp() { return clock.currentTimeMillis(); }
 
     /********************
      * internal
@@ -1050,6 +1052,8 @@ public class Auth {
      */
     Auth(AblyBase ably, ClientOptions options) throws AblyException {
         this.ably = ably;
+        this.clock = SystemClock.clockFrom(options);
+        this.nanoTimeDelta = clock.currentTimeMillis() - System.nanoTime()/(1000*1000);
         authOptions = options;
         tokenParams = options.defaultTokenParams != null ?
                 options.defaultTokenParams : new TokenParams();
@@ -1304,6 +1308,7 @@ public class Auth {
 
     private static final String TAG = Auth.class.getName();
     private final AblyBase ably;
+    private final Clock clock;
     private final AuthMethod method;
     private AuthOptions authOptions;
     private TokenParams tokenParams;
@@ -1320,7 +1325,7 @@ public class Auth {
      * Time delta between System.nanoTime() and System.currentTimeMillis. If it changes significantly it
      * suggests device time/date has changed
      */
-    private long nanoTimeDelta = System.currentTimeMillis() - System.nanoTime()/(1000*1000);
+    private long nanoTimeDelta;
 
     public static final String WILDCARD_CLIENTID = "*";
     /**

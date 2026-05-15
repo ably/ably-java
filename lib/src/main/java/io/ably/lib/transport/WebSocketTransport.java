@@ -1,5 +1,6 @@
 package io.ably.lib.transport;
 
+import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.network.EngineType;
 import io.ably.lib.network.NotConnectedException;
@@ -13,14 +14,17 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolSerializer;
+import io.ably.lib.util.Clock;
 import io.ably.lib.util.ClientOptionsUtils;
 import io.ably.lib.util.Log;
+import io.ably.lib.util.NamedTimer;
+import io.ably.lib.util.SystemClock;
+import io.ably.lib.util.TimerInstance;
 
 import javax.net.ssl.SSLContext;
 import java.nio.ByteBuffer;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Timer;
 import java.util.TimerTask;
 
 public class WebSocketTransport implements ITransport {
@@ -47,6 +51,7 @@ public class WebSocketTransport implements ITransport {
 
     private final TransportParams params;
     private final ConnectionManager connectionManager;
+    private final Clock clock;
     private final boolean channelBinaryMode;
     private String wsUri;
     private ConnectListener connectListener;
@@ -63,14 +68,19 @@ public class WebSocketTransport implements ITransport {
     protected WebSocketTransport(TransportParams params, ConnectionManager connectionManager) {
         this.params = params;
         this.connectionManager = connectionManager;
+        this.clock = SystemClock.clockFrom(params.options);
         this.channelBinaryMode = params.options.useBinaryProtocol;
         this.webSocketEngine = createWebSocketEngine(params);
         params.heartbeats = !this.webSocketEngine.isPingListenerSupported();
-
     }
 
     private static WebSocketEngine createWebSocketEngine(TransportParams params) {
-        WebSocketEngineFactory engineFactory = WebSocketEngineFactory.getFirstAvailable();
+        WebSocketEngineFactory engineFactory;
+        if (params.options instanceof DebugOptions && ((DebugOptions) params.options).webSocketEngineFactory != null) {
+            engineFactory = ((DebugOptions) params.options).webSocketEngineFactory;
+        } else {
+            engineFactory = WebSocketEngineFactory.getFirstAvailable();
+        }
         Log.v(TAG, String.format("Using %s WebSocket Engine", engineFactory.getEngineType().name()));
         WebSocketEngineConfig.WebSocketEngineConfigBuilder configBuilder = WebSocketEngineConfig.builder();
         configBuilder
@@ -251,8 +261,8 @@ public class WebSocketTransport implements ITransport {
          * WsClient private members
          ***************************/
 
-        private final Timer timer = new Timer();
-        private volatile TimerTask activityTimerTask = null;
+        private final NamedTimer timer = clock.newTimer("activity-timer");
+        private volatile TimerInstance activityTimerHandle = null;
         private volatile long lastActivityTime;
 
         /**
@@ -363,7 +373,7 @@ public class WebSocketTransport implements ITransport {
 
         private void flagActivity() {
             if (isActiveTransport()) {
-                lastActivityTime = System.currentTimeMillis();
+                lastActivityTime = clock.currentTimeMillis();
                 connectionManager.setLastActivity(lastActivityTime);
             }
 
@@ -389,11 +399,11 @@ public class WebSocketTransport implements ITransport {
             }
 
             // prevent going to the synchronized block if the timer is active
-            if (activityTimerTask != null) return;
+            if (activityTimerHandle != null) return;
 
             synchronized (activityTimerMonitor) {
                 // Check if timer already running
-                if (activityTimerTask == null) {
+                if (activityTimerHandle == null) {
                     // Start the activity timer task
                     startActivityTimer(timeout + 100);
                 }
@@ -401,7 +411,7 @@ public class WebSocketTransport implements ITransport {
         }
 
         private void startActivityTimer(long timeout) {
-            activityTimerTask = new TimerTask() {
+            TimerTask task = new TimerTask() {
                 public void run() {
                     try {
                         onActivityTimerExpiry();
@@ -411,19 +421,20 @@ public class WebSocketTransport implements ITransport {
                     }
                 }
             };
-            schedule(activityTimerTask, timeout);
+            activityTimerHandle = schedule(task, timeout);
         }
 
-        private void schedule(TimerTask task, long delay) {
+        private TimerInstance schedule(TimerTask task, long delay) {
             try {
-                timer.schedule(task, delay);
+                return timer.schedule(task, delay);
             } catch (IllegalStateException ise) {
                 Log.w(TAG, "Timer has already has been canceled", ise);
+                return () -> {};
             }
         }
 
         private void onActivityTimerExpiry() {
-            long timeSinceLastActivity = System.currentTimeMillis() - lastActivityTime;
+            long timeSinceLastActivity = clock.currentTimeMillis() - lastActivityTime;
             long timeRemaining = getActivityTimeout() - timeSinceLastActivity;
 
             // If we have no time remaining, then close the connection
@@ -434,7 +445,7 @@ public class WebSocketTransport implements ITransport {
             }
 
             synchronized (activityTimerMonitor) {
-                activityTimerTask = null;
+                activityTimerHandle = null;
                 // Otherwise, we've had some activity, restart the timer for the next timeout
                 Log.v(TAG, "onActivityTimerExpiry: ok");
                 startActivityTimer(timeRemaining + 100);
