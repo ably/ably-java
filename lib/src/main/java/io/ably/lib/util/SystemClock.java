@@ -1,0 +1,41 @@
+package io.ably.lib.util;
+
+import java.util.Timer;
+import java.util.TimerTask;
+
+import io.ably.lib.debug.DebugOptions;
+import io.ably.lib.types.ClientOptions;
+
+public class SystemClock implements Clock {
+    public static final SystemClock INSTANCE = new SystemClock();
+
+    @Override
+    public long currentTimeMillis() {
+        return System.currentTimeMillis();
+    }
+
+    @Override
+    public NamedTimer newTimer(String name) {
+        Timer jTimer = new Timer(name, true);
+        return new NamedTimer() {
+            @Override
+            public TimerInstance schedule(TimerTask task, long delayMs) {
+                jTimer.schedule(task, delayMs);
+                return task::cancel;
+            }
+
+            @Override
+            public void cancel() {
+                jTimer.cancel();
+            }
+        };
+    }
+
+    public static Clock clockFrom(ClientOptions opts) {
+        if (opts instanceof DebugOptions) {
+            Clock c = ((DebugOptions) opts).clock;
+            if (c != null) return c;
+        }
+        return INSTANCE;
+    }
+}

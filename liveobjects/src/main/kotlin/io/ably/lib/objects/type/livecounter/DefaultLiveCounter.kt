@@ -14,6 +14,7 @@ import io.ably.lib.objects.type.counter.LiveCounterUpdate
 import io.ably.lib.objects.type.noOp
 import java.util.concurrent.atomic.AtomicReference
 import io.ably.lib.util.Log
+import io.ably.lib.util.SystemClock
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -22,7 +23,7 @@ import kotlinx.coroutines.runBlocking
 internal class DefaultLiveCounter private constructor(
   objectId: String,
   private val realtimeObjects: DefaultRealtimeObjects,
-) : LiveCounter, BaseRealtimeObject(objectId, ObjectType.Counter) {
+) : LiveCounter, BaseRealtimeObject(objectId, ObjectType.Counter, SystemClock.clockFrom(realtimeObjects.adapter.clientOptions)) {
 
   override val tag = "LiveCounter"
 

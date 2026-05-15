@@ -1,6 +1,7 @@
 package io.ably.lib.objects
 
 import io.ably.lib.types.AblyException
+import io.ably.lib.util.SystemClock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -21,15 +22,16 @@ internal object ServerTime {
    */
   @Throws(AblyException::class)
   internal suspend fun getCurrentTime(adapter: ObjectsAdapter): Long {
+    val clock = SystemClock.clockFrom(adapter.clientOptions)
     if (serverTimeOffset == null) {
       mutex.withLock {
         if (serverTimeOffset == null) { // Double-checked locking to ensure thread safety
           val serverTime: Long = withContext(Dispatchers.IO) { adapter.time }
-          serverTimeOffset = serverTime - System.currentTimeMillis()
+          serverTimeOffset = serverTime - clock.currentTimeMillis()
           return serverTime
         }
       }
     }
-    return System.currentTimeMillis() + serverTimeOffset!!
+    return clock.currentTimeMillis() + serverTimeOffset!!
   }
 }
