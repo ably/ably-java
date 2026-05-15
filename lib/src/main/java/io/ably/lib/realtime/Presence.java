@@ -331,7 +331,7 @@ public class Presence {
         for (PresenceMessage member: residualMembers) {         // RTP19
             member.action = PresenceMessage.Action.leave;
             member.id = null;
-            member.timestamp = System.currentTimeMillis();
+            member.timestamp = channel.clock.currentTimeMillis();
         }
         broadcastPresence(residualMembers);
     }

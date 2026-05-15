@@ -7,7 +7,9 @@ import io.ably.lib.objects.ObjectsOperationSource
 import io.ably.lib.objects.objectError
 import io.ably.lib.objects.type.livecounter.noOpCounterUpdate
 import io.ably.lib.objects.type.livemap.noOpMapUpdate
+import io.ably.lib.util.Clock
 import io.ably.lib.util.Log
+import io.ably.lib.util.SystemClock
 
 internal enum class ObjectType(val value: String) {
   Map("map"),
@@ -27,6 +29,7 @@ internal val ObjectUpdate.noOp get() = this.update == null
 internal abstract class BaseRealtimeObject(
   internal val objectId: String, // // RTLO3a
   internal val objectType: ObjectType,
+  internal val clock: Clock = SystemClock.INSTANCE,
 ) : ObjectLifecycleCoordinator() {
 
   protected open val tag = "BaseRealtimeObject"
@@ -128,7 +131,7 @@ internal abstract class BaseRealtimeObject(
       Log.w(tag, "Tombstoning object $objectId without serial timestamp, using local timestamp instead")
     }
     isTombstoned = true
-    tombstonedAt = serialTimestamp?: System.currentTimeMillis()
+    tombstonedAt = serialTimestamp?: clock.currentTimeMillis()
     val update = clearData()
     // Emit object lifecycle event for deletion
     objectLifecycleChanged(ObjectLifecycle.Deleted)
@@ -149,7 +152,7 @@ internal abstract class BaseRealtimeObject(
    *         false otherwise
    */
   internal fun isEligibleForGc(gcGracePeriod: Long): Boolean {
-    val currentTime = System.currentTimeMillis()
+    val currentTime = clock.currentTimeMillis()
     return isTombstoned && tombstonedAt?.let { currentTime - it >= gcGracePeriod } == true
   }
 

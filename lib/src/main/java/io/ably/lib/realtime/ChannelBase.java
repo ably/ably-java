@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -46,12 +45,15 @@ import io.ably.lib.types.ProtocolMessage.Flag;
 import io.ably.lib.types.PublishResult;
 import io.ably.lib.types.Summary;
 import io.ably.lib.types.UpdateDeleteResult;
+import io.ably.lib.util.Clock;
 import io.ably.lib.util.CollectionUtils;
 import io.ably.lib.util.EventEmitter;
 import io.ably.lib.util.Listeners;
 import io.ably.lib.util.Log;
+import io.ably.lib.util.NamedTimer;
 import io.ably.lib.util.ReconnectionStrategy;
 import io.ably.lib.util.StringUtils;
+import io.ably.lib.util.SystemClock;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NonBlocking;
 import org.jetbrains.annotations.Nullable;
@@ -508,21 +510,20 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     }
 
     /* Timer for attach operation */
-    private Timer attachTimer;
+    private NamedTimer attachTimer;
 
     /* Timer for reattaching if attach failed */
-    private Timer reattachTimer;
+    private NamedTimer reattachTimer;
 
     /**
      * Cancel attach/reattach timers
      */
     synchronized private void clearAttachTimers() {
-        Timer[] timers = new Timer[]{attachTimer, reattachTimer};
+        NamedTimer[] timers = new NamedTimer[]{attachTimer, reattachTimer};
         attachTimer = reattachTimer = null;
-        for (Timer t: timers) {
+        for (NamedTimer t: timers) {
             if (t != null) {
                 t.cancel();
-                t.purge();
             }
         }
     }
@@ -537,9 +538,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      */
     synchronized private void attachWithTimeout(final boolean forceReattach, final CompletionListener listener, ErrorInfo reattachmentReason) {
         checkChannelIsNotReleased();
-        Timer currentAttachTimer;
+        NamedTimer currentAttachTimer;
         try {
-            currentAttachTimer = new Timer();
+            currentAttachTimer = clock.newTimer("attach-timer");
         } catch(Throwable t) {
             /* an exception instancing the timer can arise because the runtime is exiting */
             callCompletionListenerError(listener, ErrorInfo.fromThrowable(t));
@@ -571,7 +572,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             return;
         }
 
-        final Timer inProgressTimer = currentAttachTimer;
+        final NamedTimer inProgressTimer = currentAttachTimer;
         attachTimer.schedule(
                 new TimerTask() {
                     @Override
@@ -601,9 +602,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * try to attach the channel
      */
     synchronized private void reattachAfterTimeout() {
-        Timer currentReattachTimer;
+        NamedTimer currentReattachTimer;
         try {
-            currentReattachTimer = new Timer();
+            currentReattachTimer = clock.newTimer("reattach-timer");
         } catch(Throwable t) {
             /* an exception instancing the timer can arise because the runtime is exiting */
             return;
@@ -613,7 +614,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         this.retryAttempt++;
         int retryDelay = ReconnectionStrategy.getRetryTime(ably.options.channelRetryTimeout, retryAttempt);
 
-        final Timer inProgressTimer = currentReattachTimer;
+        final NamedTimer inProgressTimer = currentReattachTimer;
         reattachTimer.schedule(new TimerTask() {
             @Override
             public void run() {
@@ -640,9 +641,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      */
     synchronized private void detachWithTimeout(final CompletionListener listener) {
         final ChannelState originalState = state;
-        Timer currentDetachTimer;
+        NamedTimer currentDetachTimer;
         try {
-            currentDetachTimer = released.get() ? null : new Timer();
+            currentDetachTimer = released.get() ? null : clock.newTimer("detach-timer");
         } catch(Throwable t) {
             /* an exception instancing the timer can arise because the runtime is exiting */
             callCompletionListenerError(listener, ErrorInfo.fromThrowable(t));
@@ -676,7 +677,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             return;
         }
 
-        final Timer inProgressTimer = currentDetachTimer;
+        final NamedTimer inProgressTimer = currentDetachTimer;
         attachTimer.schedule(new TimerTask() {
             @Override
             public void run() {
@@ -1684,6 +1685,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     ChannelBase(AblyRealtime ably, String name, ChannelOptions options, @Nullable LiveObjectsPlugin liveObjectsPlugin) throws AblyException {
         Log.v(TAG, "RealtimeChannel(); channel = " + name);
         this.ably = ably;
+        this.clock = SystemClock.clockFrom(ably.options);
         this.name = name;
         this.basePath = "/channels/" + HttpUtils.encodeURIComponent(name);
         this.setOptions(options);
@@ -1808,6 +1810,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
     private static final String TAG = Channel.class.getName();
     final AblyRealtime ably;
+    final Clock clock;
     final String basePath;
     ChannelOptions options;
     /**

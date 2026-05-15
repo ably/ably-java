@@ -37,7 +37,7 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
       objectState.map?.entries?.forEach { (key, entry) ->
         liveMap.data[key] = LiveMapEntry(
           isTombstoned = entry.tombstone ?: false,
-          tombstonedAt = if (entry.tombstone == true) entry.serialTimestamp ?: System.currentTimeMillis() else null,
+          tombstonedAt = if (entry.tombstone == true) entry.serialTimestamp ?: liveMap.clock.currentTimeMillis() else null,
           timeserial = entry.timeserial,
           data = entry.data
         )
@@ -212,7 +212,7 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
         "No timestamp provided for MAP_REMOVE op on key=\"${mapRemove.key}\"; using current time as tombstone time; " +
           "objectId=${objectId}"
       )
-      System.currentTimeMillis()
+      liveMap.clock.currentTimeMillis()
     }
 
     if (existingEntry != null) {
