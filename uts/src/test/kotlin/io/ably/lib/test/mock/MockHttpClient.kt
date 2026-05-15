@@ -16,7 +16,7 @@ class MockHttpClient {
         MockHttpEngine { _pendingRequests.trySend(it) }
 
     val webSocketEngineFactory: WebSocketEngineFactory =
-        MockWebSocketEngineFactory { _pendingConnections.trySend(it) }
+        MockWebSocketEngineFactory(onConnect = { _pendingConnections.trySend(it) })
 
     fun installOn(options: DebugOptions) {
         options.httpEngine = httpEngine
