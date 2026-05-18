@@ -6,6 +6,12 @@ import io.ably.lib.util.TimerInstance
 import java.util.TimerTask
 import kotlin.time.Duration
 
+/**
+ * Virtual clock for deterministic time control in unit tests.
+ *
+ * Install via `enableFakeTimers(fakeClock)` inside a `TestRealtimeClient` or `TestRestClient` block.
+ * Time only advances when [advance] is called; timer callbacks fire synchronously within that call.
+ */
 class FakeClock(initialTimeMs: Long = 0L) : Clock {
     @Volatile private var time = initialTimeMs
     private val timers = mutableMapOf<String, FakeNamedTimer>()
@@ -18,13 +24,16 @@ class FakeClock(initialTimeMs: Long = 0L) : Clock {
         return t
     }
 
+    /** Advance virtual time by [ms] milliseconds, firing any timers that become due. */
     fun advance(ms: Long) {
         time += ms
         timers.values.forEach { it.fireDue(time) }
     }
 
+    /** Advance virtual time by [time], firing any timers that become due. */
     fun advance(time: Duration) = advance(time.inWholeMilliseconds)
 
+    /** Number of tasks currently scheduled on the named timer — useful for asserting retry state. */
     fun pendingTaskCount(timerName: String) = timers[timerName]?.pendingCount ?: 0
 
     inner class FakeNamedTimer(val name: String) : NamedTimer {

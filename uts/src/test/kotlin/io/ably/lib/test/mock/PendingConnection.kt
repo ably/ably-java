@@ -13,12 +13,20 @@ internal fun parseQueryString(rawQuery: String?): Map<String, String> {
     }.toMap()
 }
 
+/**
+ * A WebSocket or HTTP connection attempt that the test must resolve.
+ *
+ * Received via [MockWebSocket.awaitConnectionAttempt] or [WebSocketMockConfig.onConnectionAttempt].
+ */
 interface PendingConnection {
     val host: String
     val port: Int
     val tls: Boolean
+    /** URL query parameters decoded from the connection URL (e.g. `key`, `recover`, `resume`, `format`). */
     val queryParams: Map<String, String>
+    /** Open the connection without sending any initial message. */
     fun respondWithSuccess()
+    /** Open the connection and immediately deliver [message] to the SDK (e.g. CONNECTED). */
     fun respondWithSuccess(message: ProtocolMessage)
     fun respondWithRefused()
     fun respondWithTimeout()

@@ -15,15 +15,36 @@ import java.util.Collections
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
+/**
+ * Callbacks for [MockWebSocket]. All fields are optional.
+ *
+ * When a callback is set it receives the event immediately (synchronous, on the SDK's thread).
+ * When a callback is null the event is queued for the corresponding `await*` method instead.
+ * The two styles cannot be mixed for the same event type.
+ */
 class WebSocketMockConfig {
+    /** Called for every connection attempt. Set to respond inline; leave null to use [MockWebSocket.awaitConnectionAttempt]. */
     var onConnectionAttempt: ((PendingConnection) -> Unit)? = null
+    /** Called for every decoded protocol message from the SDK. Leave null to use [MockWebSocket.awaitNextMessageFromClient]. */
     var onMessageFromClient: ((ProtocolMessage) -> Unit)? = null
+    /** Raw text frame callback — rarely needed; prefer [onMessageFromClient]. */
     var onTextDataFrame: ((String) -> Unit)? = null
+    /** Raw binary frame callback — rarely needed; prefer [onMessageFromClient]. */
     var onBinaryDataFrame: ((ByteArray) -> Unit)? = null
 }
 
+/**
+ * Fake WebSocket transport for SDK unit tests. Install via [installOn] or `TestRealtimeClient`.
+ *
+ * Two usage styles for connection/message handling (cannot mix per event type):
+ * - **Callback** (`onConnectionAttempt`, `onMessageFromClient` in [WebSocketMockConfig]): handle
+ *   inline, synchronously on the SDK thread. Preferred for single-behaviour setups.
+ * - **Await** ([awaitConnectionAttempt], [awaitNextMessageFromClient]): suspend until the SDK
+ *   triggers the event. Required when initial and reconnection attempts need different behaviour.
+ */
 class MockWebSocket(config: WebSocketMockConfig = WebSocketMockConfig()) {
     private val _events = Collections.synchronizedList(mutableListOf<MockEvent>())
+    /** Snapshot of all events recorded since construction (or last [reset]). */
     val events: List<MockEvent> get() = _events.toList()
 
     private var _pendingConnections = Channel<PendingConnection>(Channel.UNLIMITED)
@@ -82,31 +103,37 @@ class MockWebSocket(config: WebSocketMockConfig = WebSocketMockConfig()) {
         },
     )
 
+    /** Wire this mock into [options] so the SDK uses it instead of a real WebSocket. */
     fun installOn(options: DebugOptions) {
         options.webSocketEngineFactory = engineFactory
     }
 
+    /** Suspend until the SDK opens a new WebSocket connection. Only usable when [WebSocketMockConfig.onConnectionAttempt] is null. */
     suspend fun awaitConnectionAttempt(timeout: Duration = 5.seconds): PendingConnection =
         withContext(Dispatchers.Default.limitedParallelism(1)) {
             withTimeout(timeout) { _pendingConnections.receive() }
         }
 
+    /** Suspend until the SDK sends a protocol message to the server. Only usable when [WebSocketMockConfig.onMessageFromClient] is null. */
     suspend fun awaitNextMessageFromClient(timeout: Duration = 5.seconds): ProtocolMessage =
         withContext(Dispatchers.Default.limitedParallelism(1)) {
             withTimeout(timeout) { _messagesFromClient.receive() }
         }
 
+    /** Suspend until the SDK sends a WebSocket close frame. */
     suspend fun awaitClientClose(timeout: Duration = 5.seconds): MockEvent.ClientClose =
         withContext(Dispatchers.Default.limitedParallelism(1)) {
             withTimeout(timeout) { _clientCloseEvents.receive() }
         }
 
+    /** Deliver [message] from the fake server to the SDK over the active connection. */
     fun sendToClient(message: ProtocolMessage) {
         val listener = checkNotNull(activeListener) { "No active WebSocket connection" }
         _events.add(MockEvent.SentToClient(message))
         listener.onMessage(Serialisation.gson.toJson(message))
     }
 
+    /** Deliver [message] to the SDK then immediately close the connection with code 1000. */
     fun sendToClientAndClose(message: ProtocolMessage) {
         val listener = checkNotNull(activeListener) { "No active WebSocket connection" }
         _events.add(MockEvent.SentToClient(message))
@@ -115,6 +142,7 @@ class MockWebSocket(config: WebSocketMockConfig = WebSocketMockConfig()) {
         listener.onClose(1000, "Normal closure")
     }
 
+    /** Simulate an abnormal network drop (close code 1006). Triggers DISCONNECTED on the SDK. */
     fun simulateDisconnect() {
         val listener = checkNotNull(activeListener) { "No active WebSocket connection" }
         _events.add(MockEvent.Disconnected)
@@ -122,6 +150,7 @@ class MockWebSocket(config: WebSocketMockConfig = WebSocketMockConfig()) {
         listener.onClose(1006, "Abnormal closure")
     }
 
+    /** Clear all queued events and pending channels. Call between tests when reusing a mock instance. */
     fun reset() {
         _pendingConnections.close()
         _messagesFromClient.close()
