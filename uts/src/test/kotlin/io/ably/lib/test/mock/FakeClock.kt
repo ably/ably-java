@@ -1,9 +1,11 @@
 package io.ably.lib.test.mock
 
+import io.ably.lib.debug.DebugOptions
 import io.ably.lib.util.Clock
 import io.ably.lib.util.NamedTimer
 import io.ably.lib.util.TimerInstance
 import java.util.TimerTask
+import kotlin.time.Duration
 
 class FakeClock(initialTimeMs: Long = 0L) : Clock {
     @Volatile private var time = initialTimeMs
@@ -22,10 +24,7 @@ class FakeClock(initialTimeMs: Long = 0L) : Clock {
         timers.values.forEach { it.fireDue(time) }
     }
 
-    fun advance(timerName: String, ms: Long) {
-        time += ms
-        timers[timerName]?.fireDue(time)
-    }
+    fun advance(time: Duration) = advance(time.inWholeMilliseconds)
 
     fun pendingTaskCount(timerName: String) = timers[timerName]?.pendingCount ?: 0
 

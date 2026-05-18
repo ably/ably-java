@@ -33,11 +33,12 @@ Package: derived from the output path under `kotlin/`.
 
 ---
 
-## Step 3 — Read mock infrastructure files
+## Step 3 — Read infrastructure files
 
 Read ALL of these before generating any code (you need exact method signatures):
 
 ```
+uts/src/test/kotlin/io/ably/lib/ClientFactories.kt
 uts/src/test/kotlin/io/ably/lib/test/mock/MockWebSocket.kt
 uts/src/test/kotlin/io/ably/lib/test/mock/MockHttpClient.kt
 uts/src/test/kotlin/io/ably/lib/test/mock/PendingRequest.kt
@@ -54,35 +55,83 @@ Apply the translation rules below, then write the file.
 
 ### Client construction
 
-| Pseudocode | Kotlin |
-|---|---|
-| `Rest(options: ClientOptions(key: "..."))` | `AblyRest(DebugOptions("..."))` |
-| `Realtime(options: ClientOptions(key: "...", autoConnect: false))` | `DebugOptions("...").apply { autoConnect = false }.let { AblyRealtime(it) }` |
-| `ClientOptions(token: "...", autoConnect: false)` | `DebugOptions().apply { token = "..."; autoConnect = false }` |
-
-### Mock setup — CRITICAL
-
-The pseudocode uses callback-style (`onConnectionAttempt: (conn) => {...}`) but Kotlin mocks use **coroutine await-style**. Each callback body becomes a `launch { ... }` block started **before** the SDK client is created or connected.
+Use `TestRealtimeClient { }` and `TestRestClient { }` from `io.ably.lib`. These are DSL builders that extend `DebugOptions` — all `ClientOptions` fields (`autoConnect`, `recover`, `disconnectedRetryTimeout`, etc.) are settable directly inside the block. The default API key is `"appId.keyId:keySecret"`.
 
 | Pseudocode | Kotlin |
 |---|---|
-| `mock_http = MockHttpClient(...)` + `install_mock(mock_http)` | `val mock = MockHttpClient(); mock.installOn(options)` |
-| `mock_ws = MockWebSocket(...)` + `install_mock(mock_ws)` | `val mock = MockWebSocket(); mock.installOn(options)` |
-| `onConnectionAttempt: (conn) => { conn.respond_with_success() }` | `launch { val conn = mock.awaitConnectionAttempt(); conn.respondWithSuccess() }` |
-| `onRequest: (req) => { req.respond_with(200, body) }` | `launch { val req = mock.awaitRequest(); req.respondWith(200, body) }` |
-| Repeated connection attempts | `launch { repeat(N) { val conn = mock.awaitConnectionAttempt(); conn.respondWithRefused() } }` |
-| `enable_fake_timers()` | `val clock = FakeClock(); options.clock = clock` (before client construction) |
+| `Rest(options: ClientOptions(key: "..."))` | `TestRestClient { key = "..." }` |
+| `Realtime(options: ClientOptions(key: "...", autoConnect: false))` | `TestRealtimeClient { key = "..."; autoConnect = false }` |
+| `Realtime(options: ClientOptions(autoConnect: false))` | `TestRealtimeClient { autoConnect = false }` |
+| Installing mocks | `install(mock)` inside the builder block |
+| Fake timers | Create `val fakeClock = FakeClock()` before the builder, then call `enableFakeTimers(fakeClock)` inside |
 
-### Connection/request actions
+### Mock setup
+
+**Prefer `onConnectionAttempt` callback** over `launch { awaitConnectionAttempt() }` for straightforward connections. Use `respondWithSuccess(message)` to open the socket and deliver the CONNECTED message in a single call.
+
+```kotlin
+val mock = MockWebSocket {
+    onConnectionAttempt = { conn ->
+        conn.respondWithSuccess(ProtocolMessage().apply {
+            action = ProtocolMessage.Action.connected
+            connectionId = "test-connection-id"
+            connectionDetails = ConnectionDetails {
+                connectionKey = "test-key"
+                maxIdleInterval = 15_000L
+                connectionStateTtl = 120_000L
+            }
+        })
+    }
+}
+val client = TestRealtimeClient {
+    autoConnect = false
+    install(mock)
+}
+```
+
+**Use `awaitConnectionAttempt()` only** when different connection attempts need different behaviour (e.g. first attempt succeeds, subsequent ones are refused). In that case, set up the initial connection in a `launch` block before calling `connect()`, then handle reconnections separately:
+
+```kotlin
+val mockWs = MockWebSocket()
+val client = TestRealtimeClient {
+    autoConnect = false
+    install(mockWs)
+}
+
+launch {
+    mockWs.awaitConnectionAttempt().respondWithSuccess(ProtocolMessage().apply { ... })
+}
+
+client.connect()
+awaitState(client, ConnectionState.connected)
+
+// handle reconnection attempts differently
+val refuseJob = launch {
+    repeat(10) {
+        fakeClock.advance(2.seconds)
+        mockWs.awaitConnectionAttempt().respondWithRefused()
+        ...
+    }
+}
+```
+
+For HTTP:
+```kotlin
+val mockHttp = MockHttpClient { onRequest = { req -> req.respondWith(200, body) } }
+val client = TestRestClient { install(mockHttp) }
+```
+
+### Mock method reference
 
 | Pseudocode | Kotlin |
 |---|---|
-| `conn.respond_with_success()` | `conn.respondWithSuccess()` |
+| `conn.respond_with_success()` | `conn.respondWithSuccess()` (opens socket only) |
+| `conn.respond_with_success(msg)` | `conn.respondWithSuccess(msg)` (opens socket + delivers message) |
 | `conn.respond_with_refused()` | `conn.respondWithRefused()` |
 | `conn.respond_with_timeout()` | `conn.respondWithTimeout()` |
 | `conn.respond_with_dns_error()` | `conn.respondWithDnsError()` |
-| `conn.send_to_client(msg)` | `mock.sendToClient(msg)` (after `respondWithSuccess()`) |
-| `conn.send_to_client_and_close(msg)` | `mock.sendToClientAndClose(msg)` |
+| `mock_ws.send_to_client(msg)` | `mock.sendToClient(msg)` |
+| `mock_ws.send_to_client_and_close(msg)` | `mock.sendToClientAndClose(msg)` |
 | `mock_ws.simulate_disconnect()` | `mock.simulateDisconnect()` |
 | `req.respond_with(200, {...})` | `req.respondWith(200, mapOf(...))` |
 | `req.respond_with_timeout()` | `req.respondWithTimeout()` |
@@ -93,29 +142,41 @@ The pseudocode uses callback-style (`onConnectionAttempt: (conn) => {...}`) but 
 |---|---|
 | `ProtocolMessage(action: CONNECTED, ...)` | `ProtocolMessage().apply { action = ProtocolMessage.Action.connected; ... }` |
 | `CONNECTED` / `DISCONNECTED` / `ERROR` / `HEARTBEAT` / `ATTACH` / `DETACHED` | `.connected` / `.disconnected` / `.error` / `.heartbeat` / `.attach` / `.detached` |
-| `ErrorInfo(code: X, statusCode: Y, message: "...")` | `ErrorInfo("...", X, Y)` |
-| `ConnectionDetails(connectionKey: ..., maxIdleInterval: ..., connectionStateTtl: ...)` | `ConnectionDetails().apply { connectionKey = "..."; maxIdleInterval = ...; connectionStateTtl = ... }` |
+| `ErrorInfo(code: X, statusCode: Y, message: "...")` | `ErrorInfo("...", Y, X)` — note arg order: message, statusCode, code |
+| `ConnectionDetails(connectionKey: ..., maxIdleInterval: ..., connectionStateTtl: ...)` | `ConnectionDetails { connectionKey = "..."; maxIdleInterval = ...; connectionStateTtl = ... }` |
 | `ConnectionState.connected` etc. | `ConnectionState.connected`, `.disconnected`, `.suspended`, `.failed`, `.connecting`, `.closing`, `.closed` |
 
 ### Awaiting state
 
-`AWAIT_STATE client.connection.state == ConnectionState.X WITH timeout: N seconds` → call the `awaitState()` helper (included in the file template below):
+`AWAIT_STATE client.connection.state == ConnectionState.X` → use the top-level `awaitState()` helper from `io.ably.lib`:
 
 ```kotlin
-awaitState(client, ConnectionState.x, timeoutMs = N * 1000L)
+awaitState(client, ConnectionState.x)            // default 5s timeout
+awaitState(client, ConnectionState.x, 10.seconds)
 ```
+
+For channels: `awaitChannelState(channel, ChannelState.attached)`.
 
 ### Timer control
 
-| Pseudocode | Kotlin |
-|---|---|
-| `enable_fake_timers()` | `val clock = FakeClock()` then `options.clock = clock` |
-| `ADVANCE_TIME(ms)` | `clock.advance(ms)` |
+```kotlin
+val fakeClock = FakeClock()
+val client = TestRealtimeClient {
+    autoConnect = false
+    install(mock)
+    enableFakeTimers(fakeClock)
+}
 
-After `clock.advance()`, always yield to let the SDK's timer callbacks dispatch:
+// Advance time — timer callbacks fire synchronously within advance()
+fakeClock.advance(30_000)
+// or
+fakeClock.advance(30.seconds)
+```
+
+After `fakeClock.advance()` inside a coroutine, yield to let any newly dispatched coroutines run:
 
 ```kotlin
-clock.advance(30_000)
+fakeClock.advance(30.seconds)
 yield()
 ```
 
@@ -133,82 +194,72 @@ yield()
 | `AWAIT expr FAILS WITH error` | `val error = assertFailsWith<AblyException> { expr }; assertEquals(..., error.errorInfo.code)` |
 | `ASSERT list.length == N` | `assertEquals(N, list.size)` |
 
-### Test naming
+### Test naming and annotation
 
+- KDoc comment immediately above `@Test` using `/** @UTS <spec-id> */` format
 - Method name: backtick string `` `<spec-id> - <description>` ``
-- Add `// UTS: <test-id>` comment on the line immediately above `@Test`
 - Use `runTest { }` from `kotlinx.coroutines.test` for all async tests
+
+```kotlin
+/**
+ * @UTS realtime/unit/RTN4a/some-description-0
+ */
+@Test
+fun `RTN4a - description of what is being tested`() = runTest {
+    ...
+}
+```
 
 ### File template
 
 ```kotlin
 package io.ably.lib.<category>.unit[.<subcategory>]
 
-import io.ably.lib.debug.DebugOptions
-import io.ably.lib.realtime.AblyRealtime           // or AblyRest for REST tests
+import io.ably.lib.TestRealtimeClient          // or TestRestClient
+import io.ably.lib.awaitChannelState           // if testing channels
+import io.ably.lib.awaitState
+import io.ably.lib.realtime.ChannelState       // if testing channels
 import io.ably.lib.realtime.ConnectionState
-import io.ably.lib.realtime.ConnectionStateListener
-import io.ably.lib.test.mock.FakeClock
-import io.ably.lib.test.mock.MockWebSocket          // or MockHttpClient
-import io.ably.lib.types.ProtocolMessage
+import io.ably.lib.test.mock.FakeClock         // if using fake timers
+import io.ably.lib.test.mock.MockWebSocket     // or MockHttpClient
+import io.ably.lib.types.ConnectionDetails
 import io.ably.lib.types.ErrorInfo
+import io.ably.lib.types.ProtocolMessage
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withTimeout
-import kotlinx.coroutines.yield
-import kotlin.coroutines.resume
 import kotlin.test.*
+import kotlin.time.Duration.Companion.seconds  // if using Duration literals
 
 class <Name>Test {
 
-    @AfterTest
-    fun tearDown() {
-        // close any clients opened in each test (declare them at test scope, not class scope)
-    }
-
-    // UTS: <test-id>
+    /**
+     * @UTS realtime/unit/<spec-id>/<test-slug>
+     */
     @Test
     fun `<spec-id> - <description>`() = runTest {
-        val mock = MockWebSocket()
-        val options = DebugOptions("appId.keyId:keySecret").apply {
+        val mock = MockWebSocket {
+            onConnectionAttempt = { conn ->
+                conn.respondWithSuccess(ProtocolMessage().apply {
+                    action = ProtocolMessage.Action.connected
+                    connectionId = "test-connection-id"
+                    connectionDetails = ConnectionDetails {
+                        connectionKey = "test-key"
+                        maxIdleInterval = 15_000L
+                        connectionStateTtl = 120_000L
+                    }
+                })
+            }
+        }
+        val client = TestRealtimeClient {
             autoConnect = false
-            mock.installOn(this)
+            install(mock)
         }
 
-        launch {
-            val conn = mock.awaitConnectionAttempt()
-            conn.respondWithSuccess()
-            mock.sendToClient(ProtocolMessage().apply {
-                action = ProtocolMessage.Action.connected
-                connectionId = "test-connection-id"
-                connectionKey = "test-key"
-            })
-        }
-
-        val client = AblyRealtime(options)
         client.connect()
         awaitState(client, ConnectionState.connected)
 
         assertEquals(ConnectionState.connected, client.connection.state)
         client.close()
-    }
-
-    private suspend fun awaitState(
-        client: AblyRealtime,
-        target: ConnectionState,
-        timeoutMs: Long = 5000
-    ) {
-        if (client.connection.state == target) return
-        withTimeout(timeoutMs) {
-            suspendCancellableCoroutine { cont ->
-                val listener = ConnectionStateListener { change ->
-                    if (change.current == target && cont.isActive) cont.resume(Unit)
-                }
-                client.connection.on(listener)
-                cont.invokeOnCancellation { client.connection.off(listener) }
-            }
-        }
     }
 }
 ```
@@ -224,14 +275,14 @@ class <Name>Test {
 Fix any compilation errors and recompile until clean. Common issues:
 - Missing imports (add them)
 - Method names differ from what you read in the mock files (use the exact names you read)
-- `Scheduled` is a top-level class in `FakeClock`, not nested inside `FakeNamedTimer`
+- `ErrorInfo` constructor arg order is `(message, statusCode, code)` — not `(code, statusCode, message)`
 
 ---
 
 ## Step 6 — Run tests
 
 ```bash
-./gradlew :uts:test --tests "<package>.<ClassName>Test"
+./gradlew :uts:test --tests "<package>.<ClassName>"
 ```
 
 Handle test failures:

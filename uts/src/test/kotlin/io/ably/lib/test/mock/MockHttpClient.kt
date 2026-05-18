@@ -51,8 +51,4 @@ class MockHttpClient(private val config: HttpMockConfig = HttpMockConfig()) {
     }
 }
 
-fun installMockHttpClient(options: DebugOptions, init: HttpMockConfig.() -> Unit): MockHttpClient {
-    val mock = MockHttpClient(config = HttpMockConfig().apply(init))
-    mock.installOn(options)
-    return mock
-}
+fun MockHttpClient(init: HttpMockConfig.() -> Unit) = MockHttpClient(config = HttpMockConfig().apply(init))

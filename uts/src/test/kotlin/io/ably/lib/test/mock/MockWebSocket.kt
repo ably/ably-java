@@ -3,6 +3,7 @@ package io.ably.lib.test.mock
 import io.ably.lib.debug.DebugOptions
 import io.ably.lib.network.WebSocketEngineFactory
 import io.ably.lib.network.WebSocketListener
+import io.ably.lib.types.ConnectionDetails
 import io.ably.lib.types.ProtocolMessage
 import io.ably.lib.util.Serialisation
 import kotlinx.coroutines.Dispatchers
@@ -140,9 +141,17 @@ private class EventTrackingPendingConnection(
     }
 }
 
-fun installMockWebSocket(options: DebugOptions, init: WebSocketMockConfig.() -> Unit): MockWebSocket {
-  val mock = MockWebSocket(config = WebSocketMockConfig().apply(init))
-  mock.installOn(options)
-  return mock
-}
+fun MockWebSocket(init: WebSocketMockConfig.() -> Unit): MockWebSocket = MockWebSocket(config = WebSocketMockConfig().apply(init))
+
+/** Pre-built CONNECTED message suitable for most unit tests. */
+val CONNECTED_MESSAGE: ProtocolMessage
+  get() = ProtocolMessage().apply {
+    action = ProtocolMessage.Action.connected
+    connectionId = "test-connection-id"
+    connectionDetails = ConnectionDetails {
+      connectionKey = "test-connection-key"
+      connectionStateTtl = 120_000L
+      maxIdleInterval = 15_000L
+    }
+  }
 
