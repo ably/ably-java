@@ -11,6 +11,7 @@ internal class DefaultPendingConnection(
     override val host: String,
     override val port: Int,
     override val tls: Boolean,
+    override val queryParams: Map<String, String>,
     private val listener: WebSocketListener,
     private val onConnected: (WebSocketListener) -> Unit = {},
 ) : PendingConnection {

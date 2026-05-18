@@ -44,10 +44,10 @@ internal class MockWebSocketClient(
     private val onClientClose: (Int, String) -> Unit,
 ) : WebSocketClient {
     override fun connect() {
-        val uri = URI(url.substringBefore('?'))
+        val uri = URI(url)
         val tls = uri.scheme == "wss"
         val port = if (uri.port == -1) (if (tls) 443 else 80) else uri.port
-        onConnect(DefaultPendingConnection(uri.host, port, tls, listener, onConnected))
+        onConnect(DefaultPendingConnection(uri.host, port, tls, parseQueryString(uri.rawQuery), listener, onConnected))
     }
 
     override fun close() {}

@@ -216,9 +216,11 @@ class ConnectionRecoveryTest {
   fun `RTN16k - recover option adds recover query param to WebSocket URL`() = runTest {
     val recoveryKeyJson = RecoveryKeyContext("recovered-key-xyz", 5, emptyMap()).encode()
 
+    val capturedQueryParams = mutableListOf<Map<String, String>>()
     var connectAttempt = 0
     val mock = MockWebSocket {
       onConnectionAttempt = { conn ->
+        capturedQueryParams += conn.queryParams
         val key = if (connectAttempt++ == 0) "new-key-after-recovery" else "resumed-key"
         conn.respondWithSuccess(ProtocolMessage().apply {
           action = ProtocolMessage.Action.connected
@@ -243,16 +245,10 @@ class ConnectionRecoveryTest {
     mock.simulateDisconnect()
     awaitState(client, ConnectionState.connected)
 
-    // NOTE: PendingConnection does not expose URL query params (host/port/tls only).
-    // The following assertions require URL inspection which is not available in the current mock.
-    // They are verified only when RUN_DEVIATIONS is set (treated as mock limitation, not SDK deviation).
-    if (System.getenv("RUN_DEVIATIONS") != null) {
-      // ASSERT captured_connection_attempts[0].url.query_params["recover"] == "recovered-key-xyz"
-      // ASSERT "resume" NOT IN captured_connection_attempts[0].url.query_params
-      // ASSERT captured_connection_attempts[1].url.query_params["resume"] == "new-key-after-recovery"
-      // ASSERT "recover" NOT IN captured_connection_attempts[1].url.query_params
-      fail("URL query param assertions require extending PendingConnection with a url field")
-    }
+    assertEquals("recovered-key-xyz", capturedQueryParams[0]["recover"])
+    assertNull(capturedQueryParams[0]["resume"])
+    assertEquals("new-key-after-recovery", capturedQueryParams[1]["resume"])
+    assertNull(capturedQueryParams[1]["recover"])
 
     client.close()
   }
@@ -317,8 +313,10 @@ class ConnectionRecoveryTest {
    */
   @Test
   fun `RTN16f1 - Malformed recoveryKey logs error and connects normally`() = runTest {
+    var capturedQueryParams: Map<String, String>? = null
     val mock = MockWebSocket {
       onConnectionAttempt = { conn ->
+        capturedQueryParams = conn.queryParams
         conn.respondWithSuccess(ProtocolMessage().apply {
           action = ProtocolMessage.Action.connected
           connectionId = "fresh-conn"
@@ -342,14 +340,8 @@ class ConnectionRecoveryTest {
     assertEquals(ConnectionState.connected, client.connection.state)
     assertEquals("fresh-conn", client.connection.id)
     assertEquals("fresh-key", client.connection.key)
-
-    // NOTE: PendingConnection does not expose URL query params.
-    // The assertions below verify no recover/resume params were sent but require URL access.
-    if (System.getenv("RUN_DEVIATIONS") != null) {
-      // ASSERT "recover" NOT IN captured_connection_attempts[0].url.query_params
-      // ASSERT "resume" NOT IN captured_connection_attempts[0].url.query_params
-      fail("URL query param assertions require extending PendingConnection with a url field")
-    }
+    assertNull(capturedQueryParams!!["recover"])
+    assertNull(capturedQueryParams!!["resume"])
 
     client.close()
   }

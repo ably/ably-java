@@ -34,7 +34,8 @@ internal class MockHttpCall(
         val url = request.url
         val tls = url.protocol == "https"
         val port = if (url.port != -1) url.port else if (tls) 443 else 80
-        onConnect(DefaultHttpPendingConnection(url.host, port, tls, cd))
+        val queryParams = parseQueryString(url.query)
+        onConnect(DefaultHttpPendingConnection(url.host, port, tls, queryParams, cd))
         cd.await()
 
         // Phase 2 — request
@@ -53,6 +54,7 @@ internal class DefaultHttpPendingConnection(
     override val host: String,
     override val port: Int,
     override val tls: Boolean,
+    override val queryParams: Map<String, String>,
     private val deferred: CompletableDeferred<Unit>,
 ) : PendingConnection {
     override fun respondWithSuccess() { deferred.complete(Unit) }

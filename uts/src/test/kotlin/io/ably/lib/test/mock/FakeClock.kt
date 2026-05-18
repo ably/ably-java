@@ -1,6 +1,5 @@
 package io.ably.lib.test.mock
 
-import io.ably.lib.debug.DebugOptions
 import io.ably.lib.util.Clock
 import io.ably.lib.util.NamedTimer
 import io.ably.lib.util.TimerInstance
