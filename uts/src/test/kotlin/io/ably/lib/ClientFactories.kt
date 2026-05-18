@@ -8,6 +8,10 @@ import io.ably.lib.test.mock.MockHttpClient
 import io.ably.lib.test.mock.MockWebSocket
 
 class ClientOptionsBuilder : DebugOptions("appId.keyId:keySecret") {
+    init {
+        useBinaryProtocol = false
+    }
+
     fun install(mock: MockWebSocket) = mock.installOn(this)
     fun install(mock: MockHttpClient) = mock.installOn(this)
 

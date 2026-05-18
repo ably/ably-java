@@ -121,6 +121,28 @@ val mockHttp = MockHttpClient { onRequest = { req -> req.respondWith(200, body) 
 val client = TestRestClient { install(mockHttp) }
 ```
 
+### Inspecting outgoing frames (client → server)
+
+`ClientOptionsBuilder` sets `useBinaryProtocol = false`, so the SDK sends JSON text frames. Every outgoing frame is captured as `MockEvent.MessageFromClient` and queued in `awaitNextMessageFromClient()`.
+
+To assert on a message the client sent:
+
+```kotlin
+// After triggering the SDK action (e.g. attach):
+channelOne.attach()
+val msg = mock.awaitNextMessageFromClient()
+assertEquals(ProtocolMessage.Action.attach, msg.action)
+assertEquals("channel-one", msg.channel)
+assertEquals("expected-serial", msg.channelSerial)
+
+// Or filter the full event log when order doesn't matter:
+val sent = mock.events
+    .filterIsInstance<MockEvent.MessageFromClient>()
+    .firstOrNull { it.message.action == ProtocolMessage.Action.attach && it.message.channel == "channel-one" }
+assertNotNull(sent)
+assertEquals("expected-serial", sent!!.message.channelSerial)
+```
+
 ### Mock method reference
 
 | Pseudocode | Kotlin |

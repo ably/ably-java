@@ -5,6 +5,7 @@ import io.ably.lib.network.WebSocketEngineFactory
 import io.ably.lib.network.WebSocketListener
 import io.ably.lib.types.ConnectionDetails
 import io.ably.lib.types.ProtocolMessage
+import io.ably.lib.types.ProtocolSerializer
 import io.ably.lib.util.Serialisation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -61,6 +62,18 @@ class MockWebSocket(config: WebSocketMockConfig = WebSocketMockConfig()) {
         },
         onBinaryFrame = { bytes ->
             config.onBinaryDataFrame?.invoke(bytes)
+            // The SDK always sends byte[] frames (even for JSON encoding). Try JSON first
+            // (useBinaryProtocol = false), fall back to msgpack (useBinaryProtocol = true).
+            val decoded = runCatching {
+                Serialisation.gson.fromJson(String(bytes, Charsets.UTF_8), ProtocolMessage::class.java)
+            }.getOrElse {
+                runCatching { ProtocolSerializer.readMsgpack(bytes) }.getOrNull()
+            }
+            if (decoded != null) {
+                _events.add(MockEvent.MessageFromClient(decoded))
+                val handler = config.onMessageFromClient
+                if (handler != null) handler(decoded) else _messagesFromClient.trySend(decoded)
+            }
         },
         onClientClose = { code, reason ->
             val event = MockEvent.ClientClose(code, reason)

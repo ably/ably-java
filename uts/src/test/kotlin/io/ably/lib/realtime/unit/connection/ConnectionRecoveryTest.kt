@@ -406,14 +406,10 @@ class ConnectionRecoveryTest {
     assertEquals(ChannelState.initialized, channelUnicode.state)
 
     channelOne.attach()
-
-    // NOTE: MockEvent does not capture outgoing WS frames (no ClientFrame event type).
-    // The assertion that the ATTACH message includes channelSerial="serial-1-abc" requires
-    // outgoing frame inspection and is gated below.
-    if (System.getenv("RUN_DEVIATIONS") != null) {
-      // ASSERT sent ATTACH frame for "channel-one" has channelSerial == "serial-1-abc"
-      fail("Outgoing WS frame inspection requires a ClientFrame event type in MockEvent")
-    }
+    val attachMessage = mock.awaitNextMessageFromClient()
+    assertEquals(ProtocolMessage.Action.attach, attachMessage.action)
+    assertEquals("channel-one", attachMessage.channel)
+    assertEquals("serial-1-abc", attachMessage.channelSerial)
 
     mock.sendToClient(ProtocolMessage().apply {
       action = ProtocolMessage.Action.attached
