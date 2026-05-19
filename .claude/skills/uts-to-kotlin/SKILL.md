@@ -3,15 +3,17 @@ description: "Translate a UTS pseudocode test spec into Kotlin tests in the uts 
 allowed-tools: Bash, Read, Edit, Write
 ---
 
-You are translating a UTS pseudocode test spec file into a runnable Kotlin test in the `uts` module. Follow these steps in order.
+Translate the UTS pseudocode test spec at `$ARGUMENTS` into a runnable Kotlin test in the `uts` module.
+
+Reference: [Writing Derived Tests](https://github.com/ably/specification/blob/main/uts/docs/writing-derived-tests.md)
 
 ---
 
 ## Step 1 — Read the spec
 
 Read the file at `$ARGUMENTS`. Identify:
-- All test cases (each has an ID like `RTN4a`, `RSC1`, etc. and a description)
-- The protocol/transport used (WebSocket for Realtime, HTTP for REST)
+- All test cases — each has a structured ID like `realtime/unit/RSA4c2/callback-error-connecting-disconnected-0` and a description
+- The protocol used (WebSocket for Realtime, HTTP for REST)
 - Any timer usage (`enable_fake_timers`, `ADVANCE_TIME`)
 
 ---
@@ -110,7 +112,6 @@ val refuseJob = launch {
     repeat(10) {
         fakeClock.advance(2.seconds)
         mockWs.awaitConnectionAttempt().respondWithRefused()
-        ...
     }
 }
 ```
@@ -121,7 +122,7 @@ val mockHttp = MockHttpClient { onRequest = { req -> req.respondWith(200, body) 
 val client = TestRestClient { install(mockHttp) }
 ```
 
-### Inspecting outgoing frames (client → server)
+### Inspecting outgoing frames
 
 `ClientOptionsBuilder` sets `useBinaryProtocol = false`, so the SDK sends JSON text frames. Every outgoing frame is captured as `MockEvent.MessageFromClient` and queued in `awaitNextMessageFromClient()`.
 
@@ -147,8 +148,8 @@ assertEquals("expected-serial", sent!!.message.channelSerial)
 
 | Pseudocode | Kotlin |
 |---|---|
-| `conn.respond_with_success()` | `conn.respondWithSuccess()` (opens socket only) |
-| `conn.respond_with_success(msg)` | `conn.respondWithSuccess(msg)` (opens socket + delivers message) |
+| `conn.respond_with_success()` | `conn.respondWithSuccess()` |
+| `conn.respond_with_success(msg)` | `conn.respondWithSuccess(msg)` |
 | `conn.respond_with_refused()` | `conn.respondWithRefused()` |
 | `conn.respond_with_timeout()` | `conn.respondWithTimeout()` |
 | `conn.respond_with_dns_error()` | `conn.respondWithDnsError()` |
@@ -164,16 +165,16 @@ assertEquals("expected-serial", sent!!.message.channelSerial)
 |---|---|
 | `ProtocolMessage(action: CONNECTED, ...)` | `ProtocolMessage().apply { action = ProtocolMessage.Action.connected; ... }` |
 | `CONNECTED` / `DISCONNECTED` / `ERROR` / `HEARTBEAT` / `ATTACH` / `DETACHED` | `.connected` / `.disconnected` / `.error` / `.heartbeat` / `.attach` / `.detached` |
-| `ErrorInfo(code: X, statusCode: Y, message: "...")` | `ErrorInfo("...", Y, X)` — note arg order: message, statusCode, code |
+| `ErrorInfo(code: X, statusCode: Y, message: "...")` | `ErrorInfo("...", Y, X)` — arg order: message, statusCode, code |
 | `ConnectionDetails(connectionKey: ..., maxIdleInterval: ..., connectionStateTtl: ...)` | `ConnectionDetails { connectionKey = "..."; maxIdleInterval = ...; connectionStateTtl = ... }` |
 | `ConnectionState.connected` etc. | `ConnectionState.connected`, `.disconnected`, `.suspended`, `.failed`, `.connecting`, `.closing`, `.closed` |
 
 ### Awaiting state
 
-`AWAIT_STATE client.connection.state == ConnectionState.X` → use the top-level `awaitState()` helper from `io.ably.lib`:
+`AWAIT_STATE client.connection.state == ConnectionState.X` → use the top-level `awaitState()` helper:
 
 ```kotlin
-awaitState(client, ConnectionState.x)            // default 5s timeout
+awaitState(client, ConnectionState.x)             // default 5s timeout
 awaitState(client, ConnectionState.x, 10.seconds)
 ```
 
@@ -195,7 +196,7 @@ fakeClock.advance(30_000)
 fakeClock.advance(30.seconds)
 ```
 
-After `fakeClock.advance()` inside a coroutine, yield to let any newly dispatched coroutines run:
+After `fakeClock.advance()` inside a coroutine, yield to let newly dispatched coroutines run:
 
 ```kotlin
 fakeClock.advance(30.seconds)
@@ -295,9 +296,9 @@ class <Name>Test {
 ```
 
 Fix any compilation errors and recompile until clean. Common issues:
-- Missing imports (add them)
-- Method names differ from what you read in the mock files (use the exact names you read)
-- `ErrorInfo` constructor arg order is `(message, statusCode, code)` — not `(code, statusCode, message)`
+- Missing imports
+- Method names differ from what you read in the mock files (use the exact names from Step 3)
+- `ErrorInfo` constructor arg order is `(message, statusCode, code)`
 
 ---
 
@@ -307,17 +308,49 @@ Fix any compilation errors and recompile until clean. Common issues:
 ./gradlew :uts:test --tests "<package>.<ClassName>"
 ```
 
-Handle test failures:
+Handle test failures using this decision tree (see [reference doc](https://github.com/ably/specification/blob/main/uts/docs/writing-derived-tests.md) for full detail):
 
-1. **UTS spec error** (pseudocode itself is wrong): fix the test to match what the spec intends, add a `// NOTE: spec pseudocode had X, corrected to Y` comment.
-2. **Translation error** (you misread the pseudocode): fix silently.
-3. **SDK deviation** (confirmed against `uts/spec/features.md` — SDK does not comply):
-   - Wrap the failing assertion in an env gate:
-     ```kotlin
-     if (System.getenv("RUN_DEVIATIONS") != null) {
-         assertEquals(specCorrectValue, actualValue)
-     }
-     ```
-   - Add a comment explaining the deviation.
-   - Append an entry to `uts/src/test/kotlin/io/ably/lib/deviations.md`:
-     - Spec point, what spec requires, what SDK does, which test is affected.
+```
+Test fails
+  |
+  +-- Does UTS spec match features spec?
+  |     NO  → fix test, record UTS spec error in deviations file
+  |     YES
+  |       +-- Does test accurately translate the UTS spec?
+  |             NO  → fix the test (no deviation entry needed)
+  |             YES → SDK deviation — adapt test, record in deviations file
+```
+
+### Deviation patterns
+
+**Env-gated skip (preferred)** — test contains spec-correct assertions but is skipped by default:
+
+```kotlin
+/**
+ * @UTS realtime/unit/RSA4c2/callback-error-connecting-disconnected-0
+ */
+@Test
+fun `RSA4c2 - callback error connecting disconnected`() = runTest {
+    // DEVIATION: see deviations.md
+    if (System.getenv("RUN_DEVIATIONS") != null) return@runTest
+
+    // ... spec-correct setup and assertions ...
+}
+```
+
+**Adapted assertion** — when you still want to assert on the SDK's actual behaviour to prevent regressions:
+
+```kotlin
+// DEVIATION: spec requires error code 40106, SDK returns 40160 — see deviations.md
+assertEquals(40160, error.errorInfo.code)
+```
+
+**Never use the accommodate-both pattern** (accept either spec or SDK behaviour). Every test must assert either spec behaviour or the SDK's actual behaviour — never both at once.
+
+### Deviations file
+
+Append to `uts/src/test/kotlin/io/ably/lib/deviations.md`. Each entry needs:
+1. The spec point (e.g. `RSA4c2`)
+2. What the spec says
+3. What the SDK does
+4. Which test is affected and how it was adapted
