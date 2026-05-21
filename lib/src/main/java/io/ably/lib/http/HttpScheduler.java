@@ -291,7 +291,7 @@ public class HttpScheduler implements AutoCloseable {
             long remaining = unit.toMillis(timeout), deadline = clock.currentTimeMillis() + remaining;
             synchronized(this) {
                 while(remaining > 0) {
-                    wait(remaining);
+                    clock.waitOn(this, remaining);
                     if(isDone) { break; }
                     remaining = deadline - clock.currentTimeMillis();
                 }

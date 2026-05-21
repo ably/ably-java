@@ -4,9 +4,9 @@ import io.ably.lib.network.FailedConnectionException
 import io.ably.lib.network.HttpBody
 import io.ably.lib.network.HttpRequest
 import io.ably.lib.network.HttpResponse
+import kotlin.time.Duration
 import kotlinx.coroutines.CompletableDeferred
 import java.net.SocketTimeoutException
-import java.time.Duration
 
 internal class DefaultPendingRequest(
     private val request: HttpRequest,
@@ -34,7 +34,7 @@ internal class DefaultPendingRequest(
 
     override fun respondWithDelay(delay: Duration, status: Int, body: Any) {
         Thread {
-            Thread.sleep(delay.toMillis())
+            Thread.sleep(delay.inWholeMilliseconds)
             respondWith(status, body)
         }.apply { isDaemon = true }.start()
     }

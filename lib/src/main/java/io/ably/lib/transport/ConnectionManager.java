@@ -995,7 +995,7 @@ public class ConnectionManager implements ConnectListener {
             boolean pending;
             synchronized(heartbeatWaiters) {
                 try {
-                    heartbeatWaiters.wait(HEARTBEAT_TIMEOUT);
+                    clock.waitOn(heartbeatWaiters, HEARTBEAT_TIMEOUT);
                 } catch (InterruptedException ie) {
                 }
                 pending = clear();
@@ -1506,7 +1506,7 @@ public class ConnectionManager implements ConnectListener {
             if(timeout == 0) {
                 wait();
             } else {
-                wait(timeout);
+                clock.waitOn(this, timeout);
             }
         } catch (InterruptedException e) {}
     }

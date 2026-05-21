@@ -1,6 +1,7 @@
 package io.ably.lib.test.mock
 
-import java.time.Duration
+import kotlin.time.Duration
+
 
 /**
  * An in-flight HTTP request that the test must resolve.

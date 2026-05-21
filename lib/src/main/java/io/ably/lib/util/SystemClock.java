@@ -31,6 +31,11 @@ public class SystemClock implements Clock {
         };
     }
 
+    @Override
+    public void waitOn(Object target, long timeout) throws InterruptedException {
+        target.wait(timeout);
+    }
+
     public static Clock clockFrom(ClientOptions opts) {
         if (opts instanceof DebugOptions) {
             Clock c = ((DebugOptions) opts).clock;

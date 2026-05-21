@@ -15,6 +15,7 @@ import kotlin.time.Duration
 class FakeClock(initialTimeMs: Long = 0L) : Clock {
     @Volatile private var time = initialTimeMs
     private val timers = mutableMapOf<String, FakeNamedTimer>()
+    private val waiters = mutableListOf<Waiter>()
 
     override fun currentTimeMillis() = time
 
@@ -24,10 +25,29 @@ class FakeClock(initialTimeMs: Long = 0L) : Clock {
         return t
     }
 
+    @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
+    override fun waitOn(target: Any, timeout: Long) {
+        synchronized(waiters) {
+            waiters.add(Waiter(target as Object, time + timeout))
+        }
+        (target as Object).wait()
+    }
+
     /** Advance virtual time by [ms] milliseconds, firing any timers that become due. */
     fun advance(ms: Long) {
         time += ms
         timers.values.forEach { it.fireDue(time) }
+        val due = synchronized(waiters) {
+            waiters.filter { it.fireAt <= time }.also {
+                waiters.removeIf { it.fireAt <= time }
+            }
+        }
+        // notifyAll() requires holding the target's monitor.
+        due.forEach { waiter ->
+            synchronized(waiter.target) {
+                waiter.target.notifyAll()
+            }
+        }
     }
 
     /** Advance virtual time by [time], firing any timers that become due. */
@@ -60,4 +80,7 @@ class FakeClock(initialTimeMs: Long = 0L) : Clock {
     }
 
     class Scheduled(val task: TimerTask, val fireAt: Long)
+
+    @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
+    class Waiter(val target: Object, val fireAt: Long)
 }
