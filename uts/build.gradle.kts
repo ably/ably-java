@@ -11,6 +11,8 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(libs.coroutine.core)
     testImplementation(libs.coroutine.test)
+    testImplementation(libs.ktor.client.core)
+    testImplementation(libs.ktor.client.cio)
 }
 
 tasks.withType<Test>().configureEach {

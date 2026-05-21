@@ -7,11 +7,13 @@ import io.ably.lib.realtime.ChannelStateListener
 import io.ably.lib.realtime.ConnectionState
 import io.ably.lib.realtime.ConnectionStateListener
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlin.coroutines.resume
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 suspend fun awaitState(
@@ -33,6 +35,26 @@ suspend fun awaitState(
         if (client.connection.state == target && cont.isActive) cont.resume(Unit)
         cont.invokeOnCancellation { client.connection.off(listener) }
       }
+    }
+  }
+}
+
+/**
+ * Suspends until [condition] returns `true`, polling every [interval], or fails with a
+ * [kotlinx.coroutines.TimeoutCancellationException] once [timeout] elapses.
+ *
+ * Runs on a real-thread dispatcher so [timeout] measures wall-clock time (not virtual
+ * `kotlinx.coroutines.test` time) — use this for integration tests that wait on real network or
+ * proxy state, e.g. `pollUntil { authCallbackCount.get() > original }`.
+ */
+suspend fun pollUntil(
+  timeout: Duration = 15.seconds,
+  interval: Duration = 100.milliseconds,
+  condition: suspend () -> Boolean,
+) {
+  withContext(Dispatchers.Default.limitedParallelism(1)) {
+    withTimeout(timeout) {
+      while (!condition()) delay(interval)
     }
   }
 }
