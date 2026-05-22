@@ -30,7 +30,7 @@ internal class DefaultLiveMap private constructor(
   objectId: String,
   private val realtimeObjects: DefaultRealtimeObjects,
   internal val semantics: ObjectsMapSemantics = ObjectsMapSemantics.LWW
-) : LiveMap, BaseRealtimeObject(objectId, ObjectType.Map, SystemClock.clockFrom(realtimeObjects.adapter.clientOptions)) {
+) : LiveMap, BaseRealtimeObject(objectId, ObjectType.Map, realtimeObjects.clock) {
 
   override val tag = "LiveMap"
 

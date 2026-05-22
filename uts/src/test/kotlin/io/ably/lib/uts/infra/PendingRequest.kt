@@ -1,5 +1,6 @@
-package io.ably.lib.test.mock
+package io.ably.lib.uts.infra
 
+import java.net.URL
 import kotlin.time.Duration
 
 
@@ -9,7 +10,7 @@ import kotlin.time.Duration
  * Received via [MockHttpClient.awaitRequest] or [HttpMockConfig.onRequest].
  */
 interface PendingRequest {
-    val url: java.net.URL
+    val url: URL
     val method: String
     val headers: Map<String, List<String>>
     val body: ByteArray

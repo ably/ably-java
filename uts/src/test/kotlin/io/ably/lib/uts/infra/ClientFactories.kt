@@ -1,11 +1,8 @@
-package io.ably.lib
+package io.ably.lib.uts.infra
 
 import io.ably.lib.debug.DebugOptions
 import io.ably.lib.realtime.AblyRealtime
 import io.ably.lib.rest.AblyRest
-import io.ably.lib.test.mock.FakeClock
-import io.ably.lib.test.mock.MockHttpClient
-import io.ably.lib.test.mock.MockWebSocket
 
 class ClientOptionsBuilder : DebugOptions("appId.keyId:keySecret") {
     init {

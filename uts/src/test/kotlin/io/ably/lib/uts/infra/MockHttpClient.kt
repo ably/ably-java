@@ -1,4 +1,4 @@
-package io.ably.lib.test.mock
+package io.ably.lib.uts.infra
 
 import io.ably.lib.debug.DebugOptions
 import io.ably.lib.network.HttpEngine

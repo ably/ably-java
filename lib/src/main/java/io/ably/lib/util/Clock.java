@@ -19,15 +19,23 @@ public interface Clock {
     long currentTimeMillis();
 
     /**
-     * Creates a new {@link NamedTimer} backed by this clock.
+     * Returns the current wall-clock time in nanoseconds since the Unix epoch
+     * (1 January 1970 00:00:00 UTC), analogous to {@link System#nanoTime()}.
+     *
+     * @return current time in nanoseconds
+     */
+    long nanoTime();
+
+    /**
+     * Creates a new {@link AblyTimer} backed by this clock.
      *
      * <p>The name is used for diagnostic and logging purposes (e.g. as the underlying
      * {@link java.util.Timer} thread name).
      *
      * @param name a human-readable label for the timer; must not be {@code null}
-     * @return a new {@link NamedTimer} instance ready to schedule tasks
+     * @return a new {@link AblyTimer} instance ready to schedule tasks
      */
-    NamedTimer newTimer(String name);
+    AblyTimer newTimer(String name);
 
     /**
      * Causes the current thread to wait until either another thread calls

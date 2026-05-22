@@ -923,7 +923,7 @@ public class Auth {
         if(request.timestamp == 0) {
             if(options.queryTime) {
                 long oldNanoTimeDelta = nanoTimeDelta;
-                long currentNanoTimeDelta = clock.currentTimeMillis() - System.nanoTime()/(1000*1000);
+                long currentNanoTimeDelta = clock.currentTimeMillis() - clock.nanoTime()/(1000*1000);
 
                 if (timeDelta != Long.MAX_VALUE) {
                     /* system time changed by more than 500ms since last time? */
@@ -1053,7 +1053,7 @@ public class Auth {
     Auth(AblyBase ably, ClientOptions options) throws AblyException {
         this.ably = ably;
         this.clock = SystemClock.clockFrom(options);
-        this.nanoTimeDelta = clock.currentTimeMillis() - System.nanoTime()/(1000*1000);
+        this.nanoTimeDelta = clock.currentTimeMillis() - clock.nanoTime()/(1000*1000);
         authOptions = options;
         tokenParams = options.defaultTokenParams != null ?
                 options.defaultTokenParams : new TokenParams();

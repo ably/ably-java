@@ -50,7 +50,7 @@ import io.ably.lib.util.CollectionUtils;
 import io.ably.lib.util.EventEmitter;
 import io.ably.lib.util.Listeners;
 import io.ably.lib.util.Log;
-import io.ably.lib.util.NamedTimer;
+import io.ably.lib.util.AblyTimer;
 import io.ably.lib.util.ReconnectionStrategy;
 import io.ably.lib.util.StringUtils;
 import io.ably.lib.util.SystemClock;
@@ -510,18 +510,18 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     }
 
     /* Timer for attach operation */
-    private NamedTimer attachTimer;
+    private AblyTimer attachTimer;
 
     /* Timer for reattaching if attach failed */
-    private NamedTimer reattachTimer;
+    private AblyTimer reattachTimer;
 
     /**
      * Cancel attach/reattach timers
      */
     synchronized private void clearAttachTimers() {
-        NamedTimer[] timers = new NamedTimer[]{attachTimer, reattachTimer};
+        AblyTimer[] timers = new AblyTimer[]{attachTimer, reattachTimer};
         attachTimer = reattachTimer = null;
-        for (NamedTimer t: timers) {
+        for (AblyTimer t: timers) {
             if (t != null) {
                 t.cancel();
             }
@@ -538,7 +538,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      */
     synchronized private void attachWithTimeout(final boolean forceReattach, final CompletionListener listener, ErrorInfo reattachmentReason) {
         checkChannelIsNotReleased();
-        NamedTimer currentAttachTimer;
+        AblyTimer currentAttachTimer;
         try {
             currentAttachTimer = clock.newTimer("attach-timer");
         } catch(Throwable t) {
@@ -572,7 +572,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             return;
         }
 
-        final NamedTimer inProgressTimer = currentAttachTimer;
+        final AblyTimer inProgressTimer = currentAttachTimer;
         attachTimer.schedule(
                 new TimerTask() {
                     @Override
@@ -602,7 +602,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * try to attach the channel
      */
     synchronized private void reattachAfterTimeout() {
-        NamedTimer currentReattachTimer;
+        AblyTimer currentReattachTimer;
         try {
             currentReattachTimer = clock.newTimer("reattach-timer");
         } catch(Throwable t) {
@@ -614,7 +614,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         this.retryAttempt++;
         int retryDelay = ReconnectionStrategy.getRetryTime(ably.options.channelRetryTimeout, retryAttempt);
 
-        final NamedTimer inProgressTimer = currentReattachTimer;
+        final AblyTimer inProgressTimer = currentReattachTimer;
         reattachTimer.schedule(new TimerTask() {
             @Override
             public void run() {
@@ -641,7 +641,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      */
     synchronized private void detachWithTimeout(final CompletionListener listener) {
         final ChannelState originalState = state;
-        NamedTimer currentDetachTimer;
+        AblyTimer currentDetachTimer;
         try {
             currentDetachTimer = released.get() ? null : clock.newTimer("detach-timer");
         } catch(Throwable t) {
@@ -677,7 +677,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             return;
         }
 
-        final NamedTimer inProgressTimer = currentDetachTimer;
+        final AblyTimer inProgressTimer = currentDetachTimer;
         attachTimer.schedule(new TimerTask() {
             @Override
             public void run() {

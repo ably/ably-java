@@ -1,4 +1,4 @@
-package io.ably.lib.test.mock
+package io.ably.lib.uts.infra
 
 import io.ably.lib.types.ProtocolMessage
 import java.net.URLDecoder

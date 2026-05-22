@@ -1,4 +1,4 @@
-package io.ably.lib.test.mock
+package io.ably.lib.uts.infra
 
 import io.ably.lib.network.EngineType
 import io.ably.lib.network.WebSocketClient
@@ -50,8 +50,11 @@ internal class MockWebSocketClient(
         onConnect(DefaultPendingConnection(uri.host, port, tls, parseQueryString(uri.rawQuery), listener, onConnected))
     }
 
-    override fun close() {}
-    override fun close(code: Int, reason: String) { onClientClose(code, reason) }
+    override fun close() = close(1000, "Normal closure")
+    override fun close(code: Int, reason: String) {
+      onClientClose(code, reason)
+      listener.onClose(code, reason)   // drive the SDK
+    }
     override fun cancel(code: Int, reason: String) { onClientClose(code, reason) }
     override fun send(message: ByteArray) { onBinaryFrame(message) }
     override fun send(message: String) { onTextFrame(message) }

@@ -15,9 +15,14 @@ public class SystemClock implements Clock {
     }
 
     @Override
-    public NamedTimer newTimer(String name) {
+    public long nanoTime() {
+        return System.nanoTime();
+    }
+
+    @Override
+    public AblyTimer newTimer(String name) {
         Timer jTimer = new Timer(name, true);
-        return new NamedTimer() {
+        return new AblyTimer() {
             @Override
             public TimerInstance schedule(TimerTask task, long delayMs) {
                 jTimer.schedule(task, delayMs);

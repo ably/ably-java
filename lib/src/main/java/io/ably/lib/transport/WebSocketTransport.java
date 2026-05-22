@@ -17,7 +17,7 @@ import io.ably.lib.types.ProtocolSerializer;
 import io.ably.lib.util.Clock;
 import io.ably.lib.util.ClientOptionsUtils;
 import io.ably.lib.util.Log;
-import io.ably.lib.util.NamedTimer;
+import io.ably.lib.util.AblyTimer;
 import io.ably.lib.util.SystemClock;
 import io.ably.lib.util.TimerInstance;
 
@@ -261,7 +261,7 @@ public class WebSocketTransport implements ITransport {
          * WsClient private members
          ***************************/
 
-        private final NamedTimer timer = clock.newTimer("activity-timer");
+        private final AblyTimer timer = clock.newTimer("activity-timer");
         private volatile TimerInstance activityTimerHandle = null;
         private volatile long lastActivityTime;
 

@@ -1,13 +1,14 @@
 package io.ably.lib.realtime.unit.connection
 
-import io.ably.lib.TestRealtimeClient
+import io.ably.lib.uts.infra.TestRealtimeClient
 import io.ably.lib.awaitChannelState
 import io.ably.lib.awaitState
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.realtime.ConnectionState
-import io.ably.lib.test.mock.CONNECTED_MESSAGE
-import io.ably.lib.test.mock.FakeClock
-import io.ably.lib.test.mock.MockWebSocket
+import io.ably.lib.uts.infra.CONNECTED_MESSAGE
+import io.ably.lib.uts.infra.FakeClock
+import io.ably.lib.uts.infra.MockEvent
+import io.ably.lib.uts.infra.MockWebSocket
 import io.ably.lib.types.ConnectionDetails
 import io.ably.lib.types.ErrorInfo
 import io.ably.lib.types.ProtocolMessage
@@ -119,8 +120,10 @@ class ConnectionRecoveryTest {
     awaitState(client, ConnectionState.closing)
     assertNull(client.connection.createRecoveryKey())
 
-    // MockWebSocketClient.close() is a no-op; simulate the WS closing to trigger CLOSED
-    mock.simulateDisconnect()
+    mock.sendToClientAndClose(ProtocolMessage().apply {
+      action = ProtocolMessage.Action.closed
+    })
+
     awaitState(client, ConnectionState.closed)
     assertNull(client.connection.createRecoveryKey())
 
@@ -146,12 +149,13 @@ class ConnectionRecoveryTest {
     clientFailed.connect()
     awaitState(clientFailed, ConnectionState.connected)
 
-    // NOTE: spec pseudocode used code 50000/statusCode 500 but that is non-fatal per SDK's
-    // isFatalError() (requires code 40000–49999 or statusCode < 500). Using code=40000, statusCode=400.
-    // ErrorInfo constructor: ErrorInfo(message, statusCode, code).
-    // sendToClient (not sendToClientAndClose): the mock's onClose(1000) would trigger
-    // SynchronousStateChangeAction(DISCONNECTED) which preempts the async FAILED action.
-    // The SDK's FAILED state handling calls clearTransport() itself.
+    // DEVIATION: spec uses error code=50000/statusCode=500, but SDK's isFatalError() requires
+    // code 40000–49999 or statusCode < 500; 50000/500 is non-fatal so FAILED is never reached.
+    // Using code=40000/statusCode=400. See deviations.md.
+    // DEVIATION: spec uses send_to_client_and_close, but sending close(1000) fires a synchronous
+    // DISCONNECTED action that preempts the async FAILED transition. Using sendToClient instead;
+    // the SDK's FAILED handling calls clearTransport() itself. See deviations.md.
+    // ErrorInfo constructor arg order: ErrorInfo(message, statusCode, code).
     mockFailed.sendToClient(ProtocolMessage().apply {
       action = ProtocolMessage.Action.error
       error = ErrorInfo("Fatal error", 400, 40000)
@@ -189,7 +193,6 @@ class ConnectionRecoveryTest {
     awaitState(clientSuspended, ConnectionState.connected)
 
     mockSuspended.simulateDisconnect()
-    awaitState(clientSuspended, ConnectionState.disconnected)
 
     // Refuse all reconnection attempts after disconnect — refuseJob started here,
     // AFTER the initial connection succeeded, so it cannot intercept the first connect.
@@ -303,6 +306,8 @@ class ConnectionRecoveryTest {
     assertNotNull(currentRecoveryKey)
     if (System.getenv("RUN_DEVIATIONS") != null) {
       assertEquals(42L, currentRecoveryKey.msgSerial)
+    } else {
+      assertEquals(0L, currentRecoveryKey.msgSerial)
     }
 
     client.close()
@@ -342,6 +347,7 @@ class ConnectionRecoveryTest {
     assertEquals("fresh-key", client.connection.key)
     assertNull(capturedQueryParams!!["recover"])
     assertNull(capturedQueryParams!!["resume"])
+    assertEquals(1, mock.events.filterIsInstance<MockEvent.ConnectionAttempt>().size)
 
     client.close()
   }

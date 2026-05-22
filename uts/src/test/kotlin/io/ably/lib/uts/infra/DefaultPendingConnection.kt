@@ -1,4 +1,4 @@
-package io.ably.lib.test.mock
+package io.ably.lib.uts.infra
 
 import io.ably.lib.network.WebSocketListener
 import io.ably.lib.types.ProtocolMessage
@@ -6,6 +6,7 @@ import io.ably.lib.util.Serialisation
 import java.io.IOException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
+import java.util.concurrent.Executors
 
 internal class DefaultPendingConnection(
     override val host: String,
@@ -15,6 +16,11 @@ internal class DefaultPendingConnection(
     private val listener: WebSocketListener,
     private val onConnected: (WebSocketListener) -> Unit = {},
 ) : PendingConnection {
+
+    private val deliveryExecutor = Executors.newSingleThreadExecutor { r ->
+        Thread(r, "mock-ws-delivery").apply { isDaemon = true }
+    }
+
     override fun respondWithSuccess() {
         listener.onOpen()
         onConnected(listener)
@@ -25,7 +31,7 @@ internal class DefaultPendingConnection(
         onConnected(listener)
         // Async delivery per spec: the library must store the WS reference before processing CONNECTED.
         val encoded = Serialisation.gson.toJson(message)
-        Thread { listener.onMessage(encoded) }.apply { isDaemon = true }.start()
+        deliveryExecutor.submit { listener.onMessage(encoded) }
     }
 
     override fun respondWithRefused() = listener.onError(IOException("Connection refused to $host:$port"))

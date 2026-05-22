@@ -13,7 +13,9 @@ import io.ably.lib.realtime.ChannelState
 import io.ably.lib.types.AblyException
 import io.ably.lib.types.ProtocolMessage
 import io.ably.lib.types.PublishResult
+import io.ably.lib.util.Clock
 import io.ably.lib.util.Log
+import io.ably.lib.util.SystemClock
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -361,3 +363,10 @@ internal class DefaultRealtimeObjects(internal val channelName: String, internal
     asyncScope.cancel(disposeReason) // cancel all ongoing callbacks
   }
 }
+
+/**
+ * Provides the default Clock instance for the DefaultRealtimeObjects.
+ * This Clock is derived from the system clock, utilizing the client options
+ * from the adapter configuration.
+ */
+internal val DefaultRealtimeObjects.clock get(): Clock = SystemClock.clockFrom(adapter.clientOptions)

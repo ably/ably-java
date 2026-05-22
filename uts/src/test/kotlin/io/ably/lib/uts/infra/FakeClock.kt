@@ -1,7 +1,7 @@
-package io.ably.lib.test.mock
+package io.ably.lib.uts.infra
 
 import io.ably.lib.util.Clock
-import io.ably.lib.util.NamedTimer
+import io.ably.lib.util.AblyTimer
 import io.ably.lib.util.TimerInstance
 import java.util.TimerTask
 import kotlin.time.Duration
@@ -14,13 +14,15 @@ import kotlin.time.Duration
  */
 class FakeClock(initialTimeMs: Long = 0L) : Clock {
     @Volatile private var time = initialTimeMs
-    private val timers = mutableMapOf<String, FakeNamedTimer>()
+    private val timers = mutableMapOf<String, FakeAblyTimer>()
     private val waiters = mutableListOf<Waiter>()
 
     override fun currentTimeMillis() = time
 
-    override fun newTimer(name: String): NamedTimer {
-        val t = FakeNamedTimer(name)
+    override fun nanoTime() = time * 1_000_000L
+
+    override fun newTimer(name: String): AblyTimer {
+        val t = FakeAblyTimer(name)
         timers[name] = t
         return t
     }
@@ -30,7 +32,7 @@ class FakeClock(initialTimeMs: Long = 0L) : Clock {
         synchronized(waiters) {
             waiters.add(Waiter(target as Object, time + timeout))
         }
-        (target as Object).wait()
+        (target as Object).wait(timeout)
     }
 
     /** Advance virtual time by [ms] milliseconds, firing any timers that become due. */
@@ -56,7 +58,7 @@ class FakeClock(initialTimeMs: Long = 0L) : Clock {
     /** Number of tasks currently scheduled on the named timer — useful for asserting retry state. */
     fun pendingTaskCount(timerName: String) = timers[timerName]?.pendingCount ?: 0
 
-    inner class FakeNamedTimer(val name: String) : NamedTimer {
+    inner class FakeAblyTimer(val name: String) : AblyTimer {
         private val pending = mutableListOf<Scheduled>()
         val pendingCount get() = pending.size
 

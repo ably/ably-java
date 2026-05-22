@@ -23,7 +23,7 @@ import kotlinx.coroutines.runBlocking
 internal class DefaultLiveCounter private constructor(
   objectId: String,
   private val realtimeObjects: DefaultRealtimeObjects,
-) : LiveCounter, BaseRealtimeObject(objectId, ObjectType.Counter, SystemClock.clockFrom(realtimeObjects.adapter.clientOptions)) {
+) : LiveCounter, BaseRealtimeObject(objectId, ObjectType.Counter, realtimeObjects.clock) {
 
   override val tag = "LiveCounter"
 
