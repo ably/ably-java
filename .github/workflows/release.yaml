@@ -7,6 +7,8 @@ jobs:
   run-on-release:
     runs-on: ubuntu-latest
     if: github.repository == 'ably/ably-java'
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
