@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
 
       - name: Set up the JDK
         uses: actions/setup-java@17f84c3641ba7b8f6deff6309fc4c864478f5d62 # v3
