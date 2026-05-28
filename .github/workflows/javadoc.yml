@@ -13,29 +13,31 @@ jobs:
       id-token: write
       deployments: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # v1
         with:
           aws-region: eu-west-2
           role-to-assume: arn:aws:iam::${{ secrets.ABLY_AWS_ACCOUNT_ID_SDK }}:role/ably-sdk-builds-ably-java
           role-session-name: "${{ github.run_id }}-${{ github.run_number }}"
 
       - name: Set up the JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@d9c87d481d55275bb5441eef3fe0e46805f9ef70 # v3
 
       - name: Build docs
         run: ./gradlew javadoc
 
       - name: Upload Documentation
-        uses: ably/sdk-upload-action@v2
+        uses: ably/sdk-upload-action@4e694297f208b72b5a9f6b1248a1556f19f821d6 # v2
         with:
           sourcePath: java/build/docs/javadoc
           githubToken: ${{ secrets.GITHUB_TOKEN }}
