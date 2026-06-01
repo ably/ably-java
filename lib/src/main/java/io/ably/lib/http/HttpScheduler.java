@@ -13,7 +13,9 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
+import io.ably.lib.util.Clock;
 import io.ably.lib.util.Log;
+import io.ably.lib.util.SystemClock;
 
 /**
  * HttpScheduler schedules HttpCore operations to an Executor, exposing a generic async API.
@@ -286,12 +288,12 @@ public class HttpScheduler implements AutoCloseable {
         }
         @Override
         public T get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-            long remaining = unit.toMillis(timeout), deadline = System.currentTimeMillis() + remaining;
+            long remaining = unit.toMillis(timeout), deadline = clock.currentTimeMillis() + remaining;
             synchronized(this) {
                 while(remaining > 0) {
-                    wait(remaining);
+                    clock.waitOn(this, remaining);
                     if(isDone) { break; }
-                    remaining = deadline - System.currentTimeMillis();
+                    remaining = deadline - clock.currentTimeMillis();
                 }
                 if(!isDone) {
                     throw new TimeoutException();
@@ -360,6 +362,7 @@ public class HttpScheduler implements AutoCloseable {
     protected HttpScheduler(HttpCore httpCore, CloseableExecutor executor) {
         this.httpCore = httpCore;
         this.executor = executor;
+        this.clock = SystemClock.clockFrom(httpCore.options);
     }
 
     @Override
@@ -446,6 +449,7 @@ public class HttpScheduler implements AutoCloseable {
 
     protected final CloseableExecutor executor;
     private final HttpCore httpCore;
+    private final Clock clock;
 
     protected static final String TAG = HttpScheduler.class.getName();
 

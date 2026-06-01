@@ -36,9 +36,11 @@ import io.ably.lib.types.Param;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolSerializer;
 import io.ably.lib.types.PublishResult;
+import io.ably.lib.util.Clock;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.PlatformAgentProvider;
 import io.ably.lib.util.ReconnectionStrategy;
+import io.ably.lib.util.SystemClock;
 import org.jetbrains.annotations.Nullable;
 
 public class ConnectionManager implements ConnectListener {
@@ -782,6 +784,7 @@ public class ConnectionManager implements ConnectListener {
 
     public ConnectionManager(final AblyRealtime ably, final Connection connection, final Channels channels, final PlatformAgentProvider platformAgentProvider, LiveObjectsPlugin liveObjectsPlugin) throws AblyException {
         this.ably = ably;
+        this.clock = SystemClock.clockFrom(ably.options);
         this.connection = connection;
         this.channels = channels;
         this.platformAgentProvider = platformAgentProvider;
@@ -992,7 +995,7 @@ public class ConnectionManager implements ConnectListener {
             boolean pending;
             synchronized(heartbeatWaiters) {
                 try {
-                    heartbeatWaiters.wait(HEARTBEAT_TIMEOUT);
+                    clock.waitOn(heartbeatWaiters, HEARTBEAT_TIMEOUT);
                 } catch (InterruptedException ie) {
                 }
                 pending = clear();
@@ -1447,7 +1450,7 @@ public class ConnectionManager implements ConnectListener {
         if(lastActivity == 0) {
             return false;
         }
-        long now = System.currentTimeMillis();
+        long now = clock.currentTimeMillis();
         long intervalSinceLastActivity = now - lastActivity;
         if(intervalSinceLastActivity > (maxIdleInterval + connectionStateTtl)) {
             /* RTN15g1, RTN15g2 Force a new connection if the previous one is stale;
@@ -1465,7 +1468,7 @@ public class ConnectionManager implements ConnectListener {
     }
 
     private synchronized void setSuspendTime() {
-        suspendTime = (System.currentTimeMillis() + connectionStateTtl);
+        suspendTime = (clock.currentTimeMillis() + connectionStateTtl);
     }
 
     /**
@@ -1490,7 +1493,7 @@ public class ConnectionManager implements ConnectListener {
     }
 
     private synchronized StateIndication checkSuspended(ErrorInfo reason) {
-        long currentTime = System.currentTimeMillis();
+        long currentTime = clock.currentTimeMillis();
         long timeToSuspend = suspendTime - currentTime;
         boolean suspendMode = timeToSuspend <= 0;
         Log.v(TAG, "checkSuspended: timeToSuspend = " + timeToSuspend + "ms; suspendMode = " + suspendMode);
@@ -1503,7 +1506,7 @@ public class ConnectionManager implements ConnectListener {
             if(timeout == 0) {
                 wait();
             } else {
-                wait(timeout);
+                clock.waitOn(this, timeout);
             }
         } catch (InterruptedException e) {}
     }
@@ -2015,6 +2018,7 @@ public class ConnectionManager implements ConnectListener {
      ******************/
 
     final AblyRealtime ably;
+    private final Clock clock;
     private final Channels channels;
     private final Connection connection;
     private final ITransport.Factory transportFactory;

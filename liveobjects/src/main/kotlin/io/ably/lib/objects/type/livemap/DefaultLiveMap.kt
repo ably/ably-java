@@ -17,6 +17,7 @@ import io.ably.lib.objects.type.map.LiveMapUpdate
 import io.ably.lib.objects.type.map.LiveMapValue
 import io.ably.lib.objects.type.noOp
 import io.ably.lib.util.Log
+import io.ably.lib.util.SystemClock
 import kotlinx.coroutines.runBlocking
 import java.util.Base64
 import java.util.concurrent.ConcurrentHashMap
@@ -29,7 +30,7 @@ internal class DefaultLiveMap private constructor(
   objectId: String,
   private val realtimeObjects: DefaultRealtimeObjects,
   internal val semantics: ObjectsMapSemantics = ObjectsMapSemantics.LWW
-) : LiveMap, BaseRealtimeObject(objectId, ObjectType.Map) {
+) : LiveMap, BaseRealtimeObject(objectId, ObjectType.Map, realtimeObjects.clock) {
 
   override val tag = "LiveMap"
 
@@ -191,7 +192,7 @@ internal class DefaultLiveMap private constructor(
   }
 
   override fun onGCInterval(gcGracePeriod: Long) {
-    data.entries.removeIf { (_, entry) -> entry.isEligibleForGc(gcGracePeriod) }
+    data.entries.removeIf { (_, entry) -> entry.isEligibleForGc(gcGracePeriod, clock) }
   }
 
   companion object {
