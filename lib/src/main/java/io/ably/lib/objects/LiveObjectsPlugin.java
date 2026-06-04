@@ -1,5 +1,6 @@
 package io.ably.lib.objects;
 
+import io.ably.lib.objects.path.ChannelObject;
 import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.types.ProtocolMessage;
 import org.jetbrains.annotations.NotNull;
@@ -21,6 +22,17 @@ public interface LiveObjectsPlugin {
      */
     @NotNull
     RealtimeObjects getInstance(@NotNull String channelName);
+
+    /**
+     * Retrieves the path-based LiveObjects accessor for the specified channel.
+     * The returned {@link ChannelObject} is the entry point for the
+     * path-based public API ({@code channel.object().get()}).
+     *
+     * @param channelName the name of the channel for which the ChannelObject is to be retrieved.
+     * @return the ChannelObject associated with the specified channel name.
+     */
+    @NotNull
+    ChannelObject getChannelObject(@NotNull String channelName);
 
     /**
      * Handles a protocol message.

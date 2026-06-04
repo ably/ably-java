@@ -1,6 +1,7 @@
 # LiveObjects Path-Based API — Updated Proposal for Java / Kotlin
 
-> Status: **DRAFT v2 (lead-dev audit)** — supersedes the initial proposal in
+> Status: **DRAFT v3 (lead-dev audit + first-pass implementation)** —
+> supersedes the initial proposal in
 > [PR #1190 — `liveobjects/PATH_BASED_API_JAVA_PYTHON.md`](https://github.com/ably/ably-java/pull/1190).
 > This revision incorporates the review feedback recorded on that PR, with a
 > particular focus on the comments from **@sacOO7**, and aligns the API with the
@@ -13,6 +14,10 @@
 > `LiveMapValue`, `LiveMap`, `LiveCounter`, `LiveMapChange`, and
 > `ObjectLifecycleChange` types. See §15 "Codebase Audit — what changed in
 > v2" for the diff.
+>
+> **v3 changes:** P0/P1/P2/P4 of the implementation plan are now landed; P3
+> (path-level subscription dispatch) is stubbed pending follow-up. See §16
+> "Implementation log" for the as-built record and deviations.
 
 ---
 
@@ -33,6 +38,7 @@
 13. [Migration and Backward Compatibility](#13-migration-and-backward-compatibility)
 14. [Risks, Challenges and Testing Strategy](#14-risks-challenges-and-testing-strategy)
 15. [Codebase Audit — what changed in v2](#15-codebase-audit--what-changed-in-v2)
+16. [Implementation log — what was actually built (P0–P4)](#16-implementation-log--what-was-actually-built-p0p4)
 
 ---
 
@@ -1555,4 +1561,128 @@ io.ably.lib.objects.path
 parity requirement or a Java type-system necessity. No new
 `*Subscription`, `*Callback`, or duplicate value-type hierarchies.
 
-*End of proposal — feedback welcome on the open questions in §11.1.*
+---
+
+## 16. Implementation log — what was actually built (P0–P4)
+
+This section records deviations and additions made during the first round of
+implementation against the plan in §12. The proposal text above is the
+"intent"; this section is the "as built". Build status: `:java:compileJava`
+and `:liveobjects:compileKotlin` both green; `:liveobjects:runLiveObjectUnitTests`
+passes; existing `:java:runUnitTests` show only the pre-existing
+`RecoveryKeyContextTest` HashMap-ordering flake (unrelated to this work).
+
+### 16.1 Phase status
+
+| Phase | Status | Notes |
+|---|---|---|
+| **P0** Public interfaces + Kotlin stubs | ✅ Done | 14 public types under `lib/src/main/java/io/ably/lib/objects/path/`; `Channel#object()` added on `ChannelBase`; `getObjects()` deprecated; `LiveObjectsPlugin#getChannelObject` added; `DefaultLiveObjectsPlugin` wires it; `DefaultChannelObject` stub created. |
+| **P1** Read path | ✅ Done | `PathResolver`, `DefaultPathObject` reads, `DefaultRootPathObject`, `Compactor`. `DefaultLiveMap` now `: LiveMapInstance`; `DefaultLiveCounter` now `: LiveCounterInstance`. |
+| **P2** Write path + atomic deep create | ✅ Done | `LiveCreate` (package-private Java) hosts `MapCreateToken` / `CounterCreateToken`; `LiveValueWriter` (internal Kotlin) translates tokens to `LiveMapValue` and recursively materialises nested creates via `RealtimeObjects.createMap` / `createCounter`. |
+| **P3** Subscriptions with depth | 🟡 Stub | `PathObject#subscribe(PathChangeListener)` and `LiveInstance#subscribe(PathChangeListener)` both throw `NotImplementedError("P3: …")`. Wiring the path subscription registry into `ObjectsManager`'s op-applied dispatch is deferred to a follow-up. |
+| **P4** Kotlin facade + suspend wrappers | ✅ Done | `Channel.realtimeObject` extension, `ChannelObject.getRoot()` `suspend`, `setSuspending`/`removeSuspending`/`incrementSuspending`/`decrementSuspending`, `liveMapOf(...)` / `liveCounterOf(...)` DSL, and typed convenience reads (`stringValue`, `numberValue`, `booleanValue`, `counterValue`, `mapInstanceOrNull`). |
+| **P5** Docs & migration guide | ⏳ Not yet | Will follow once P3 lands. |
+
+### 16.2 Files added / modified
+
+**New public Java (`lib/src/main/java/io/ably/lib/objects/path/`):**
+
+```
+ChannelObject.java                LiveCounterInstance.java   LiveMapInstance.java
+LiveCounter.java                  LiveCreate.java*           LiveValue.java
+LiveInstance.java                 LiveMap.java               LiveValues.java*
+LivePrimitive.java                ObjectMessage.java         PathChangeEvent.java
+PathChangeListener.java           PathObject.java            PathSubscriptionOptions.java
+RootPathObject.java
+```
+\* Package-private helpers — not part of the public surface, but live in
+the public package so the `LiveMap.create(...)` / `LiveCounter.create(...)`
+factories can stay tiny and the JVM access modifier ("same package =
+visible") gives Kotlin in `liveobjects/.../path/` access to them.
+
+**New internal Kotlin (`liveobjects/src/main/kotlin/io/ably/lib/objects/path/`):**
+
+```
+Compactor.kt              DefaultPathObject.kt     LiveValueWriter.kt
+DefaultChannelObject.kt   DefaultRootPathObject.kt PathErrors.kt
+PathResolver.kt
+ext/ChannelExtensions.kt  ext/PathObjectExtensions.kt
+```
+
+**Modified:**
+
+- `lib/src/main/java/io/ably/lib/objects/LiveObjectsPlugin.java` — added
+  `ChannelObject getChannelObject(String)`.
+- `lib/src/main/java/io/ably/lib/realtime/ChannelBase.java` — added
+  `public ChannelObject object()` and `@Deprecated` on `getObjects()`.
+- `liveobjects/src/main/kotlin/io/ably/lib/objects/DefaultLiveObjectsPlugin.kt`
+  — added `channelObjects` cache and `getChannelObject(...)` impl; cleanup
+  on `dispose(name)` / `dispose()`.
+- `liveobjects/src/main/kotlin/io/ably/lib/objects/type/livemap/DefaultLiveMap.kt`
+  — class header now `: LiveMapInstance`; added `id()` (delegates to
+  `objectId`), `toMapValue()`, and a `subscribe(PathChangeListener)` overload
+  that currently throws `NotImplementedError` (P3 placeholder, distinct
+  signature from the existing `subscribe(LiveMapChange.Listener)`).
+- `liveobjects/src/main/kotlin/io/ably/lib/objects/type/livecounter/DefaultLiveCounter.kt`
+  — class header now `: LiveCounterInstance`; same three additions as above.
+
+### 16.3 Deviations from §7 / §12 worth calling out
+
+| # | Decision in proposal | What was actually built | Why |
+|---|---|---|---|
+| B1 | "`PathResolver` returns either `LiveValue?` (for reads) or the parent `LiveMap` + final key (for writes)" (§12.4) | `PathResolver` returns `LiveMapValue?` (read) and `LiveMap?` (parent for write). The path-API `LiveValue` translation happens at the boundary in `DefaultPathObject`. | Keeps `PathResolver` purely in terms of the internal types it already deals with — it doesn't need to know about the public `LiveValue` hierarchy. |
+| B2 | "`compactJson()` … cycles broken via `{"objectId":"…"}`" using the real object id | First pass uses `System.identityHashCode(map).toString()` as the cycle key. | `LiveMap` (public) has no `id()` method; only the new `LiveMapInstance` does. Using identity-hash keeps the algorithm correct without forcing a downcast on every node. The placeholder string will be swapped for the real `objectId` in a follow-up (see open question §11.1). |
+| B3 | `MessageOptions` parameter dropped (D9) | Confirmed — no overload accepts `MessageOptions`. | Matches JS and the proposal. |
+| B4 | "package-private impls in the same package" for the logically-sealed `LivePrimitive` (§7.4) | Implemented as `LiveValues.PrimitiveImpl` (package-private static nested class) so all primitive types reuse the same delegate-to-`LiveMapValue` impl. | Avoids 6 near-identical sibling classes (String/Number/Boolean/Binary/JsonArray/JsonObject) — one impl, switched on the wrapped `LiveMapValue` variant. |
+| B5 | "Operations on an unresolved path throw `AblyException` with `code=92000`" (D10) | Implemented in `PathErrors.kt`: `objectNotFound → 92000`, `typeMismatch → 92001`, `notImplementedAbly → 92999`. | Two extra codes added so we can distinguish "no value at path" from "value present but wrong type". `92999` is used by the P3 async stubs and will go away when subscriptions land. |
+| B6 | "`obj["key"]` (extension)" in the cross-SDK table | Not provided. | The Kotlin compiler warns that the extension is shadowed by the Java member `get(String)` — adding it gives no new syntax. Documented in `PathObjectExtensions.kt` as a comment. |
+| B7 | "Creation token type" open question (§11.1 #6) | `LiveCreate.MapCreateToken` / `CounterCreateToken` implement `LiveValue` but their `toMapValue()` throws `UnsupportedOperationException`. They are converted into a real `LiveMapValue` only inside `LiveValueWriter.toLiveMapValue(...)` at write time. | Keeps the "no identity until the operation lands" invariant honest while still letting tokens be passed as `LiveValue`. |
+| B8 | Implicit: instance subscriptions on `LiveMapInstance` / `LiveCounterInstance` | The new `subscribe(PathChangeListener)` overload throws `NotImplementedError`; the existing `subscribe(LiveMapChange.Listener)` / `subscribe(LiveCounterChange.Listener)` methods are **untouched** and still work. | Lets the existing instance-pinned subscriptions remain functional while P3 wires the path-style listener. |
+| B9 | "liveMapOf accepts ... auto-wrapping" mentioned briefly in §7.10 | Explicit accepted types: `String`, `Number`, `Boolean`, `ByteArray`, `JsonArray`, `JsonObject`, or any `LiveValue` (including creation tokens). Anything else throws `IllegalArgumentException`. `null` values are rejected with a clear message. | Predictable failure mode — better than silently boxing `null` or surprising users with an `Any.toString()` fallback. |
+| B10 | "`DefaultLiveObjectsPlugin.getChannelObject` returns a fresh `ChannelObject` each call" (implicit) | Cached in a `ConcurrentHashMap<String, DefaultChannelObject>` keyed by channel name. Cleared in `dispose(channelName)` / `dispose()` alongside the existing `objects` map. | Stable identity for `channel.object()` across calls — matches the existing `getInstance()` behaviour. Avoids subtle bugs where two `ChannelObject`s for the same channel would each spin up their own state. |
+| B11 | `LiveValue.fromMapValue(...)` declared as a static method on the interface | Implemented as Java 8 `static interface` method delegating to the package-private `LiveValues.from(...)`. | Java 8 supports static methods on interfaces; verified by green compile under `sourceCompatibility = 1_8`. |
+
+### 16.4 New public Java types — final list (matches §15's "Net effect" plus
+`LiveCreate` and `LiveValues` which are package-private)
+
+```
+io.ably.lib.objects.path
+├── ChannelObject               (interface)
+├── LiveCounter                 (final class — factory only)
+├── LiveCounterInstance         (interface; extends LiveInstance + internal LiveCounter)
+├── LiveCreate                  (package-private final — token impls)
+├── LiveInstance                (interface; extends LiveValue)
+├── LiveMap                     (final class — factory only)
+├── LiveMapInstance             (interface; extends LiveInstance + internal LiveMap)
+├── LivePrimitive               (interface; extends LiveValue)
+├── LiveValue                   (interface)
+├── LiveValues                  (package-private final — primitive impl + bridge)
+├── ObjectMessage               (interface)
+├── PathChangeEvent             (interface)
+├── PathChangeListener          (functional interface)
+├── PathObject                  (interface)
+├── PathSubscriptionOptions     (final class)
+└── RootPathObject              (interface; extends PathObject)
+```
+
+14 public types (unchanged from §15) + 2 package-private helpers
+(`LiveCreate`, `LiveValues`).
+
+### 16.5 Follow-ups (deferred to next iteration)
+
+1. **P3 — path subscriptions.** The hardest piece: a path subscription
+   registry inside `DefaultRealtimeObjects` / `ObjectsManager`, dispatch on
+   every applied op, depth filtering, plus the public `PathChangeEvent` /
+   `ObjectMessage` adapter at the boundary. Existing instance-pinned
+   subscriptions (via `LiveMapChange.Listener` / `LiveCounterChange.Listener`)
+   continue to work in the meantime.
+2. **Real `objectId` in `compactJson` cycle keys** (see B2).
+3. **Unit & integration tests** under
+   `liveobjects/src/test/kotlin/io/ably/lib/objects/{unit,integration}/path/`
+   — none added yet; existing suites still pass unmodified.
+4. **`@deprecated` Javadoc tag** on `RealtimeObjects` itself (currently
+   only the `getObjects()` accessor on `ChannelBase` is annotated).
+5. **Migration guide** in `liveobjects/README.md` (P5).
+
+*End of proposal — feedback welcome on the open questions in §11.1 and on
+the §16.5 follow-up list.*

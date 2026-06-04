@@ -8,6 +8,8 @@ import io.ably.lib.objects.ObjectsMapSemantics
 import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectState
+import io.ably.lib.objects.path.LiveMapInstance
+import io.ably.lib.objects.path.PathChangeListener
 import io.ably.lib.objects.type.BaseRealtimeObject
 import io.ably.lib.objects.type.ObjectUpdate
 import io.ably.lib.objects.type.ObjectType
@@ -30,7 +32,17 @@ internal class DefaultLiveMap private constructor(
   objectId: String,
   private val realtimeObjects: DefaultRealtimeObjects,
   internal val semantics: ObjectsMapSemantics = ObjectsMapSemantics.LWW
-) : LiveMap, BaseRealtimeObject(objectId, ObjectType.Map, realtimeObjects.clock) {
+) : LiveMapInstance, BaseRealtimeObject(objectId, ObjectType.Map, realtimeObjects.clock) {
+
+  // ---- LiveInstance (path-API) ---------------------------------------------
+
+  override fun id(): String = objectId
+
+  override fun toMapValue(): LiveMapValue = LiveMapValue.of(this as LiveMap)
+
+  override fun subscribe(listener: PathChangeListener): ObjectsSubscription {
+    throw NotImplementedError("P3: instance-pinned PathChangeListener subscriptions not yet implemented")
+  }
 
   override val tag = "LiveMap"
 

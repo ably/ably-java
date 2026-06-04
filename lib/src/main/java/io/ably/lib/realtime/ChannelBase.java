@@ -15,6 +15,7 @@ import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.objects.RealtimeObjects;
 import io.ably.lib.objects.LiveObjectsPlugin;
+import io.ably.lib.objects.path.ChannelObject;
 import io.ably.lib.rest.MessageEditsMixin;
 import io.ably.lib.rest.RestAnnotations;
 import io.ably.lib.transport.ConnectionManager;
@@ -112,6 +113,10 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
     private volatile MessageEditsMixin messageEditsMixin;
 
+    /**
+     * @deprecated since the path-based API was introduced. Use {@link #object()}.
+     */
+    @Deprecated
     public RealtimeObjects getObjects() throws AblyException {
         if (liveObjectsPlugin == null) {
             throw AblyException.fromErrorInfo(
@@ -120,6 +125,24 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             );
         }
         return liveObjectsPlugin.getInstance(name);
+    }
+
+    /**
+     * Path-based LiveObjects accessor for this channel.
+     * <p>
+     * Returns the entry point ({@link ChannelObject}) for the path-based
+     * public API; call {@link ChannelObject#get()} to obtain the root.
+     *
+     * @throws AblyException if the LiveObjects plugin is not installed.
+     */
+    public ChannelObject object() throws AblyException {
+        if (liveObjectsPlugin == null) {
+            throw AblyException.fromErrorInfo(
+                new ErrorInfo("LiveObjects plugin hasn't been installed, " +
+                    "add runtimeOnly('io.ably:liveobjects:<ably-version>') to your dependency tree", 400, 40019)
+            );
+        }
+        return liveObjectsPlugin.getChannelObject(name);
     }
 
     public final RealtimeAnnotations annotations;

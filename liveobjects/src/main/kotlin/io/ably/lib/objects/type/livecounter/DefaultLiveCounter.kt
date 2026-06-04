@@ -5,12 +5,15 @@ import io.ably.lib.objects.CounterCreate
 import io.ably.lib.objects.CounterInc
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectState
+import io.ably.lib.objects.path.LiveCounterInstance
+import io.ably.lib.objects.path.PathChangeListener
 import io.ably.lib.objects.type.BaseRealtimeObject
 import io.ably.lib.objects.type.ObjectUpdate
 import io.ably.lib.objects.type.ObjectType
 import io.ably.lib.objects.type.counter.LiveCounter
 import io.ably.lib.objects.type.counter.LiveCounterChange
 import io.ably.lib.objects.type.counter.LiveCounterUpdate
+import io.ably.lib.objects.type.map.LiveMapValue
 import io.ably.lib.objects.type.noOp
 import java.util.concurrent.atomic.AtomicReference
 import io.ably.lib.util.Log
@@ -23,7 +26,19 @@ import kotlinx.coroutines.runBlocking
 internal class DefaultLiveCounter private constructor(
   objectId: String,
   private val realtimeObjects: DefaultRealtimeObjects,
-) : LiveCounter, BaseRealtimeObject(objectId, ObjectType.Counter, realtimeObjects.clock) {
+) : LiveCounterInstance, BaseRealtimeObject(objectId, ObjectType.Counter, realtimeObjects.clock) {
+
+  // ---- LiveInstance (path-API) ---------------------------------------------
+
+  override fun id(): String = objectId
+
+  override fun toMapValue(): LiveMapValue = LiveMapValue.of(this as LiveCounter)
+
+  override fun subscribe(listener: PathChangeListener): ObjectsSubscription {
+    // P3 will wire path-style events. Until then, throwing avoids silent
+    // no-op subscriptions on instance-pinned listeners.
+    throw NotImplementedError("P3: instance-pinned PathChangeListener subscriptions not yet implemented")
+  }
 
   override val tag = "LiveCounter"
 
