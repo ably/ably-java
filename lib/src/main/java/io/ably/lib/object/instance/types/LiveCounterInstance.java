@@ -1,0 +1,72 @@
+package io.ably.lib.object.instance.types;
+
+import io.ably.lib.object.instance.LiveObjectInstance;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.concurrent.CompletableFuture;
+
+/**
+ * A {@link LiveObjectInstance} bound to a {@code LiveCounter}. Provides type-safe
+ * access to counter operations such as {@link #value()}, {@link #increment(Number)}
+ * and {@link #decrement(Number)}.
+ */
+public interface LiveCounterInstance extends LiveObjectInstance {
+
+    /**
+     * Returns the current value of the wrapped {@code LiveCounter}.
+     *
+     * <p>Spec: RTINS4 / RTLC5
+     *
+     * @return the counter value
+     */
+    @NotNull
+    Double value();
+
+    /**
+     * Increments the wrapped {@code LiveCounter} by {@code 1}. Equivalent to
+     * calling {@link #increment(Number)} with {@code 1}.
+     *
+     * <p>Spec: RTINS14a1 (default {@code amount} of {@code 1})
+     *
+     * @return a future that completes when the operation has been acknowledged
+     */
+    @NotNull
+    CompletableFuture<Void> increment();
+
+    /**
+     * Increments the wrapped {@code LiveCounter} by {@code amount}.
+     *
+     * <p>Sends a {@code COUNTER_INC} operation to the realtime system; the local state
+     * is updated when the operation is echoed back.
+     *
+     * <p>Spec: RTINS14
+     *
+     * @param amount the amount to add (may be negative)
+     * @return a future that completes when the operation has been acknowledged
+     */
+    @NotNull
+    CompletableFuture<Void> increment(@NotNull Number amount);
+
+    /**
+     * Decrements the wrapped {@code LiveCounter} by {@code 1}. Equivalent to
+     * calling {@link #decrement(Number)} with {@code 1}.
+     *
+     * <p>Spec: RTINS15a1 (default {@code amount} of {@code 1})
+     *
+     * @return a future that completes when the operation has been acknowledged
+     */
+    @NotNull
+    CompletableFuture<Void> decrement();
+
+    /**
+     * Decrements the wrapped {@code LiveCounter} by {@code amount}. Equivalent to
+     * calling {@link #increment(Number)} with a negated value.
+     *
+     * <p>Spec: RTINS15
+     *
+     * @param amount the amount to subtract (may be negative)
+     * @return a future that completes when the operation has been acknowledged
+     */
+    @NotNull
+    CompletableFuture<Void> decrement(@NotNull Number amount);
+}
