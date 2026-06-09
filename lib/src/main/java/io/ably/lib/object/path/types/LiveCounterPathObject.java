@@ -11,9 +11,8 @@ import java.util.concurrent.CompletableFuture;
  * Provides type-safe access to counter operations such as {@link #value()},
  * {@link #increment(Number)} and {@link #decrement(Number)}.
  *
- * <p>Counters are terminal nodes. {@link PathObject#at(String)} remains purely
- * navigational and will return a new {@link PathObject} whose later read/write
- * operations fail to resolve.
+ * <p>Counters are terminal nodes - navigation via {@code at(...)} is not available
+ * here because it is only defined on {@code LiveMapPathObject}.
  *
  * <p>Operations are best-effort and resolve the path at call time. Read operations
  * return {@code null} when the path does not resolve to a {@code LiveCounter}; write

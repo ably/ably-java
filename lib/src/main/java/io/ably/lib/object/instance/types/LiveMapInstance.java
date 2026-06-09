@@ -1,6 +1,6 @@
 package io.ably.lib.object.instance.types;
 
-import io.ably.lib.object.instance.LiveObjectInstance;
+import io.ably.lib.object.instance.Instance;
 import io.ably.lib.objects.type.map.LiveMapValue;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -10,17 +10,27 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * A {@link LiveObjectInstance} bound to a {@code LiveMap}. Provides type-safe access to
+ * A {@link Instance} bound to a {@code LiveMap}. Provides type-safe access to
  * map-specific operations such as {@link #get(String)}, {@link #entries()} and
  * {@link #set(String, LiveMapValue)}.
  *
  * <p>Operations are bound to the specific underlying {@code LiveMap}, dereferenced in
  * O(1), and do not perform any path resolution.
  */
-public interface LiveMapInstance extends LiveObjectInstance {
+public interface LiveMapInstance extends Instance {
 
     /**
-     * Returns a {@link LiveObjectInstance} wrapping the value at {@code key} of the
+     * Returns the object id of the wrapped {@code LiveMap}.
+     *
+     * <p>Spec: RTINS3a
+     *
+     * @return the wrapped {@code LiveMap}'s object id
+     */
+    @NotNull
+    String getId();
+
+    /**
+     * Returns a {@link Instance} wrapping the value at {@code key} of the
      * wrapped {@code LiveMap}, or {@code null} when the key is absent / tombstoned.
      *
      * <p>Spec: RTINS5
@@ -29,10 +39,10 @@ public interface LiveMapInstance extends LiveObjectInstance {
      * @return an instance wrapping the value at {@code key}, or {@code null}
      */
     @Nullable
-    LiveObjectInstance get(@NotNull String key);
+    Instance get(@NotNull String key);
 
     /**
-     * Returns the entries (key, child {@link LiveObjectInstance}) of the wrapped
+     * Returns the entries (key, child {@link Instance}) of the wrapped
      * {@code LiveMap}.
      *
      * <p>Spec: RTINS6
@@ -41,7 +51,7 @@ public interface LiveMapInstance extends LiveObjectInstance {
      */
     @NotNull
     @Unmodifiable
-    Iterable<Map.Entry<String, LiveObjectInstance>> entries();
+    Iterable<Map.Entry<String, Instance>> entries();
 
     /**
      * Returns the keys of the wrapped {@code LiveMap}.
@@ -55,7 +65,7 @@ public interface LiveMapInstance extends LiveObjectInstance {
     Iterable<String> keys();
 
     /**
-     * Returns the child {@link LiveObjectInstance}s for each value in the wrapped
+     * Returns the child {@link Instance}s for each value in the wrapped
      * {@code LiveMap}.
      *
      * <p>Spec: RTINS8
@@ -64,7 +74,7 @@ public interface LiveMapInstance extends LiveObjectInstance {
      */
     @NotNull
     @Unmodifiable
-    Iterable<LiveObjectInstance> values();
+    Iterable<Instance> values();
 
     /**
      * Returns the number of (non-tombstoned) entries in the wrapped {@code LiveMap}.

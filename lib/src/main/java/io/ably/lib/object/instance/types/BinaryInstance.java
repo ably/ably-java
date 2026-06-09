@@ -1,16 +1,14 @@
 package io.ably.lib.object.instance.types;
 
-import io.ably.lib.object.instance.LiveObjectInstance;
+import io.ably.lib.object.instance.Instance;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * A read-only {@link LiveObjectInstance} bound to a binary primitive value
- * (a {@code byte[]}).
- *
- * <p>{@link #getId()} always returns {@code null} for primitive instances, and
- * subscribe operations are not supported.
+ * A read-only {@link Instance} bound to a binary primitive value
+ * (a {@code byte[]}). Primitive instances are anonymous (no object id) and do not
+ * support subscribe.
  */
-public interface BinaryInstance extends LiveObjectInstance {
+public interface BinaryInstance extends Instance {
 
     /**
      * Returns the wrapped binary value.

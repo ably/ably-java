@@ -1,6 +1,6 @@
 package io.ably.lib.object;
 
-public enum ObjectType {
+public enum ValueType {
     STRING,
     NUMBER,
     BOOLEAN,

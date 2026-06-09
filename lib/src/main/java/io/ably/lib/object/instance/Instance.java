@@ -1,7 +1,7 @@
 package io.ably.lib.object.instance;
 
 import com.google.gson.JsonElement;
-import io.ably.lib.object.ObjectType;
+import io.ably.lib.object.ValueType;
 import io.ably.lib.object.instance.types.BinaryInstance;
 import io.ably.lib.object.instance.types.BooleanInstance;
 import io.ably.lib.object.instance.types.JsonArrayInstance;
@@ -13,41 +13,30 @@ import io.ably.lib.object.instance.types.StringInstance;
 import io.ably.lib.objects.ObjectsSubscription;
 import org.jetbrains.annotations.NonBlocking;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * A direct-reference view of a single LiveObject (a {@code LiveMap} or {@code LiveCounter})
  * or a primitive value. Unlike {@code PathObject}, which resolves a path lazily against
  * the LiveObjects graph at every call, an {@code Instance} is bound to a specific
- * underlying value identified by its object id (for live objects) and dereferenced in
- * O(1).
+ * underlying value and dereferenced in O(1).
  *
  * <p>Java exposes type-specific sub-types ({@link LiveMapInstance},
  * {@link LiveCounterInstance}, and the primitive {@code *Instance} types). Use the
  * {@code as*} helpers to obtain a sub-type wrapper without performing type validation.
+ * Only {@link LiveMapInstance} and {@link LiveCounterInstance} expose an object id
+ * (via their own {@code getId()} methods); primitive instances are anonymous.
  *
  * <p>Spec: RTINS1
  */
-public interface LiveObjectInstance {
+public interface Instance {
 
     /**
-     * Returns the {@link ObjectType} of the value wrapped by this instance. Use this
+     * Returns the {@link ValueType} of the value wrapped by this instance. Use this
      * instead of dedicated {@code isLiveMap}/{@code isLiveCounter}/etc. checks.
      *
-     * @return the wrapped object type
+     * @return the wrapped value type
      */
-    @NotNull ObjectType getType();
-
-    /**
-     * Returns the object id of the wrapped LiveObject, or {@code null} when the wrapped
-     * value is a primitive. Only {@link LiveMapInstance} and {@link LiveCounterInstance}
-     * ever return a non-null id.
-     *
-     * <p>Spec: RTINS3
-     *
-     * @return the wrapped object's id, or {@code null} for primitive instances
-     */
-    @Nullable String getId();
+    @NotNull ValueType getType();
 
     /**
      * Returns a JSON-serializable, recursively compacted snapshot of the wrapped value.
@@ -65,6 +54,8 @@ public interface LiveObjectInstance {
     /**
      * Subscribes a listener for updates on the underlying LiveObject. The listener is
      * invoked whenever the wrapped object is changed by a local or remote operation.
+     * Call {@link ObjectsSubscription#unsubscribe()} on the returned handle to stop
+     * receiving events for this listener.
      *
      * <p>Subscribe is not supported on primitive instances; implementations may throw
      * when called on {@link NumberInstance}, {@link StringInstance},
@@ -78,21 +69,6 @@ public interface LiveObjectInstance {
      */
     @NonBlocking
     @NotNull ObjectsSubscription subscribe(@NotNull Listener listener);
-
-    /**
-     * Unsubscribes the specified listener previously registered via
-     * {@link #subscribe(Listener)}. No-op if the listener is not currently subscribed.
-     *
-     * @param listener the listener to remove
-     */
-    @NonBlocking
-    void unsubscribe(@NotNull Listener listener);
-
-    /**
-     * Removes all listeners previously registered on this instance.
-     */
-    @NonBlocking
-    void unsubscribeAll();
 
     /**
      * Returns this instance wrapped as a {@link LiveMapInstance}.
@@ -162,7 +138,7 @@ public interface LiveObjectInstance {
     @NotNull JsonArrayInstance asJsonArray();
 
     /**
-     * Listener interface for {@link LiveObjectInstance#subscribe(Listener) instance
+     * Listener interface for {@link Instance#subscribe(Listener) instance
      * subscriptions}.
      *
      * <p>Spec: RTINS16a1
@@ -184,10 +160,10 @@ public interface LiveObjectInstance {
      */
     interface SubscriptionEvent {
         /**
-         * Returns the {@link LiveObjectInstance} that was updated.
+         * Returns the {@link Instance} that was updated.
          *
          * @return the updated instance
          */
-        @NotNull LiveObjectInstance getInstance();
+        @NotNull Instance getInstance();
     }
 }

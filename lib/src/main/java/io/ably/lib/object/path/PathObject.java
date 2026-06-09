@@ -1,8 +1,8 @@
 package io.ably.lib.object.path;
 
 import com.google.gson.JsonElement;
-import io.ably.lib.object.ObjectType;
-import io.ably.lib.object.instance.LiveObjectInstance;
+import io.ably.lib.object.ValueType;
+import io.ably.lib.object.instance.Instance;
 import io.ably.lib.object.path.types.BinaryPathObject;
 import io.ably.lib.object.path.types.BooleanPathObject;
 import io.ably.lib.object.path.types.JsonArrayPathObject;
@@ -37,12 +37,12 @@ import org.jetbrains.annotations.Nullable;
 public interface PathObject {
 
     /**
-     * Returns the {@link ObjectType} of the value the resolved at this path currently.
+     * Returns the {@link ValueType} of the value resolved at this path currently.
      * Use this instead of dedicated {@code isLiveMap}/{@code isLiveCounter}/etc. checks.
      *
-     * @return the resolved object type at this path
+     * @return the resolved value type at this path
      */
-    @NotNull ObjectType getType();
+    @NotNull ValueType getType();
 
     /**
      * Returns a dot-delimited string representation of the stored path segments.
@@ -57,27 +57,7 @@ public interface PathObject {
     @NotNull String path();
 
     /**
-     * Returns a new {@code PathObject} whose path is this path with the segments parsed
-     * from {@code path} appended. The {@code path} argument is a dot-delimited string;
-     * a backslash-escaped dot ({@code \.}) is treated as a literal dot within a segment.
-     *
-     * <p>This is purely navigational - no resolution against the LiveObjects graph is
-     * performed by this call. {@code pathObject.at("a.b.c")} is equivalent to
-     * {@code pathObject.get("a").get("b").get("c")} on a {@link LiveMapPathObject}.
-     *
-     * <p>For primitive {@code *PathObject} sub-types and {@link LiveCounterPathObject},
-     * deeper navigation is not meaningful; implementations may throw or return a
-     * {@code PathObject} that will fail to resolve at read/write time.
-     *
-     * <p>Spec: RTPO6
-     *
-     * @param path dot-delimited path to append to this path
-     * @return a new {@code PathObject} representing the deeper path
-     */
-    @NotNull PathObject at(@NotNull String path);
-
-    /**
-     * Resolves this path and returns a {@link LiveObjectInstance} wrapping the underlying
+     * Resolves this path and returns a {@link Instance} wrapping the underlying
      * value if it is a {@code LiveMap} or {@code LiveCounter}.
      *
      * <p>Returns {@code null} when the resolved value is a primitive (LiveObjects with
@@ -86,9 +66,9 @@ public interface PathObject {
      *
      * <p>Spec: RTPO8
      *
-     * @return a {@link LiveObjectInstance} wrapping the resolved live object, or {@code null}
+     * @return a {@link Instance} wrapping the resolved live object, or {@code null}
      */
-    @Nullable LiveObjectInstance instance();
+    @Nullable Instance instance();
 
     /**
      * Returns a JSON-serializable, recursively compacted snapshot of the value at this
@@ -107,7 +87,8 @@ public interface PathObject {
     /**
      * Subscribes a listener for path-based update events. The listener is invoked when
      * an operation modifies the value at this path. The same path may be subscribed by
-     * multiple listeners independently.
+     * multiple listeners independently. Call {@link ObjectsSubscription#unsubscribe()}
+     * on the returned handle to stop receiving events for this listener.
      *
      * <p>Spec: RTPO19
      *
@@ -120,7 +101,9 @@ public interface PathObject {
     /**
      * Subscribes a listener for path-based update events using the provided
      * {@link SubscriptionOptions}. Options control coverage rules such as the
-     * {@code depth} of nested updates that trigger the listener.
+     * {@code depth} of nested updates that trigger the listener. Call
+     * {@link ObjectsSubscription#unsubscribe()} on the returned handle to stop
+     * receiving events for this listener.
      *
      * <p>Spec: RTPO19
      *
@@ -130,22 +113,6 @@ public interface PathObject {
      */
     @NonBlocking
     @NotNull ObjectsSubscription subscribe(@NotNull Listener listener, @Nullable SubscriptionOptions options);
-
-    /**
-     * Unsubscribes the specified listener previously registered via
-     * {@link #subscribe(Listener)} or {@link #subscribe(Listener, SubscriptionOptions)}.
-     * No-op if the listener is not currently subscribed for this path.
-     *
-     * @param listener the listener to remove
-     */
-    @NonBlocking
-    void unsubscribe(@NotNull Listener listener);
-
-    /**
-     * Removes all listeners previously registered for this path.
-     */
-    @NonBlocking
-    void unsubscribeAll();
 
     /**
      * Returns {@code true} if a value currently resolves at this path in the local

@@ -38,6 +38,27 @@ public interface LiveMapPathObject extends PathObject {
     PathObject get(@NotNull String key);
 
     /**
+     * Returns a new {@link PathObject} whose path is this path with the segments parsed
+     * from {@code path} appended. The {@code path} argument is a dot-delimited string;
+     * a backslash-escaped dot ({@code \.}) is treated as a literal dot within a segment.
+     *
+     * <p>This is purely navigational - no resolution against the LiveObjects graph is
+     * performed by this call. {@code liveMapPath.at("a.b.c")} is equivalent to
+     * {@code liveMapPath.get("a").get("b").get("c")}.
+     *
+     * <p>Available only on {@code LiveMapPathObject} because deeper navigation is only
+     * meaningful when the current resolved value is a {@code LiveMap}. To traverse from
+     * an arbitrary {@link PathObject}, first cast via {@link PathObject#asLiveMap()}.
+     *
+     * <p>Spec: RTPO6
+     *
+     * @param path dot-delimited path to append to this path
+     * @return a new {@link PathObject} representing the deeper path
+     */
+    @NotNull
+    PathObject at(@NotNull String path);
+
+    /**
      * Returns the entries (key, child {@link PathObject}) of the {@code LiveMap} at
      * this path. Each child path is produced as if by calling {@link #get(String)} with
      * the corresponding key.

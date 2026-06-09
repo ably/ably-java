@@ -6,11 +6,11 @@ import org.jetbrains.annotations.Nullable;
 /**
  * A {@link PathObject} whose underlying value is expected to be a {@code Number}.
  *
- * <p>This is a terminal type. {@link PathObject#at(String)} remains purely
- * navigational and will return a new {@link PathObject} whose later read/write
- * operations fail to resolve. {@link PathObject#instance()} returns {@code null}
- * because a primitive resolution does not produce a wrapped LiveObject.
- * Only {@link #value()} and the inherited read APIs are useful here.
+ * <p>This is a terminal type. {@link PathObject#instance()} returns {@code null}
+ * because a primitive resolution does not produce a wrapped LiveObject; navigation
+ * via {@code at(...)} is not available here because it is only defined on
+ * {@code LiveMapPathObject}. Only {@link #value()} and the inherited read APIs are
+ * useful here.
  */
 public interface NumberPathObject extends PathObject {
 

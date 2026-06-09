@@ -1,16 +1,26 @@
 package io.ably.lib.object.instance.types;
 
-import io.ably.lib.object.instance.LiveObjectInstance;
+import io.ably.lib.object.instance.Instance;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.CompletableFuture;
 
 /**
- * A {@link LiveObjectInstance} bound to a {@code LiveCounter}. Provides type-safe
+ * A {@link Instance} bound to a {@code LiveCounter}. Provides type-safe
  * access to counter operations such as {@link #value()}, {@link #increment(Number)}
  * and {@link #decrement(Number)}.
  */
-public interface LiveCounterInstance extends LiveObjectInstance {
+public interface LiveCounterInstance extends Instance {
+
+    /**
+     * Returns the object id of the wrapped {@code LiveCounter}.
+     *
+     * <p>Spec: RTINS3a
+     *
+     * @return the wrapped {@code LiveCounter}'s object id
+     */
+    @NotNull
+    String getId();
 
     /**
      * Returns the current value of the wrapped {@code LiveCounter}.
