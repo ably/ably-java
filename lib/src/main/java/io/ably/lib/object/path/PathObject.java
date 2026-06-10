@@ -96,36 +96,6 @@ public interface PathObject {
     @Nullable JsonElement compactJson();
 
     /**
-     * Subscribes a listener for path-based update events. The listener is invoked when
-     * an operation modifies the value at this path. The same path may be subscribed by
-     * multiple listeners independently. Call {@link Subscription#unsubscribe()}
-     * on the returned handle to stop receiving events for this listener.
-     *
-     * <p>Spec: RTPO19 / RTTS3d
-     *
-     * @param listener the listener to invoke on updates
-     * @return a subscription handle that can be used to unsubscribe this listener
-     */
-    @NonBlocking
-    @NotNull Subscription subscribe(@NotNull PathObjectListener listener);
-
-    /**
-     * Subscribes a listener for path-based update events using the provided
-     * {@link PathObjectSubscriptionOptions}. Options control coverage rules such as the
-     * {@code depth} of nested updates that trigger the listener. Call
-     * {@link Subscription#unsubscribe()} on the returned handle to stop
-     * receiving events for this listener.
-     *
-     * <p>Spec: RTPO19 / RTTS3d
-     *
-     * @param listener the listener to invoke on updates
-     * @param options  optional subscription options, may be {@code null}
-     * @return a subscription handle that can be used to unsubscribe this listener
-     */
-    @NonBlocking
-    @NotNull Subscription subscribe(@NotNull PathObjectListener listener, @Nullable PathObjectSubscriptionOptions options);
-
-    /**
      * Returns {@code true} if a value currently resolves at this path in the local
      * object graph. This is a best-effort check evaluated at call time; the answer may
      * change immediately afterwards as remote operations are applied. Useful as a
@@ -222,4 +192,34 @@ public interface PathObject {
      * @return a {@link JsonArrayPathObject} view of this path
      */
     @NotNull JsonArrayPathObject asJsonArray();
+
+    /**
+     * Subscribes a listener for path-based update events. The listener is invoked when
+     * an operation modifies the value at this path. The same path may be subscribed by
+     * multiple listeners independently. Call {@link Subscription#unsubscribe()}
+     * on the returned handle to stop receiving events for this listener.
+     *
+     * <p>Spec: RTPO19 / RTTS3d
+     *
+     * @param listener the listener to invoke on updates
+     * @return a subscription handle that can be used to unsubscribe this listener
+     */
+    @NonBlocking
+    @NotNull Subscription subscribe(@NotNull PathObjectListener listener);
+
+    /**
+     * Subscribes a listener for path-based update events using the provided
+     * {@link PathObjectSubscriptionOptions}. Options control coverage rules such as the
+     * {@code depth} of nested updates that trigger the listener. Call
+     * {@link Subscription#unsubscribe()} on the returned handle to stop
+     * receiving events for this listener.
+     *
+     * <p>Spec: RTPO19 / RTTS3d
+     *
+     * @param listener the listener to invoke on updates
+     * @param options  optional subscription options, may be {@code null}
+     * @return a subscription handle that can be used to unsubscribe this listener
+     */
+    @NonBlocking
+    @NotNull Subscription subscribe(@NotNull PathObjectListener listener, @Nullable PathObjectSubscriptionOptions options);
 }
