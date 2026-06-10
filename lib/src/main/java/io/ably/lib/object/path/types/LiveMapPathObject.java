@@ -1,7 +1,7 @@
 package io.ably.lib.object.path.types;
 
 import io.ably.lib.object.path.PathObject;
-import io.ably.lib.objects.type.map.LiveMapValue;
+import io.ably.lib.object.value.LiveMapValue;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
@@ -22,6 +22,8 @@ import java.util.concurrent.CompletableFuture;
  * not resolve to a {@code LiveMap}; write operations complete the returned
  * {@link CompletableFuture} exceptionally with an {@code AblyException}
  * (status 400, code 92007) in that case.
+ *
+ * <p>Spec: RTTS6a
  */
 public interface LiveMapPathObject extends PathObject {
 

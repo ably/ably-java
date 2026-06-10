@@ -10,29 +10,39 @@ import io.ably.lib.object.instance.types.LiveCounterInstance;
 import io.ably.lib.object.instance.types.LiveMapInstance;
 import io.ably.lib.object.instance.types.NumberInstance;
 import io.ably.lib.object.instance.types.StringInstance;
-import io.ably.lib.objects.ObjectsSubscription;
-import org.jetbrains.annotations.NonBlocking;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * A direct-reference view of a single LiveObject (a {@code LiveMap} or {@code LiveCounter})
- * or a primitive value. Unlike {@code PathObject}, which resolves a path lazily against
- * the LiveObjects graph at every call, an {@code Instance} is bound to a specific
- * underlying value and dereferenced in O(1).
+ * A direct-reference view of a single resolved LiveObject ({@code LiveMap} or
+ * {@code LiveCounter}) or primitive value.
  *
- * <p>Java exposes type-specific sub-types ({@link LiveMapInstance},
- * {@link LiveCounterInstance}, and the primitive {@code *Instance} types). Use the
- * {@code as*} helpers to obtain a sub-type wrapper without performing type validation.
- * Only {@link LiveMapInstance} and {@link LiveCounterInstance} expose an object id
- * (via their own {@code getId()} methods); primitive instances are anonymous.
+ * <p>Unlike {@code PathObject}, which re-resolves its path on every call, an
+ * {@code Instance} is identity-addressed: it is bound to a specific underlying value
+ * and dereferenced in O(1), regardless of where that value sits in the graph. Read
+ * operations validate the access API preconditions and fail with an
+ * {@code AblyException} if they are not satisfied.
  *
- * <p>Spec: RTINS1
+ * <p>This base type exposes only the methods whose behaviour is independent of the
+ * wrapped type; everything else - including {@code subscribe} (RTTS7b) - is
+ * partitioned onto the sub-types. Use the {@code as*} helpers to obtain a sub-type
+ * view without type validation, or discriminate via {@link #getType()}.
+ *
+ * <p>Spec: RTINS1, RTTS7
+ *
+ * @see LiveMapInstance
+ * @see LiveCounterInstance
+ * @see InstanceListener
  */
 public interface Instance {
 
     /**
      * Returns the {@link ValueType} of the value wrapped by this instance. Use this
      * instead of dedicated {@code isLiveMap}/{@code isLiveCounter}/etc. checks.
+     *
+     * <p>An {@code Instance} is always constructed from a resolved value, so this never
+     * returns {@link ValueType#UNKNOWN} in normal operation.
+     *
+     * <p>Spec: RTTS8a
      *
      * @return the wrapped value type
      */
@@ -45,30 +55,14 @@ public interface Instance {
      * always bound to a resolved value, so this always returns a non-null result;
      * failures of the access API preconditions are signalled via {@code AblyException}.
      *
-     * <p>Spec: RTINS11
+     * <p>Spec: RTINS11 / RTINS11c (universal non-null invariant - Instance is bound
+     * to an already-resolved value, so the path-resolution failure mode of
+     * PathObject#compactJson does not apply) / RTTS7a (typed-SDK signature reflects
+     * the universal invariant)
      *
      * @return the compacted JSON snapshot
      */
     @NotNull JsonElement compactJson();
-
-    /**
-     * Subscribes a listener for updates on the underlying LiveObject. The listener is
-     * invoked whenever the wrapped object is changed by a local or remote operation.
-     * Call {@link ObjectsSubscription#unsubscribe()} on the returned handle to stop
-     * receiving events for this listener.
-     *
-     * <p>Subscribe is not supported on primitive instances; implementations may throw
-     * when called on {@link NumberInstance}, {@link StringInstance},
-     * {@link BooleanInstance}, {@link BinaryInstance}, {@link JsonObjectInstance} or
-     * {@link JsonArrayInstance}.
-     *
-     * <p>Spec: RTINS16
-     *
-     * @param listener the listener to invoke on updates
-     * @return a subscription handle that can be used to unsubscribe this listener
-     */
-    @NonBlocking
-    @NotNull ObjectsSubscription subscribe(@NotNull Listener listener);
 
     /**
      * Returns this instance wrapped as a {@link LiveMapInstance}.
@@ -76,6 +70,8 @@ public interface Instance {
      * <p>Best-effort cast; does not validate the underlying type. Read operations on
      * the returned wrapper are always permitted; write/terminal operations will fail
      * at call time if the wrapped value is not a {@code LiveMap}.
+     *
+     * <p>Spec: RTTS9a
      *
      * @return a {@link LiveMapInstance} view of this instance
      */
@@ -85,6 +81,8 @@ public interface Instance {
      * Returns this instance wrapped as a {@link LiveCounterInstance}.
      * Best-effort cast; does not validate the underlying type.
      *
+     * <p>Spec: RTTS9b
+     *
      * @return a {@link LiveCounterInstance} view of this instance
      */
     @NotNull LiveCounterInstance asLiveCounter();
@@ -92,6 +90,8 @@ public interface Instance {
     /**
      * Returns this instance wrapped as a {@link NumberInstance}.
      * Best-effort cast; does not validate the underlying type.
+     *
+     * <p>Spec: RTTS9c
      *
      * @return a {@link NumberInstance} view of this instance
      */
@@ -101,6 +101,8 @@ public interface Instance {
      * Returns this instance wrapped as a {@link StringInstance}.
      * Best-effort cast; does not validate the underlying type.
      *
+     * <p>Spec: RTTS9c
+     *
      * @return a {@link StringInstance} view of this instance
      */
     @NotNull StringInstance asString();
@@ -108,6 +110,8 @@ public interface Instance {
     /**
      * Returns this instance wrapped as a {@link BooleanInstance}.
      * Best-effort cast; does not validate the underlying type.
+     *
+     * <p>Spec: RTTS9c
      *
      * @return a {@link BooleanInstance} view of this instance
      */
@@ -117,6 +121,8 @@ public interface Instance {
      * Returns this instance wrapped as a {@link BinaryInstance}.
      * Best-effort cast; does not validate the underlying type.
      *
+     * <p>Spec: RTTS9c
+     *
      * @return a {@link BinaryInstance} view of this instance
      */
     @NotNull BinaryInstance asBinary();
@@ -124,6 +130,8 @@ public interface Instance {
     /**
      * Returns this instance wrapped as a {@link JsonObjectInstance}.
      * Best-effort cast; does not validate the underlying type.
+     *
+     * <p>Spec: RTTS9c
      *
      * @return a {@link JsonObjectInstance} view of this instance
      */
@@ -133,37 +141,9 @@ public interface Instance {
      * Returns this instance wrapped as a {@link JsonArrayInstance}.
      * Best-effort cast; does not validate the underlying type.
      *
+     * <p>Spec: RTTS9c
+     *
      * @return a {@link JsonArrayInstance} view of this instance
      */
     @NotNull JsonArrayInstance asJsonArray();
-
-    /**
-     * Listener interface for {@link Instance#subscribe(Listener) instance
-     * subscriptions}.
-     *
-     * <p>Spec: RTINS16a1
-     */
-    interface Listener {
-        /**
-         * Invoked when the wrapped LiveObject is modified.
-         *
-         * @param event the event describing the change
-         */
-        void onUpdated(@NotNull SubscriptionEvent event);
-    }
-
-    /**
-     * Event delivered to {@link Listener#onUpdated(SubscriptionEvent)} when the wrapped
-     * LiveObject is updated.
-     *
-     * <p>Spec: RTINS16e
-     */
-    interface SubscriptionEvent {
-        /**
-         * Returns the {@link Instance} that was updated.
-         *
-         * @return the updated instance
-         */
-        @NotNull Instance getInstance();
-    }
 }

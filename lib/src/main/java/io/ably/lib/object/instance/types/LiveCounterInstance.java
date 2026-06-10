@@ -1,6 +1,9 @@
 package io.ably.lib.object.instance.types;
 
 import io.ably.lib.object.instance.Instance;
+import io.ably.lib.object.instance.InstanceListener;
+import io.ably.lib.object.Subscription;
+import org.jetbrains.annotations.NonBlocking;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.CompletableFuture;
@@ -9,6 +12,8 @@ import java.util.concurrent.CompletableFuture;
  * A {@link Instance} bound to a {@code LiveCounter}. Provides type-safe
  * access to counter operations such as {@link #value()}, {@link #increment(Number)}
  * and {@link #decrement(Number)}.
+ *
+ * <p>Spec: RTTS10b
  */
 public interface LiveCounterInstance extends Instance {
 
@@ -79,4 +84,21 @@ public interface LiveCounterInstance extends Instance {
      */
     @NotNull
     CompletableFuture<Void> decrement(@NotNull Number amount);
+
+    /**
+     * Subscribes a listener for updates on the wrapped {@code LiveCounter}. The
+     * listener is invoked whenever the wrapped counter is changed by a local or remote
+     * operation. Call {@link Subscription#unsubscribe()} on the returned handle
+     * to stop receiving events for this listener.
+     *
+     * <p>The subscription is identity-based: it follows the specific underlying
+     * {@code LiveCounter}, regardless of where it sits in the LiveObjects graph.
+     *
+     * <p>Spec: RTTS10b / RTINS16
+     *
+     * @param listener the listener to invoke on updates
+     * @return a subscription handle that can be used to unsubscribe this listener
+     */
+    @NonBlocking
+    @NotNull Subscription subscribe(@NotNull InstanceListener listener);
 }

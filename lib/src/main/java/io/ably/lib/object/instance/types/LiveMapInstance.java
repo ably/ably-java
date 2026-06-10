@@ -1,7 +1,10 @@
 package io.ably.lib.object.instance.types;
 
 import io.ably.lib.object.instance.Instance;
-import io.ably.lib.objects.type.map.LiveMapValue;
+import io.ably.lib.object.instance.InstanceListener;
+import io.ably.lib.object.Subscription;
+import io.ably.lib.object.value.LiveMapValue;
+import org.jetbrains.annotations.NonBlocking;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
@@ -16,6 +19,8 @@ import java.util.concurrent.CompletableFuture;
  *
  * <p>Operations are bound to the specific underlying {@code LiveMap}, dereferenced in
  * O(1), and do not perform any path resolution.
+ *
+ * <p>Spec: RTTS10a
  */
 public interface LiveMapInstance extends Instance {
 
@@ -112,4 +117,21 @@ public interface LiveMapInstance extends Instance {
      */
     @NotNull
     CompletableFuture<Void> remove(@NotNull String key);
+
+    /**
+     * Subscribes a listener for updates on the wrapped {@code LiveMap}. The listener is
+     * invoked whenever the wrapped map is changed by a local or remote operation. Call
+     * {@link Subscription#unsubscribe()} on the returned handle to stop
+     * receiving events for this listener.
+     *
+     * <p>The subscription is identity-based: it follows the specific underlying
+     * {@code LiveMap}, regardless of where it sits in the LiveObjects graph.
+     *
+     * <p>Spec: RTTS10a / RTINS16
+     *
+     * @param listener the listener to invoke on updates
+     * @return a subscription handle that can be used to unsubscribe this listener
+     */
+    @NonBlocking
+    @NotNull Subscription subscribe(@NotNull InstanceListener listener);
 }

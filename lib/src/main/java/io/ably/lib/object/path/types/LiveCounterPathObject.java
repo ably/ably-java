@@ -18,6 +18,8 @@ import java.util.concurrent.CompletableFuture;
  * return {@code null} when the path does not resolve to a {@code LiveCounter}; write
  * operations complete the returned {@link CompletableFuture} exceptionally with an
  * {@code AblyException} (status 400, code 92007) in that case.
+ *
+ * <p>Spec: RTTS6b
  */
 public interface LiveCounterPathObject extends PathObject {
 

@@ -11,34 +11,45 @@ import io.ably.lib.object.path.types.LiveCounterPathObject;
 import io.ably.lib.object.path.types.LiveMapPathObject;
 import io.ably.lib.object.path.types.NumberPathObject;
 import io.ably.lib.object.path.types.StringPathObject;
-import io.ably.lib.objects.ObjectsSubscription;
+import io.ably.lib.object.Subscription;
 import org.jetbrains.annotations.NonBlocking;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Provides a path-based, navigational view over the LiveObjects graph rooted at the
- * channel's root {@code LiveMap}. A {@code PathObject} encapsulates a path expressed as
- * an ordered list of string segments and resolves the path lazily against the current
- * client-side state of the graph when read or write operations are invoked.
+ * A lazy, path-based reference into the LiveObjects graph rooted at the channel's root
+ * {@code LiveMap}.
  *
- * <p>Resolution is best-effort: it observes the local object tree at the time the
- * operation is called. There is no global transaction primitive, so the value at a given
- * path can change between two calls on the same {@code PathObject} (e.g. between
+ * <p>A {@code PathObject} stores a path as an ordered list of string segments and
+ * resolves it against the local object graph each time a method is called. Resolution
+ * is best-effort: the value at a path may change between two calls (e.g. between
  * {@link #exists()} and a subsequent write) as updates from other clients are applied.
+ * Operations that resolve the path validate the access/write API preconditions and
+ * fail with an {@code AblyException} if they are not satisfied.
  *
- * <p>For the strongly-typed flavour of the API in Java, callers normally interact with
- * type-specific sub-types ({@link LiveMapPathObject}, {@link LiveCounterPathObject}, and
- * the primitive {@code *PathObject} types). Use the {@code as*} helpers to obtain a
- * sub-type wrapper without performing type validation.
+ * <p>This base type exposes only the methods whose behaviour is independent of the
+ * resolved type; map and counter reads/writes are partitioned onto the sub-types
+ * (RTTS3e). Use the {@code as*} helpers to obtain a sub-type view without type
+ * validation, e.g. {@code pathObject.asLiveMap().at("a.b.c")} (RTTS3g). The spec's
+ * {@code compact} is not exposed; {@link #compactJson()} is the supported equivalent
+ * (RTTS3f).
  *
- * <p>Spec: RTPO1, RTPO2
+ * <p>Spec: RTPO1, RTPO2, RTTS3
+ *
+ * @see LiveMapPathObject
+ * @see LiveCounterPathObject
+ * @see PathObjectListener
  */
 public interface PathObject {
 
     /**
      * Returns the {@link ValueType} of the value resolved at this path currently.
      * Use this instead of dedicated {@code isLiveMap}/{@code isLiveCounter}/etc. checks.
+     *
+     * <p>Returns {@link ValueType#UNKNOWN} when the path does not resolve or the
+     * resolved value falls into none of the known categories.
+     *
+     * <p>Spec: RTTS4b
      *
      * @return the resolved value type at this path
      */
@@ -50,7 +61,7 @@ public interface PathObject {
      * path with segments {@code ["a", "b.c", "d"]} is represented as {@code "a.b\.c.d"}.
      * An empty path (i.e. the root {@code PathObject}) returns the empty string.
      *
-     * <p>Spec: RTPO4
+     * <p>Spec: RTPO4 / RTTS3a
      *
      * @return the dot-delimited path from the root to this position
      */
@@ -64,7 +75,7 @@ public interface PathObject {
      * no object id), when the path does not resolve, or when called on primitive
      * {@code *PathObject} sub-types.
      *
-     * <p>Spec: RTPO8
+     * <p>Spec: RTPO8 / RTTS3b
      *
      * @return a {@link Instance} wrapping the resolved live object, or {@code null}
      */
@@ -78,7 +89,7 @@ public interface PathObject {
      *
      * <p>Returns {@code null} when the path does not resolve.
      *
-     * <p>Spec: RTPO14
+     * <p>Spec: RTPO14 / RTTS3c
      *
      * @return the compacted JSON snapshot, or {@code null} if the path does not resolve
      */
@@ -87,32 +98,32 @@ public interface PathObject {
     /**
      * Subscribes a listener for path-based update events. The listener is invoked when
      * an operation modifies the value at this path. The same path may be subscribed by
-     * multiple listeners independently. Call {@link ObjectsSubscription#unsubscribe()}
+     * multiple listeners independently. Call {@link Subscription#unsubscribe()}
      * on the returned handle to stop receiving events for this listener.
      *
-     * <p>Spec: RTPO19
+     * <p>Spec: RTPO19 / RTTS3d
      *
      * @param listener the listener to invoke on updates
      * @return a subscription handle that can be used to unsubscribe this listener
      */
     @NonBlocking
-    @NotNull ObjectsSubscription subscribe(@NotNull Listener listener);
+    @NotNull Subscription subscribe(@NotNull PathObjectListener listener);
 
     /**
      * Subscribes a listener for path-based update events using the provided
-     * {@link SubscriptionOptions}. Options control coverage rules such as the
+     * {@link PathObjectSubscriptionOptions}. Options control coverage rules such as the
      * {@code depth} of nested updates that trigger the listener. Call
-     * {@link ObjectsSubscription#unsubscribe()} on the returned handle to stop
+     * {@link Subscription#unsubscribe()} on the returned handle to stop
      * receiving events for this listener.
      *
-     * <p>Spec: RTPO19
+     * <p>Spec: RTPO19 / RTTS3d
      *
      * @param listener the listener to invoke on updates
      * @param options  optional subscription options, may be {@code null}
      * @return a subscription handle that can be used to unsubscribe this listener
      */
     @NonBlocking
-    @NotNull ObjectsSubscription subscribe(@NotNull Listener listener, @Nullable SubscriptionOptions options);
+    @NotNull Subscription subscribe(@NotNull PathObjectListener listener, @Nullable PathObjectSubscriptionOptions options);
 
     /**
      * Returns {@code true} if a value currently resolves at this path in the local
@@ -121,6 +132,8 @@ public interface PathObject {
      * guard before performing operations whose semantics depend on existence.
      *
      * <p>Complexity is O(n) in the path length because the path must be resolved.
+     *
+     * <p>Spec: RTTS4a
      *
      * @return {@code true} if the path resolves to a value, {@code false} otherwise
      */
@@ -134,6 +147,8 @@ public interface PathObject {
      * returned wrapper; write or terminal operations that require resolution will fail
      * at call time if the resolved value is not a {@code LiveMap}.
      *
+     * <p>Spec: RTTS5a
+     *
      * @return a {@link LiveMapPathObject} view of this path
      */
     @NotNull LiveMapPathObject asLiveMap();
@@ -141,6 +156,8 @@ public interface PathObject {
     /**
      * Returns this {@code PathObject} wrapped as a {@link LiveCounterPathObject}.
      * Best-effort cast; does not validate the underlying type at this path.
+     *
+     * <p>Spec: RTTS5b
      *
      * @return a {@link LiveCounterPathObject} view of this path
      */
@@ -150,6 +167,8 @@ public interface PathObject {
      * Returns this {@code PathObject} wrapped as a {@link NumberPathObject}.
      * Best-effort cast; does not validate the underlying type at this path.
      *
+     * <p>Spec: RTTS5c
+     *
      * @return a {@link NumberPathObject} view of this path
      */
     @NotNull NumberPathObject asNumber();
@@ -157,6 +176,8 @@ public interface PathObject {
     /**
      * Returns this {@code PathObject} wrapped as a {@link StringPathObject}.
      * Best-effort cast; does not validate the underlying type at this path.
+     *
+     * <p>Spec: RTTS5c
      *
      * @return a {@link StringPathObject} view of this path
      */
@@ -166,6 +187,8 @@ public interface PathObject {
      * Returns this {@code PathObject} wrapped as a {@link BooleanPathObject}.
      * Best-effort cast; does not validate the underlying type at this path.
      *
+     * <p>Spec: RTTS5c
+     *
      * @return a {@link BooleanPathObject} view of this path
      */
     @NotNull BooleanPathObject asBoolean();
@@ -173,6 +196,8 @@ public interface PathObject {
     /**
      * Returns this {@code PathObject} wrapped as a {@link BinaryPathObject}.
      * Best-effort cast; does not validate the underlying type at this path.
+     *
+     * <p>Spec: RTTS5c
      *
      * @return a {@link BinaryPathObject} view of this path
      */
@@ -182,6 +207,8 @@ public interface PathObject {
      * Returns this {@code PathObject} wrapped as a {@link JsonObjectPathObject}.
      * Best-effort cast; does not validate the underlying type at this path.
      *
+     * <p>Spec: RTTS5c
+     *
      * @return a {@link JsonObjectPathObject} view of this path
      */
     @NotNull JsonObjectPathObject asJsonObject();
@@ -190,72 +217,9 @@ public interface PathObject {
      * Returns this {@code PathObject} wrapped as a {@link JsonArrayPathObject}.
      * Best-effort cast; does not validate the underlying type at this path.
      *
+     * <p>Spec: RTTS5c
+     *
      * @return a {@link JsonArrayPathObject} view of this path
      */
     @NotNull JsonArrayPathObject asJsonArray();
-
-    /**
-     * Listener interface for {@link PathObject#subscribe(Listener) path-based subscriptions}.
-     *
-     * <p>Spec: RTPO19a1
-     */
-    interface Listener {
-        /**
-         * Invoked when a change is applied at, or beneath, the subscribed path according
-         * to the configured {@link SubscriptionOptions}.
-         *
-         * @param event the event describing the change
-         */
-        void onUpdated(@NotNull SubscriptionEvent event);
-    }
-
-    /**
-     * Event delivered to {@link Listener#onUpdated(SubscriptionEvent)} when a change
-     * affects the subscribed path.
-     *
-     * <p>Spec: RTPO19e
-     */
-    interface SubscriptionEvent {
-        /**
-         * Returns a {@link PathObject} pointing to the path where the change occurred.
-         *
-         * <p>Spec: RTPO19e1
-         *
-         * @return the {@code PathObject} at the changed path
-         */
-        @NotNull PathObject getObject();
-    }
-
-    /**
-     * Optional subscription options accepted by
-     * {@link PathObject#subscribe(Listener, SubscriptionOptions)}.
-     *
-     * <p>Spec: RTPO19c
-     */
-    final class SubscriptionOptions {
-
-        private final Integer depth;
-
-        /**
-         * Creates options with the given {@code depth}.
-         *
-         * @param depth how many levels of path nesting below the subscribed path should
-         *              trigger the listener; must be a positive integer if provided
-         */
-        public SubscriptionOptions(@Nullable Integer depth) {
-            this.depth = depth;
-        }
-
-        /**
-         * Returns the configured nesting depth, or {@code null} if not set.
-         *
-         * <p>Spec: RTPO19c1
-         *
-         * @return the depth value, or {@code null}
-         */
-        @Nullable
-        public Integer getDepth() {
-            return depth;
-        }
-    }
 }

@@ -12,6 +12,8 @@ import org.jetbrains.annotations.Nullable;
  * via {@code at(...)} is not available here because it is only defined on
  * {@code LiveMapPathObject}. Only {@link #value()} and the inherited read APIs are
  * useful here.
+ *
+ * <p>Spec: RTTS6c
  */
 public interface BinaryPathObject extends PathObject {
 
@@ -19,7 +21,7 @@ public interface BinaryPathObject extends PathObject {
      * Returns the binary value at this path, or {@code null} when the path does not
      * resolve or resolves to a non-binary value.
      *
-     * <p>Spec: RTPO7
+     * <p>Spec: RTPO7 / RTTS6c
      *
      * @return the resolved bytes, or {@code null}
      */

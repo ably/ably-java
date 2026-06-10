@@ -5,15 +5,19 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * A read-only {@link Instance} bound to a binary primitive value
- * (a {@code byte[]}). Primitive instances are anonymous (no object id) and do not
- * support subscribe.
+ * (a {@code byte[]}).
+ * Primitive instances are anonymous (no object id) and deliberately do not expose
+ * {@code subscribe}, {@code set}, {@code remove} or any other id/iteration/write
+ * methods - only {@code value()} - per RTTS10c.
+ *
+ * <p>Spec: RTTS10c
  */
 public interface BinaryInstance extends Instance {
 
     /**
      * Returns the wrapped binary value.
      *
-     * <p>Spec: RTINS4
+     * <p>Spec: RTINS4 / RTTS10c
      *
      * @return the wrapped bytes
      */
