@@ -46,7 +46,7 @@ public interface LiveMapPathObject extends PathObject {
      *
      * <p>This is purely navigational - no resolution against the LiveObjects graph is
      * performed by this call. {@code liveMapPath.at("a.b.c")} is equivalent to
-     * {@code liveMapPath.get("a").get("b").get("c")}.
+     * {@code liveMapPath.get("a").asLiveMap().get("b").asLiveMap().get("c")}.
      *
      * <p>Available only on {@code LiveMapPathObject} because deeper navigation is only
      * meaningful when the current resolved value is a {@code LiveMap}. To traverse from

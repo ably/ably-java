@@ -51,7 +51,8 @@ public interface ObjectData {
     @Nullable Boolean getBoolean();
 
     /**
-     * Returns the binary value.
+     * Returns the binary value. The returned array is the underlying message
+     * payload and is not defensively copied; callers must treat it as read-only.
      *
      * <p>Spec: OD2c
      *

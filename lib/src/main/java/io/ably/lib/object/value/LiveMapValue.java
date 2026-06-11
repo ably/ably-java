@@ -183,7 +183,8 @@ public abstract class LiveMapValue {
     }
 
     /**
-     * Creates a LiveMapValue from a Binary.
+     * Creates a LiveMapValue from a Binary. The array is copied, so later
+     * modifications to {@code value} do not affect the created LiveMapValue.
      *
      * @param value the binary value
      * @return a LiveMapValue containing the binary
@@ -290,19 +291,19 @@ public abstract class LiveMapValue {
         private final byte[] value;
 
         BinaryValue(byte @NotNull [] value) {
-            this.value = value;
+            this.value = value.clone();
         }
 
         @Override
         public @NotNull Object getValue() {
-            return value;
+            return value.clone();
         }
 
         @Override
         public boolean isBinary() { return true; }
 
         @Override
-        public byte @NotNull [] getAsBinary() { return value; }
+        public byte @NotNull [] getAsBinary() { return value.clone(); }
     }
 
     /**

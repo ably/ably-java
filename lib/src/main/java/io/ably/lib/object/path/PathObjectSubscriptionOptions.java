@@ -1,5 +1,7 @@
 package io.ably.lib.object.path;
 
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ErrorInfo;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -13,12 +15,32 @@ public final class PathObjectSubscriptionOptions {
     private final Integer depth;
 
     /**
-     * Creates options with the given {@code depth}.
+     * Creates options with no {@code depth} set: there is no depth limit, and
+     * changes at any depth within nested children trigger the listener.
+     * Equivalent to passing a {@code null} depth.
+     *
+     * <p>Spec: RTPO19c1
+     */
+    public PathObjectSubscriptionOptions() {
+        this.depth = null;
+    }
+
+    /**
+     * Creates options with the given {@code depth}. For infinite depth, use the
+     * no-arg constructor {@link #PathObjectSubscriptionOptions()} instead.
+     *
+     * <p>Spec: RTPO19c1, RTPO19c1a
      *
      * @param depth how many levels of path nesting below the subscribed path should
-     *              trigger the listener; must be a positive integer if provided
+     *              trigger the listener; must be a positive integer
+     * @throws AblyException with {@code statusCode} 400 and {@code code} 40003 if
+     *                       {@code depth} is not a positive integer
      */
-    public PathObjectSubscriptionOptions(@Nullable Integer depth) {
+    public PathObjectSubscriptionOptions(int depth) throws AblyException {
+        if (depth <= 0) {
+            throw AblyException.fromErrorInfo(
+                new ErrorInfo("Subscription depth must be greater than 0 or omitted for infinite depth", 400, 40003));
+        }
         this.depth = depth;
     }
 
