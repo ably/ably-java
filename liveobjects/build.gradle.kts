@@ -33,6 +33,8 @@ tasks.withType<Test>().configureEach {
 tasks.register<Test>("runLiveObjectUnitTests") {
     filter {
         includeTestsMatching("io.ably.lib.objects.unit.*")
+        // unit tests for the path-based public API implementation (io.ably.lib.object)
+        includeTestsMatching("io.ably.lib.object.unit.*")
     }
 }
 
