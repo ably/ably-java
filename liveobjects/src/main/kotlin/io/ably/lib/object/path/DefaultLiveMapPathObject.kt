@@ -12,6 +12,7 @@ import io.ably.lib.`object`.invalidInputError
 import io.ably.lib.`object`.objectDataFrom
 import io.ably.lib.`object`.path.types.LiveMapPathObject
 import io.ably.lib.`object`.pathNotResolvedError
+import io.ably.lib.`object`.resolve
 import io.ably.lib.`object`.typeMismatchError
 import io.ably.lib.`object`.value.LiveMapValue
 import java.util.AbstractMap
@@ -36,6 +37,14 @@ internal class DefaultLiveMapPathObject(
 
   private fun mapNodeOrNull(): MapNode? = (resolve() as? ResolvedValue.MapRef)?.map
 
+  /**
+   * Keys of the resolved map whose entries themselves resolve - entries
+   * referencing missing/tombstoned objects are excluded, matching the
+   * underlying map semantics (RTLM11d2/RTLM14).
+   */
+  private fun resolvableKeys(node: MapNode): List<String> =
+    node.entries().filter { (_, data) -> data.resolve(bridge) != null }.map { it.key }
+
   /** Spec: RTPO5 - purely navigational, no resolution performed */
   override fun get(key: String): PathObject = DefaultPathObject(bridge, pathSegments + key)
 
@@ -47,7 +56,7 @@ internal class DefaultLiveMapPathObject(
   override fun entries(): Iterable<Map.Entry<String, PathObject>> {
     bridge.throwIfInvalidAccessApiConfiguration() // RTPO9a / RTO25
     val node = mapNodeOrNull() ?: return emptyList()
-    return node.entries().keys.map { key ->
+    return resolvableKeys(node).map { key ->
       AbstractMap.SimpleImmutableEntry<String, PathObject>(key, get(key)) // child paths as if by get(key)
     }
   }
@@ -56,16 +65,16 @@ internal class DefaultLiveMapPathObject(
   override fun keys(): Iterable<String> {
     bridge.throwIfInvalidAccessApiConfiguration() // RTPO10a / RTO25
     val node = mapNodeOrNull() ?: return emptyList()
-    return node.entries().keys.toList()
+    return resolvableKeys(node)
   }
 
   /** Spec: RTPO11 */
   override fun values(): Iterable<PathObject> = entries().map { it.value }
 
-  /** Spec: RTPO12 - null when the path does not resolve to a map */
+  /** Spec: RTPO12 - null when the path does not resolve to a map; counts resolvable entries (RTLM10d) */
   override fun size(): Long? {
     bridge.throwIfInvalidAccessApiConfiguration() // RTPO12a / RTO25
-    return mapNodeOrNull()?.entries()?.size?.toLong()
+    return mapNodeOrNull()?.let { resolvableKeys(it).size.toLong() }
   }
 
   /** Spec: RTPO15 */

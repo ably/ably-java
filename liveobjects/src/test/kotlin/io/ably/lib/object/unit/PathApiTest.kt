@@ -48,6 +48,11 @@ internal class PathApiTest {
     // RTPO6 - parsing honours the escape
     assertEquals(listOf("a.b", "c"), DefaultBasePathObject.parsePath("a\\.b.c"))
     assertEquals(listOf("users", "emma"), DefaultBasePathObject.parsePath("users.emma"))
+    // ably-js parity: a backslash NOT escaping a dot is kept as-is, so an
+    // escaped backslash before a dot does not suppress the split
+    assertEquals(listOf("a\\\\", "b"), DefaultBasePathObject.parsePath("a\\\\.b"))
+    // ably-js parity: trailing backslash is kept literally
+    assertEquals(listOf("x\\"), DefaultBasePathObject.parsePath("x\\"))
   }
 
   @Test
@@ -162,6 +167,34 @@ internal class PathApiTest {
     subscription.unsubscribe()
     bridge.notifyUpdated("map:profile@1", setOf("name"), wireMessage)
     assertEquals(1, events.size)
+  }
+
+  @Test
+  fun `object reachable via several covered paths notifies once per path`() {
+    val bridge = graphBridge()
+    // second reference to the same counter directly under root
+    (bridge.nodes["root"] as FakeMapNode).data["topScore"] = WireObjectData(objectId = "counter:score@1")
+
+    val events = mutableListOf<String>()
+    DefaultLiveMapPathObject(bridge, emptyList()).subscribe { events.add(it.getObject().path()) }
+
+    bridge.notifyUpdated("counter:score@1", emptySet(), null)
+
+    // ably-js parity (liveobject.ts#_notifyPathSubscriptions): one event per full path
+    assertEquals(setOf("profile.score", "topScore"), events.toSet())
+    assertEquals(2, events.size)
+  }
+
+  @Test
+  fun `size and keys exclude entries with unresolvable references`() {
+    val bridge = graphBridge()
+    // dangling reference - the target object does not exist in the pool
+    (bridge.nodes["root"] as FakeMapNode).data["ghost"] = WireObjectData(objectId = "map:deleted@1")
+
+    val root = DefaultLiveMapPathObject(bridge, emptyList())
+    assertEquals(2L, root.size()) // RTLM10d/RTLM14 - ghost not counted
+    assertEquals(setOf("profile", "flag"), root.keys().toSet())
+    assertEquals(2L, root.instance()!!.asLiveMap().size()) // RTINS9 - same filtering
   }
 
   @Test

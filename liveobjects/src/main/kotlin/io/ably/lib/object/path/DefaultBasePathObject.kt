@@ -101,32 +101,37 @@ internal abstract class DefaultBasePathObject(
 
   internal companion object {
     /**
-     * Parses a dot-delimited path string into segments; a backslash-escaped
-     * dot (`\.`) is a literal dot within a segment.
+     * Parses a dot-delimited path string into segments: splits on unescaped
+     * dots; a backslash-escaped dot (`\.`) is a literal dot within a segment;
+     * a backslash before any other character is kept as-is. Exact port of the
+     * ably-js algorithm (pathobject.ts#at) so the two SDKs agree on every
+     * input, including escaped backslashes and trailing backslashes.
      *
      * Spec: RTPO6 (and the inverse of RTPO4b)
      */
     internal fun parsePath(path: String): List<String> {
       val segments = mutableListOf<String>()
       val current = StringBuilder()
-      var i = 0
-      while (i < path.length) {
-        val c = path[i]
-        when {
-          c == '\\' && i + 1 < path.length && path[i + 1] == '.' -> {
-            current.append('.')
-            i += 2
-          }
-          c == '.' -> {
+      var escaping = false
+      for (c in path) {
+        if (escaping) {
+          // keep the escape character if not escaping a dot
+          if (c != '.') current.append('\\')
+          current.append(c)
+          escaping = false
+          continue
+        }
+        when (c) {
+          '\\' -> escaping = true
+          '.' -> {
             segments.add(current.toString())
             current.setLength(0)
-            i++
           }
-          else -> {
-            current.append(c)
-            i++
-          }
+          else -> current.append(c)
         }
+      }
+      if (escaping) {
+        current.append('\\')
       }
       segments.add(current.toString())
       return segments

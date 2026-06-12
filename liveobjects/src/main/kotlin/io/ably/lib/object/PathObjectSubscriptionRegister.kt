@@ -63,10 +63,6 @@ internal class PathObjectSubscriptionRegister(private val bridge: ObjectsBridge)
     val fullPaths = PathFinder.findFullPaths(bridge, objectId)
     if (fullPaths.isEmpty()) return // object not reachable from root
 
-    val candidatePaths = fullPaths.flatMap { fullPath ->
-      listOf(fullPath) + updatedKeys.map { key -> fullPath + key }
-    }
-
     val publicMessage = message?.let {
       try {
         it.toPublicMessage(bridge.channelName)
@@ -76,17 +72,23 @@ internal class PathObjectSubscriptionRegister(private val bridge: ObjectsBridge)
       }
     }
 
-    for (entry in subscriptions.values) {
-      // first candidate covered by this subscription wins (priority order)
-      val coveredPath = candidatePaths.firstOrNull { coversPath(entry.path, entry.depth, it) } ?: continue
-      val event = DefaultPathObjectSubscriptionEvent(
-        DefaultPathObject(bridge, coveredPath), // RTPO19e1
-        publicMessage, // RTPO19e2
-      )
-      try {
-        entry.listener.onUpdated(event)
-      } catch (t: Throwable) {
-        Log.e(tag, "Error in PathObjectListener callback", t)
+    // one event per full path to the object (an object reachable via several
+    // covered paths notifies once per path), exactly like ably-js
+    // liveobject.ts#_notifyPathSubscriptions
+    for (fullPath in fullPaths) {
+      val candidatePaths = listOf(fullPath) + updatedKeys.map { key -> fullPath + key }
+      for (entry in subscriptions.values) {
+        // first candidate covered by this subscription wins (priority order)
+        val coveredPath = candidatePaths.firstOrNull { coversPath(entry.path, entry.depth, it) } ?: continue
+        val event = DefaultPathObjectSubscriptionEvent(
+          DefaultPathObject(bridge, coveredPath), // RTPO19e1
+          publicMessage, // RTPO19e2
+        )
+        try {
+          entry.listener.onUpdated(event)
+        } catch (t: Throwable) {
+          Log.e(tag, "Error in PathObjectListener callback", t)
+        }
       }
     }
   }

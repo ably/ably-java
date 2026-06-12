@@ -64,10 +64,10 @@ internal class DefaultLiveMapInstance(
   /** Spec: RTINS8 */
   override fun values(): Iterable<Instance> = entries().map { it.value }
 
-  /** Spec: RTINS9 / RTTS10a - non-null (the wrapped value is always a map) */
+  /** Spec: RTINS9 / RTTS10a - non-null; counts resolvable entries only (RTLM10d/RTLM14) */
   override fun size(): Long {
     bridge.throwIfInvalidAccessApiConfiguration() // RTO25
-    return mapNodeOrThrow().entries().size.toLong()
+    return mapNodeOrThrow().entries().count { (_, data) -> data.resolve(bridge) != null }.toLong()
   }
 
   /** Spec: RTINS12 */
