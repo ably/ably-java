@@ -13,6 +13,7 @@ import io.ably.lib.http.BasePaginatedQuery;
 import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
+import io.ably.lib.object.RealtimeObject;
 import io.ably.lib.objects.RealtimeObjects;
 import io.ably.lib.objects.LiveObjectsPlugin;
 import io.ably.lib.rest.MessageEditsMixin;
@@ -111,6 +112,8 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     @Nullable private final LiveObjectsPlugin liveObjectsPlugin;
 
     private volatile MessageEditsMixin messageEditsMixin;
+
+    public RealtimeObject object;
 
     public RealtimeObjects getObjects() throws AblyException {
         if (liveObjectsPlugin == null) {
@@ -1695,7 +1698,12 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         this.decodingContext = new DecodingContext();
         this.liveObjectsPlugin = liveObjectsPlugin;
         if (liveObjectsPlugin != null) {
-            liveObjectsPlugin.getInstance(name); // Make objects instance ready to process sync messages
+            liveObjectsPlugin.getInstance(name);
+            // TODO(objects-migration): assign `this.object` to the real RealtimeObject once the
+            // LiveObjects plugin exposes io.ably.lib.object.RealtimeObject (getInstance currently
+            // returns the legacy io.ably.lib.objects.RealtimeObjects type).
+        } else {
+            this.object = RealtimeObject.Unavailable.INSTANCE;
         }
         this.annotations = new RealtimeAnnotations(
             this,
