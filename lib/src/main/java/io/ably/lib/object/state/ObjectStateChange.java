@@ -1,6 +1,6 @@
 package io.ably.lib.object.state;
 
-import io.ably.lib.objects.ObjectsSubscription;
+import io.ably.lib.object.Subscription;
 import org.jetbrains.annotations.NonBlocking;
 import org.jetbrains.annotations.NotNull;
 
@@ -17,7 +17,7 @@ public interface ObjectStateChange {
      * @return a subscription object that can be used to unsubscribe from the event
      */
     @NonBlocking
-    ObjectsSubscription on(@NotNull ObjectStateEvent event, @NotNull ObjectStateChange.Listener listener);
+    Subscription on(@NotNull ObjectStateEvent event, @NotNull ObjectStateChange.Listener listener);
 
     /**
      * Unsubscribes the specified listener from all synchronization state events.

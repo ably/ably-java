@@ -3,11 +3,11 @@ package io.ably.lib.object;
 import io.ably.lib.object.path.types.LiveMapPathObject;
 import io.ably.lib.object.state.ObjectStateChange;
 import io.ably.lib.object.state.ObjectStateEvent;
-import io.ably.lib.objects.ObjectsSubscription;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
-import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.concurrent.CompletableFuture;
 
 /**
  * The RealtimeObject interface is the entry point to the strongly-typed, path-based
@@ -33,16 +33,17 @@ public interface RealtimeObject extends ObjectStateChange {
      * when working with multiple channels with different underlying data structures.
      *
      * <p>This operation requires the {@code OBJECT_SUBSCRIBE} channel mode. It implicitly
-     * attaches the channel if it is not already attached, and waits for the objects
-     * synchronization state to transition to {@code SYNCED} before returning.
+     * attaches the channel if it is not already attached; the returned future completes once
+     * the objects synchronization state has transitioned to {@code SYNCED}, and completes
+     * exceptionally with an {@code AblyException} if synchronization fails.
      *
      * <p>Spec: RTO23, RTO23f (typed SDKs return a {@link LiveMapPathObject})
      *
-     * @return the root {@link LiveMapPathObject} for this channel's objects graph.
+     * @return a future that completes with the root {@link LiveMapPathObject} for this
+     *         channel's objects graph.
      */
-    @Blocking
     @NotNull
-    LiveMapPathObject get();
+    CompletableFuture<LiveMapPathObject> get();
 
     /**
      * Null-Object guard for {@link RealtimeObject}, used as the value of {@code channel.object}
@@ -64,12 +65,12 @@ public interface RealtimeObject extends ObjectStateChange {
         private Unavailable() {}
 
         @Override
-        public @NotNull LiveMapPathObject get() {
+        public @NotNull CompletableFuture<LiveMapPathObject> get() {
             throw missing();
         }
 
         @Override
-        public ObjectsSubscription on(@NotNull ObjectStateEvent event, ObjectStateChange.@NotNull Listener listener) {
+        public Subscription on(@NotNull ObjectStateEvent event, ObjectStateChange.@NotNull Listener listener) {
             throw missing();
         }
 
