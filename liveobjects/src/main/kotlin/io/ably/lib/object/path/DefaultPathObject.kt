@@ -44,9 +44,20 @@ internal open class DefaultPathObject(
 
   override fun getType(): ValueType? = resolveValueAtPath(path)?.valueType()
 
-  override fun instance(): Instance? = TODO("Not yet implemented")
+  override fun instance(): Instance? {
+    val resolvedValue = resolveValueAtPath(path) ?: return null // unresolved path -> no instance
+    return when (resolvedValue) {
+      is ResolvedValue.Leaf -> null // primitives have no Instance; only live objects do
+      // TODO - wrap the resolved live object (LiveMap/LiveCounter) in an Instance
+      is ResolvedValue.MapRef, is ResolvedValue.CounterRef -> TODO("Not yet implemented")
+    }
+  }
 
-  override fun compactJson(): JsonElement? = TODO("Not yet implemented")
+  override fun compactJson(): JsonElement? {
+    resolveValueAtPath(path) ?: return null // unresolved path -> null
+    // TODO - build the compacted JSON snapshot (LiveMap -> JsonObject, LiveCounter -> number, leaf -> JSON value)
+    TODO("Not yet implemented")
+  }
 
   override fun exists(): Boolean = resolveValueAtPath(path) != null
 

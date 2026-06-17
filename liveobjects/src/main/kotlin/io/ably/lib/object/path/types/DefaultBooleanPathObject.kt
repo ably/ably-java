@@ -2,6 +2,7 @@ package io.ably.lib.`object`.path.types
 
 import io.ably.lib.`object`.DefaultRealtimeObject
 import io.ably.lib.`object`.path.DefaultPathObject
+import io.ably.lib.`object`.value.ResolvedValue
 
 /**
  * Default implementation of [BooleanPathObject], a terminal primitive view that only adds a
@@ -14,6 +15,9 @@ internal class DefaultBooleanPathObject(
   path: String,
 ) : DefaultPathObject(channelObject, path), BooleanPathObject {
 
-  @Suppress("RedundantNullableReturnType")
-  override fun value(): Boolean? = TODO("Not yet implemented")
+  override fun value(): Boolean? {
+    if (resolveValueAtPath(path) !is ResolvedValue.Leaf) return null // live object or unresolved -> no primitive value
+    // TODO - extract the primitive value from the resolved leaf, narrowed to Boolean
+    TODO("Not yet implemented")
+  }
 }
