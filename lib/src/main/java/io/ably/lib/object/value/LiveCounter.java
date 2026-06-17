@@ -23,7 +23,7 @@ import java.lang.reflect.InvocationTargetException;
  */
 public abstract class LiveCounter {
 
-    private static final String IMPLEMENTATION_CLASS = "io.ably.lib.object.DefaultLiveCounter";
+    private static final String IMPLEMENTATION_CLASS = "io.ably.lib.object.value.DefaultLiveCounter";
 
     /**
      * Extended by the LiveObjects implementation; not intended for
