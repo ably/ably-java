@@ -1,5 +1,6 @@
 package io.ably.lib.object.instance.types;
 
+import com.google.gson.JsonPrimitive;
 import io.ably.lib.object.instance.Instance;
 import org.jetbrains.annotations.NotNull;
 
@@ -22,4 +23,15 @@ public interface BinaryInstance extends Instance {
      * @return the wrapped bytes
      */
     byte @NotNull [] value();
+
+    /**
+     * Returns the compacted JSON snapshot of the wrapped value, narrowed to a
+     * {@link JsonPrimitive}: binary compacts to a base64-encoded JSON string.
+     *
+     * <p>Spec: RTTS7a
+     *
+     * @return the compacted JSON primitive
+     */
+    @Override
+    @NotNull JsonPrimitive compactJson();
 }

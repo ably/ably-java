@@ -1,6 +1,6 @@
 package io.ably.lib.`object`.instance.types
 
-import com.google.gson.JsonElement
+import com.google.gson.JsonPrimitive
 import io.ably.lib.`object`.DefaultRealtimeObject
 import io.ably.lib.`object`.ValueType
 import io.ably.lib.`object`.instance.DefaultInstance
@@ -17,7 +17,7 @@ internal class DefaultBooleanInstance(
 
   override fun getType(): ValueType = ValueType.BOOLEAN
 
-  override fun compactJson(): JsonElement = TODO("Not yet implemented")
+  override fun compactJson(): JsonPrimitive = TODO("Not yet implemented")
 
   override fun asBoolean(): BooleanInstance = this
 

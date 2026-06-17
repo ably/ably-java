@@ -1,6 +1,6 @@
 package io.ably.lib.`object`.instance.types
 
-import com.google.gson.JsonElement
+import com.google.gson.JsonPrimitive
 import io.ably.lib.`object`.DefaultRealtimeObject
 import io.ably.lib.`object`.Subscription
 import io.ably.lib.`object`.ValueType
@@ -21,7 +21,7 @@ internal class DefaultLiveCounterInstance(
 
   override fun getType(): ValueType = ValueType.LIVE_COUNTER
 
-  override fun compactJson(): JsonElement = TODO("Not yet implemented")
+  override fun compactJson(): JsonPrimitive = TODO("Not yet implemented")
 
   override fun asLiveCounter(): LiveCounterInstance = this
 

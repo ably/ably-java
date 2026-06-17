@@ -1,6 +1,5 @@
 package io.ably.lib.`object`.instance.types
 
-import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import io.ably.lib.`object`.DefaultRealtimeObject
 import io.ably.lib.`object`.ValueType
@@ -18,7 +17,7 @@ internal class DefaultJsonObjectInstance(
 
   override fun getType(): ValueType = ValueType.JSON_OBJECT
 
-  override fun compactJson(): JsonElement = TODO("Not yet implemented")
+  override fun compactJson(): JsonObject = TODO("Not yet implemented")
 
   override fun asJsonObject(): JsonObjectInstance = this
 

@@ -1,6 +1,6 @@
 package io.ably.lib.`object`.instance.types
 
-import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 import io.ably.lib.`object`.DefaultRealtimeObject
 import io.ably.lib.`object`.Subscription
 import io.ably.lib.`object`.ValueType
@@ -23,7 +23,7 @@ internal class DefaultLiveMapInstance(
 
   override fun getType(): ValueType = ValueType.LIVE_MAP
 
-  override fun compactJson(): JsonElement = TODO("Not yet implemented")
+  override fun compactJson(): JsonObject = TODO("Not yet implemented")
 
   override fun asLiveMap(): LiveMapInstance = this
 

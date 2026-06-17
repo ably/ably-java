@@ -1,5 +1,6 @@
 package io.ably.lib.object.instance.types;
 
+import com.google.gson.JsonPrimitive;
 import io.ably.lib.object.instance.Instance;
 import io.ably.lib.object.instance.InstanceListener;
 import io.ably.lib.object.Subscription;
@@ -36,6 +37,18 @@ public interface LiveCounterInstance extends Instance {
      */
     @NotNull
     Double value();
+
+    /**
+     * Returns the compacted JSON snapshot of the wrapped value, narrowed to a
+     * {@link JsonPrimitive}: a {@code LiveCounterInstance} always compacts to a numeric
+     * JSON primitive.
+     *
+     * <p>Spec: RTTS7a
+     *
+     * @return the compacted JSON primitive
+     */
+    @Override
+    @NotNull JsonPrimitive compactJson();
 
     /**
      * Increments the wrapped {@code LiveCounter} by {@code 1}. Equivalent to
