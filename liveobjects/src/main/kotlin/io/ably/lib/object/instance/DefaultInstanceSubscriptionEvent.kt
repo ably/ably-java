@@ -10,11 +10,11 @@ import io.ably.lib.`object`.message.ObjectMessage
  * Spec: RTINS16e
  */
 internal class DefaultInstanceSubscriptionEvent(
-  private val objectAt: Instance,
+  private val instance: Instance,
   private val message: ObjectMessage?,
 ) : InstanceSubscriptionEvent {
 
-  override fun getObject(): Instance = objectAt
+  override fun getObject(): Instance = instance
 
   override fun getMessage(): ObjectMessage? = message
 }

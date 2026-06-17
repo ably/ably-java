@@ -10,11 +10,11 @@ import io.ably.lib.`object`.message.ObjectMessage
  * Spec: RTPO19e / RTTS3d
  */
 internal class DefaultPathObjectSubscriptionEvent(
-  private val objectAt: PathObject,
+  private val pathObject: PathObject,
   private val message: ObjectMessage?,
 ) : PathObjectSubscriptionEvent {
 
-  override fun getObject(): PathObject = objectAt
+  override fun getObject(): PathObject = pathObject
 
   override fun getMessage(): ObjectMessage? = message
 }
