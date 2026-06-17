@@ -11,7 +11,8 @@ import io.ably.lib.`object`.path.DefaultPathObject
  */
 internal class DefaultBooleanPathObject(
   channelObject: DefaultRealtimeObject,
-) : DefaultPathObject(channelObject), BooleanPathObject {
+  path: String,
+) : DefaultPathObject(channelObject, path), BooleanPathObject {
 
   @Suppress("RedundantNullableReturnType")
   override fun value(): Boolean? = TODO("Not yet implemented")

@@ -12,7 +12,8 @@ import io.ably.lib.`object`.path.DefaultPathObject
  */
 internal class DefaultJsonObjectPathObject(
   channelObject: DefaultRealtimeObject,
-) : DefaultPathObject(channelObject), JsonObjectPathObject {
+  path: String,
+) : DefaultPathObject(channelObject, path), JsonObjectPathObject {
 
   @Suppress("RedundantNullableReturnType")
   override fun value(): JsonObject? = TODO("Not yet implemented")

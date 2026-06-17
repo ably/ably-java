@@ -11,7 +11,8 @@ import io.ably.lib.`object`.path.DefaultPathObject
  */
 internal class DefaultBinaryPathObject(
   channelObject: DefaultRealtimeObject,
-) : DefaultPathObject(channelObject), BinaryPathObject {
+  path: String,
+) : DefaultPathObject(channelObject, path), BinaryPathObject {
 
   @Suppress("RedundantNullableReturnType")
   override fun value(): ByteArray? = TODO("Not yet implemented")

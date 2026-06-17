@@ -43,17 +43,22 @@ import org.jetbrains.annotations.Nullable;
 public interface PathObject {
 
     /**
-     * Returns the {@link ValueType} of the value resolved at this path currently.
-     * Use this instead of dedicated {@code isLiveMap}/{@code isLiveCounter}/etc. checks.
+     * Returns the {@link ValueType} of the value currently resolved at this path, or
+     * {@code null} when the path does not resolve to any value. Use this instead of
+     * dedicated {@code isLiveMap}/{@code isLiveCounter}/etc. checks.
      *
-     * <p>Returns {@link ValueType#UNKNOWN} when the path does not resolve or the
-     * resolved value falls into none of the known categories.
+     * <p>A {@code null} result means there is no value at this path - nothing is stored
+     * there (e.g. an absent or removed map entry). This is deliberately distinct from
+     * {@link ValueType#UNKNOWN}, which is returned only when a value <em>is</em> present
+     * but its type matches none of the known categories. In other words: {@code null}
+     * means "no value", {@code UNKNOWN} means "a value of an unrecognized type".
      *
      * <p>Spec: RTTS4b
      *
-     * @return the resolved value type at this path
+     * @return the resolved value type at this path, or {@code null} if the path does
+     *         not resolve to a value
      */
-    @NotNull ValueType getType();
+    @Nullable ValueType getType();
 
     /**
      * Returns a dot-delimited string representation of the stored path segments.

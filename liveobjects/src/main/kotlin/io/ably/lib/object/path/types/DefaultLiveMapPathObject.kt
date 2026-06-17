@@ -14,7 +14,8 @@ import java.util.concurrent.CompletableFuture
  */
 internal class DefaultLiveMapPathObject(
   channelObject: DefaultRealtimeObject,
-) : DefaultPathObject(channelObject), LiveMapPathObject {
+  path: String,
+) : DefaultPathObject(channelObject, path), LiveMapPathObject {
 
   override fun get(key: String): PathObject = TODO("Not yet implemented")
 

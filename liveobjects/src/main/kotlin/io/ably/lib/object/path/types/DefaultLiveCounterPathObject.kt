@@ -14,7 +14,8 @@ import java.util.concurrent.CompletableFuture
  */
 internal class DefaultLiveCounterPathObject(
   channelObject: DefaultRealtimeObject,
-) : DefaultPathObject(channelObject), LiveCounterPathObject {
+  path: String,
+) : DefaultPathObject(channelObject, path), LiveCounterPathObject {
 
   @Suppress("RedundantNullableReturnType")
   override fun value(): Double? = TODO("Not yet implemented")

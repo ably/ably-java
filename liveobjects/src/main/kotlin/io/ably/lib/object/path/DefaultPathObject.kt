@@ -22,6 +22,8 @@ import io.ably.lib.`object`.path.types.LiveCounterPathObject
 import io.ably.lib.`object`.path.types.LiveMapPathObject
 import io.ably.lib.`object`.path.types.NumberPathObject
 import io.ably.lib.`object`.path.types.StringPathObject
+import io.ably.lib.`object`.value.ResolvedValue
+import io.ably.lib.`object`.value.valueType
 
 /**
  * Default implementation of [PathObject], the untyped node in the path-addressed view of
@@ -35,33 +37,34 @@ import io.ably.lib.`object`.path.types.StringPathObject
  */
 internal open class DefaultPathObject(
   internal val channelObject: DefaultRealtimeObject,
+  internal val path: String
 ) : PathObject {
 
-  override fun path(): String = TODO("Not yet implemented")
+  override fun path(): String = path
 
-  override fun getType(): ValueType = TODO("Not yet implemented")
+  override fun getType(): ValueType? = resolveValueAtPath(path)?.valueType()
 
   override fun instance(): Instance? = TODO("Not yet implemented")
 
   override fun compactJson(): JsonElement? = TODO("Not yet implemented")
 
-  override fun exists(): Boolean = TODO("Not yet implemented")
+  override fun exists(): Boolean = resolveValueAtPath(path) != null
 
-  override fun asLiveMap(): LiveMapPathObject = DefaultLiveMapPathObject(channelObject)
+  override fun asLiveMap(): LiveMapPathObject = DefaultLiveMapPathObject(channelObject, path)
 
-  override fun asLiveCounter(): LiveCounterPathObject = DefaultLiveCounterPathObject(channelObject)
+  override fun asLiveCounter(): LiveCounterPathObject = DefaultLiveCounterPathObject(channelObject, path)
 
-  override fun asNumber(): NumberPathObject = DefaultNumberPathObject(channelObject)
+  override fun asNumber(): NumberPathObject = DefaultNumberPathObject(channelObject, path)
 
-  override fun asString(): StringPathObject = DefaultStringPathObject(channelObject)
+  override fun asString(): StringPathObject = DefaultStringPathObject(channelObject, path)
 
-  override fun asBoolean(): BooleanPathObject = DefaultBooleanPathObject(channelObject)
+  override fun asBoolean(): BooleanPathObject = DefaultBooleanPathObject(channelObject, path)
 
-  override fun asBinary(): BinaryPathObject = DefaultBinaryPathObject(channelObject)
+  override fun asBinary(): BinaryPathObject = DefaultBinaryPathObject(channelObject, path)
 
-  override fun asJsonObject(): JsonObjectPathObject = DefaultJsonObjectPathObject(channelObject)
+  override fun asJsonObject(): JsonObjectPathObject = DefaultJsonObjectPathObject(channelObject, path)
 
-  override fun asJsonArray(): JsonArrayPathObject = DefaultJsonArrayPathObject(channelObject)
+  override fun asJsonArray(): JsonArrayPathObject = DefaultJsonArrayPathObject(channelObject, path)
 
   override fun subscribe(listener: PathObjectListener): Subscription = subscribe(listener, null)
 
@@ -70,5 +73,10 @@ internal open class DefaultPathObject(
     return onceSubscription {
       // TODO - remove PathObjectListener from list
     }
+  }
+
+  protected fun resolveValueAtPath(path: String): ResolvedValue? {
+    // TODO - resolve the path against the live objects graph and return the value at that position
+    return null
   }
 }

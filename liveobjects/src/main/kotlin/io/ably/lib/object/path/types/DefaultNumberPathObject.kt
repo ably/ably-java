@@ -11,7 +11,8 @@ import io.ably.lib.`object`.path.DefaultPathObject
  */
 internal class DefaultNumberPathObject(
   channelObject: DefaultRealtimeObject,
-) : DefaultPathObject(channelObject), NumberPathObject {
+  path: String,
+) : DefaultPathObject(channelObject, path), NumberPathObject {
 
   @Suppress("RedundantNullableReturnType")
   override fun value(): Number? = TODO("Not yet implemented")
