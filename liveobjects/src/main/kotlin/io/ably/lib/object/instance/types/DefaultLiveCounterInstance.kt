@@ -21,23 +21,42 @@ internal class DefaultLiveCounterInstance(
 
   override fun getType(): ValueType = ValueType.LIVE_COUNTER
 
-  override fun compactJson(): JsonPrimitive = TODO("Not yet implemented")
+  override fun compactJson(): JsonPrimitive {
+    channelObject.throwIfInvalidAccessApiConfiguration()
+    TODO("Not yet implemented")
+  }
 
   override fun asLiveCounter(): LiveCounterInstance = this
 
   override fun getId(): String = TODO("Not yet implemented")
 
-  override fun value(): Double = TODO("Not yet implemented")
+  override fun value(): Double {
+    channelObject.throwIfInvalidAccessApiConfiguration()
+    TODO("Not yet implemented")
+  }
 
-  override fun increment(): CompletableFuture<Void> = TODO("Not yet implemented")
+  override fun increment(): CompletableFuture<Void> {
+    channelObject.throwIfInvalidWriteApiConfiguration()
+    TODO("Not yet implemented")
+  }
 
-  override fun increment(amount: Number): CompletableFuture<Void> = TODO("Not yet implemented")
+  override fun increment(amount: Number): CompletableFuture<Void> {
+    channelObject.throwIfInvalidWriteApiConfiguration()
+    TODO("Not yet implemented")
+  }
 
-  override fun decrement(): CompletableFuture<Void> = TODO("Not yet implemented")
+  override fun decrement(): CompletableFuture<Void> {
+    channelObject.throwIfInvalidWriteApiConfiguration()
+    TODO("Not yet implemented")
+  }
 
-  override fun decrement(amount: Number): CompletableFuture<Void> = TODO("Not yet implemented")
+  override fun decrement(amount: Number): CompletableFuture<Void> {
+    channelObject.throwIfInvalidWriteApiConfiguration()
+    TODO("Not yet implemented")
+  }
 
   override fun subscribe(listener: InstanceListener): Subscription {
+    channelObject.throwIfInvalidAccessApiConfiguration()
     // TODO - subscribe logic goes here
     return onceSubscription {
       // TODO - remove InstanceListener

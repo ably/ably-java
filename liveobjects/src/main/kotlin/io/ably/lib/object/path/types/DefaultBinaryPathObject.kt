@@ -16,6 +16,7 @@ internal class DefaultBinaryPathObject(
 ) : DefaultPathObject(channelObject, path), BinaryPathObject {
 
   override fun value(): ByteArray? {
+    channelObject.throwIfInvalidAccessApiConfiguration()
     if (resolveValueAtPath(path) !is ResolvedValue.Leaf) return null // live object or unresolved -> no primitive value
     // TODO - extract the primitive value from the resolved leaf, narrowed to ByteArray (base64-decoded)
     TODO("Not yet implemented")

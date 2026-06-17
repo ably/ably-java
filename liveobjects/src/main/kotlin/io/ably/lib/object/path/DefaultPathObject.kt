@@ -42,9 +42,13 @@ internal open class DefaultPathObject(
 
   override fun path(): String = path
 
-  override fun getType(): ValueType? = resolveValueAtPath(path)?.valueType()
+  override fun getType(): ValueType? {
+    channelObject.throwIfInvalidAccessApiConfiguration()
+    return resolveValueAtPath(path)?.valueType()
+  }
 
   override fun instance(): Instance? {
+    channelObject.throwIfInvalidAccessApiConfiguration()
     val resolvedValue = resolveValueAtPath(path) ?: return null // unresolved path -> no instance
     return when (resolvedValue) {
       is ResolvedValue.Leaf -> null // primitives have no Instance; only live objects do
@@ -54,12 +58,16 @@ internal open class DefaultPathObject(
   }
 
   override fun compactJson(): JsonElement? {
+    channelObject.throwIfInvalidAccessApiConfiguration()
     resolveValueAtPath(path) ?: return null // unresolved path -> null
     // TODO - build the compacted JSON snapshot (LiveMap -> JsonObject, LiveCounter -> number, leaf -> JSON value)
     TODO("Not yet implemented")
   }
 
-  override fun exists(): Boolean = resolveValueAtPath(path) != null
+  override fun exists(): Boolean {
+    channelObject.throwIfInvalidAccessApiConfiguration()
+    return resolveValueAtPath(path) != null
+  }
 
   override fun asLiveMap(): LiveMapPathObject = DefaultLiveMapPathObject(channelObject, path)
 
@@ -80,6 +88,7 @@ internal open class DefaultPathObject(
   override fun subscribe(listener: PathObjectListener): Subscription = subscribe(listener, null)
 
   override fun subscribe(listener: PathObjectListener, options: PathObjectSubscriptionOptions?): Subscription {
+    channelObject.throwIfInvalidAccessApiConfiguration()
     // TODO - subscribe logic goes here
     return onceSubscription {
       // TODO - remove PathObjectListener from list

@@ -25,30 +25,35 @@ internal class DefaultLiveMapPathObject(
   override fun at(path: String): PathObject = TODO("Not yet implemented")
 
   override fun entries(): Iterable<Map.Entry<String, PathObject>> {
+    channelObject.throwIfInvalidAccessApiConfiguration()
     if (resolveValueAtPath(path) !is ResolvedValue.MapRef) return emptyList() // not a LiveMap (or unresolved) -> empty
     // TODO - iterate the resolved map's entries, yielding (key, child PathObject)
     TODO("Not yet implemented")
   }
 
   override fun keys(): Iterable<String> {
+    channelObject.throwIfInvalidAccessApiConfiguration()
     if (resolveValueAtPath(path) !is ResolvedValue.MapRef) return emptyList() // not a LiveMap (or unresolved) -> empty
     // TODO - return the resolved map's keys
     TODO("Not yet implemented")
   }
 
   override fun values(): Iterable<PathObject> {
+    channelObject.throwIfInvalidAccessApiConfiguration()
     if (resolveValueAtPath(path) !is ResolvedValue.MapRef) return emptyList() // not a LiveMap (or unresolved) -> empty
     // TODO - return a child PathObject for each entry of the resolved map
     TODO("Not yet implemented")
   }
 
   override fun size(): Long? {
+    channelObject.throwIfInvalidAccessApiConfiguration()
     if (resolveValueAtPath(path) !is ResolvedValue.MapRef) return null // not a LiveMap (or unresolved) -> null
     // TODO - return the resolved map's size
     TODO("Not yet implemented")
   }
 
   override fun set(key: String, value: LiveMapValue): CompletableFuture<Void> {
+    channelObject.throwIfInvalidWriteApiConfiguration()
     val resolvedValue = resolveValueAtPath(path) ?: throw pathNotResolvedError(path)
     if (resolvedValue !is ResolvedValue.MapRef) {
       throw typeMismatchError("Cannot set a key on a non-LiveMap object at path: \"$path\"")
@@ -58,6 +63,7 @@ internal class DefaultLiveMapPathObject(
   }
 
   override fun remove(key: String): CompletableFuture<Void> {
+    channelObject.throwIfInvalidWriteApiConfiguration()
     val resolvedValue = resolveValueAtPath(path) ?: throw pathNotResolvedError(path)
     if (resolvedValue !is ResolvedValue.MapRef) {
       throw typeMismatchError("Cannot remove a key from a non-LiveMap object at path: \"$path\"")

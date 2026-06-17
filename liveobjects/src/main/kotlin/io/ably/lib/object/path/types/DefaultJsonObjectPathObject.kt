@@ -17,6 +17,7 @@ internal class DefaultJsonObjectPathObject(
 ) : DefaultPathObject(channelObject, path), JsonObjectPathObject {
 
   override fun value(): JsonObject? {
+    channelObject.throwIfInvalidAccessApiConfiguration()
     if (resolveValueAtPath(path) !is ResolvedValue.Leaf) return null // live object or unresolved -> no primitive value
     // TODO - extract the primitive value from the resolved leaf, narrowed to JsonObject
     TODO("Not yet implemented")

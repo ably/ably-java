@@ -17,9 +17,15 @@ internal class DefaultJsonArrayInstance(
 
   override fun getType(): ValueType = ValueType.JSON_ARRAY
 
-  override fun compactJson(): JsonArray = TODO("Not yet implemented")
+  override fun compactJson(): JsonArray {
+    channelObject.throwIfInvalidAccessApiConfiguration()
+    TODO("Not yet implemented")
+  }
 
   override fun asJsonArray(): JsonArrayInstance = this
 
-  override fun value(): JsonArray = TODO("Not yet implemented")
+  override fun value(): JsonArray {
+    channelObject.throwIfInvalidAccessApiConfiguration()
+    TODO("Not yet implemented")
+  }
 }

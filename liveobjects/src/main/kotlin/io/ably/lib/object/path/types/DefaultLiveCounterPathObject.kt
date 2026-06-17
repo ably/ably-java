@@ -21,12 +21,14 @@ internal class DefaultLiveCounterPathObject(
 ) : DefaultPathObject(channelObject, path), LiveCounterPathObject {
 
   override fun value(): Double? {
+    channelObject.throwIfInvalidAccessApiConfiguration()
     if (resolveValueAtPath(path) !is ResolvedValue.CounterRef) return null // not a LiveCounter (or unresolved) -> null
     // TODO - return the resolved counter's value
     TODO("Not yet implemented")
   }
 
   override fun increment(): CompletableFuture<Void> {
+    channelObject.throwIfInvalidWriteApiConfiguration()
     val resolvedValue = resolveValueAtPath(path) ?: throw pathNotResolvedError(path)
     if (resolvedValue !is ResolvedValue.CounterRef) {
       throw typeMismatchError("Cannot increment a non-LiveCounter object at path: \"$path\"")
@@ -36,6 +38,7 @@ internal class DefaultLiveCounterPathObject(
   }
 
   override fun increment(amount: Number): CompletableFuture<Void> {
+    channelObject.throwIfInvalidWriteApiConfiguration()
     val resolvedValue = resolveValueAtPath(path) ?: throw pathNotResolvedError(path)
     if (resolvedValue !is ResolvedValue.CounterRef) {
       throw typeMismatchError("Cannot increment a non-LiveCounter object at path: \"$path\"")
@@ -45,6 +48,7 @@ internal class DefaultLiveCounterPathObject(
   }
 
   override fun decrement(): CompletableFuture<Void> {
+    channelObject.throwIfInvalidWriteApiConfiguration()
     val resolvedValue = resolveValueAtPath(path) ?: throw pathNotResolvedError(path)
     if (resolvedValue !is ResolvedValue.CounterRef) {
       throw typeMismatchError("Cannot decrement a non-LiveCounter object at path: \"$path\"")
@@ -54,6 +58,7 @@ internal class DefaultLiveCounterPathObject(
   }
 
   override fun decrement(amount: Number): CompletableFuture<Void> {
+    channelObject.throwIfInvalidWriteApiConfiguration()
     val resolvedValue = resolveValueAtPath(path) ?: throw pathNotResolvedError(path)
     if (resolvedValue !is ResolvedValue.CounterRef) {
       throw typeMismatchError("Cannot decrement a non-LiveCounter object at path: \"$path\"")

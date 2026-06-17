@@ -17,9 +17,15 @@ internal class DefaultStringInstance(
 
   override fun getType(): ValueType = ValueType.STRING
 
-  override fun compactJson(): JsonPrimitive = TODO("Not yet implemented")
+  override fun compactJson(): JsonPrimitive {
+    channelObject.throwIfInvalidAccessApiConfiguration()
+    TODO("Not yet implemented")
+  }
 
   override fun asString(): StringInstance = this
 
-  override fun value(): String = TODO("Not yet implemented")
+  override fun value(): String {
+    channelObject.throwIfInvalidAccessApiConfiguration()
+    TODO("Not yet implemented")
+  }
 }

@@ -16,6 +16,7 @@ internal class DefaultBooleanPathObject(
 ) : DefaultPathObject(channelObject, path), BooleanPathObject {
 
   override fun value(): Boolean? {
+    channelObject.throwIfInvalidAccessApiConfiguration()
     if (resolveValueAtPath(path) !is ResolvedValue.Leaf) return null // live object or unresolved -> no primitive value
     // TODO - extract the primitive value from the resolved leaf, narrowed to Boolean
     TODO("Not yet implemented")

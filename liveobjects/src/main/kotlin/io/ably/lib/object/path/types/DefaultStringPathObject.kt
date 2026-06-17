@@ -16,6 +16,7 @@ internal class DefaultStringPathObject(
 ) : DefaultPathObject(channelObject, path), StringPathObject {
 
   override fun value(): String? {
+    channelObject.throwIfInvalidAccessApiConfiguration()
     if (resolveValueAtPath(path) !is ResolvedValue.Leaf) return null // live object or unresolved -> no primitive value
     // TODO - extract the primitive value from the resolved leaf, narrowed to String
     TODO("Not yet implemented")

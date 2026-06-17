@@ -17,9 +17,15 @@ internal class DefaultJsonObjectInstance(
 
   override fun getType(): ValueType = ValueType.JSON_OBJECT
 
-  override fun compactJson(): JsonObject = TODO("Not yet implemented")
+  override fun compactJson(): JsonObject {
+    channelObject.throwIfInvalidAccessApiConfiguration()
+    TODO("Not yet implemented")
+  }
 
   override fun asJsonObject(): JsonObjectInstance = this
 
-  override fun value(): JsonObject = TODO("Not yet implemented")
+  override fun value(): JsonObject {
+    channelObject.throwIfInvalidAccessApiConfiguration()
+    TODO("Not yet implemented")
+  }
 }

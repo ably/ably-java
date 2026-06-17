@@ -17,9 +17,15 @@ internal class DefaultBinaryInstance(
 
   override fun getType(): ValueType = ValueType.BINARY
 
-  override fun compactJson(): JsonPrimitive = TODO("Not yet implemented")
+  override fun compactJson(): JsonPrimitive {
+    channelObject.throwIfInvalidAccessApiConfiguration()
+    TODO("Not yet implemented")
+  }
 
   override fun asBinary(): BinaryInstance = this
 
-  override fun value(): ByteArray = TODO("Not yet implemented")
+  override fun value(): ByteArray {
+    channelObject.throwIfInvalidAccessApiConfiguration()
+    TODO("Not yet implemented")
+  }
 }

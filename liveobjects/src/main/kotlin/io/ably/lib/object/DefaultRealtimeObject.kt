@@ -32,4 +32,10 @@ internal class DefaultRealtimeObject(
   override fun off(listener: ObjectStateChange.Listener): Unit = TODO("Not yet implemented")
 
   override fun offAll(): Unit = TODO("Not yet implemented")
+
+  /** Validates the channel is configured for access (read/subscribe) operations. Spec: RTLO4b1 */
+  internal fun throwIfInvalidAccessApiConfiguration() = adapter.throwIfInvalidAccessApiConfiguration(channelName)
+
+  /** Validates the channel is configured for write (mutation) operations. Spec: RTLO4b2 */
+  internal fun throwIfInvalidWriteApiConfiguration() = adapter.throwIfInvalidWriteApiConfiguration(channelName)
 }

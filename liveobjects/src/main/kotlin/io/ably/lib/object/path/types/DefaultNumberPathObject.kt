@@ -16,6 +16,7 @@ internal class DefaultNumberPathObject(
 ) : DefaultPathObject(channelObject, path), NumberPathObject {
 
   override fun value(): Number? {
+    channelObject.throwIfInvalidAccessApiConfiguration()
     if (resolveValueAtPath(path) !is ResolvedValue.Leaf) return null // live object or unresolved -> no primitive value
     // TODO - extract the primitive value from the resolved leaf, narrowed to Number
     TODO("Not yet implemented")

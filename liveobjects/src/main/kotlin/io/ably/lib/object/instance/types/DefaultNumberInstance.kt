@@ -17,9 +17,15 @@ internal class DefaultNumberInstance(
 
   override fun getType(): ValueType = ValueType.NUMBER
 
-  override fun compactJson(): JsonPrimitive = TODO("Not yet implemented")
+  override fun compactJson(): JsonPrimitive {
+    channelObject.throwIfInvalidAccessApiConfiguration()
+    TODO("Not yet implemented")
+  }
 
   override fun asNumber(): NumberInstance = this
 
-  override fun value(): Number = TODO("Not yet implemented")
+  override fun value(): Number {
+    channelObject.throwIfInvalidAccessApiConfiguration()
+    TODO("Not yet implemented")
+  }
 }

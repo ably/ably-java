@@ -17,9 +17,15 @@ internal class DefaultBooleanInstance(
 
   override fun getType(): ValueType = ValueType.BOOLEAN
 
-  override fun compactJson(): JsonPrimitive = TODO("Not yet implemented")
+  override fun compactJson(): JsonPrimitive {
+    channelObject.throwIfInvalidAccessApiConfiguration()
+    TODO("Not yet implemented")
+  }
 
   override fun asBoolean(): BooleanInstance = this
 
-  override fun value(): Boolean = TODO("Not yet implemented")
+  override fun value(): Boolean {
+    channelObject.throwIfInvalidAccessApiConfiguration()
+    TODO("Not yet implemented")
+  }
 }

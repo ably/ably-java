@@ -23,28 +23,53 @@ internal class DefaultLiveMapInstance(
 
   override fun getType(): ValueType = ValueType.LIVE_MAP
 
-  override fun compactJson(): JsonObject = TODO("Not yet implemented")
+  override fun compactJson(): JsonObject {
+    channelObject.throwIfInvalidAccessApiConfiguration()
+    TODO("Not yet implemented")
+  }
 
   override fun asLiveMap(): LiveMapInstance = this
 
   override fun getId(): String = TODO("Not yet implemented")
 
   @Suppress("RedundantNullableReturnType")
-  override fun get(key: String): Instance? = TODO("Not yet implemented")
+  override fun get(key: String): Instance? {
+    channelObject.throwIfInvalidAccessApiConfiguration()
+    TODO("Not yet implemented")
+  }
 
-  override fun entries(): Iterable<Map.Entry<String, Instance>> = TODO("Not yet implemented")
+  override fun entries(): Iterable<Map.Entry<String, Instance>> {
+    channelObject.throwIfInvalidAccessApiConfiguration()
+    TODO("Not yet implemented")
+  }
 
-  override fun keys(): Iterable<String> = TODO("Not yet implemented")
+  override fun keys(): Iterable<String> {
+    channelObject.throwIfInvalidAccessApiConfiguration()
+    TODO("Not yet implemented")
+  }
 
-  override fun values(): Iterable<Instance> = TODO("Not yet implemented")
+  override fun values(): Iterable<Instance> {
+    channelObject.throwIfInvalidAccessApiConfiguration()
+    TODO("Not yet implemented")
+  }
 
-  override fun size(): Long = TODO("Not yet implemented")
+  override fun size(): Long {
+    channelObject.throwIfInvalidAccessApiConfiguration()
+    TODO("Not yet implemented")
+  }
 
-  override fun set(key: String, value: LiveMapValue): CompletableFuture<Void> = TODO("Not yet implemented")
+  override fun set(key: String, value: LiveMapValue): CompletableFuture<Void> {
+    channelObject.throwIfInvalidWriteApiConfiguration()
+    TODO("Not yet implemented")
+  }
 
-  override fun remove(key: String): CompletableFuture<Void> = TODO("Not yet implemented")
+  override fun remove(key: String): CompletableFuture<Void> {
+    channelObject.throwIfInvalidWriteApiConfiguration()
+    TODO("Not yet implemented")
+  }
 
   override fun subscribe(listener: InstanceListener): Subscription {
+    channelObject.throwIfInvalidAccessApiConfiguration()
     // TODO - subscribe logic goes here
     return onceSubscription {
       // TODO - remove InstanceListener
