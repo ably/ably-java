@@ -2,8 +2,9 @@ package io.ably.lib.`object`.path.types
 
 import com.google.gson.JsonArray
 import io.ably.lib.`object`.DefaultRealtimeObject
+import io.ably.lib.`object`.ValueType
 import io.ably.lib.`object`.path.DefaultPathObject
-import io.ably.lib.`object`.value.ResolvedValue
+import io.ably.lib.`object`.value.valueType
 
 /**
  * Default implementation of [JsonArrayPathObject], a terminal primitive view that only adds
@@ -18,7 +19,7 @@ internal class DefaultJsonArrayPathObject(
 
   override fun value(): JsonArray? {
     channelObject.throwIfInvalidAccessApiConfiguration()
-    if (resolveValueAtPath(path) !is ResolvedValue.Leaf) return null // live object or unresolved -> no primitive value
+    if (resolveValueAtPath(path)?.valueType() != ValueType.JSON_ARRAY) return null // not a JSON array at this path -> no value
     // TODO - extract the primitive value from the resolved leaf, narrowed to JsonArray
     TODO("Not yet implemented")
   }
