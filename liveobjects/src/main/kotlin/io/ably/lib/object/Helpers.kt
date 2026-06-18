@@ -27,7 +27,7 @@ internal fun onceSubscription(onUnsubscribe: () -> Unit): Subscription {
  * attachable (not detached/failed) and have the `object_subscribe` mode. Copied from the
  * legacy `io.ably.lib.objects` helpers so this package has no dependency on that package.
  *
- * Spec: RTLO4b1
+ * Spec: RTO25
  */
 internal fun AblyClientAdapter.throwIfInvalidAccessApiConfiguration(channelName: String) {
   throwIfInChannelState(channelName, arrayOf(ChannelState.detached, ChannelState.failed))
@@ -39,7 +39,7 @@ internal fun AblyClientAdapter.throwIfInvalidAccessApiConfiguration(channelName:
  * enabled, the channel must be usable (not detached/failed/suspended) and have the
  * `object_publish` mode.
  *
- * Spec: RTLO4b2
+ * Spec: RTO26
  */
 internal fun AblyClientAdapter.throwIfInvalidWriteApiConfiguration(channelName: String) {
   throwIfEchoMessagesDisabled()

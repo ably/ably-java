@@ -17,15 +17,19 @@ import org.jetbrains.annotations.NotNull;
  * {@code LiveCounter}) or primitive value.
  *
  * <p>Unlike {@code PathObject}, which re-resolves its path on every call, an
- * {@code Instance} is identity-addressed: it is bound to a specific underlying value
- * and dereferenced in O(1), regardless of where that value sits in the graph. Read
- * operations validate the access API preconditions and fail with an
- * {@code AblyException} if they are not satisfied.
+ * {@code Instance} is identity-addressed: it wraps an already-resolved value (typically
+ * obtained from a {@code PathObject}), so its type is fixed and known for the lifetime
+ * of the instance, and it is dereferenced in O(1) regardless of where that value sits
+ * in the graph. Read operations validate the access API preconditions and fail with an
+ * {@code AblyException} if those are not satisfied.
  *
  * <p>This base type exposes only the methods whose behaviour is independent of the
  * wrapped type; everything else - including {@code subscribe} (RTTS7b) - is
  * partitioned onto the sub-types. Use the {@code as*} helpers to obtain a sub-type
- * view without type validation, or discriminate via {@link #getType()}.
+ * view, or discriminate via {@link #getType()}. Because the wrapped type is fixed and
+ * known, a mismatched {@code as*} cast fails fast with an {@link IllegalStateException}
+ * rather than returning a best-effort view (contrast {@code PathObject}, whose casts
+ * never throw).
  *
  * <p>Spec: RTINS1, RTTS7
  *
@@ -65,85 +69,101 @@ public interface Instance {
     @NotNull JsonElement compactJson();
 
     /**
-     * Returns this instance wrapped as a {@link LiveMapInstance}.
+     * Returns this instance viewed as a {@link LiveMapInstance}.
      *
-     * <p>Best-effort cast; does not validate the underlying type. Read operations on
-     * the returned wrapper are always permitted; write/terminal operations will fail
-     * at call time if the wrapped value is not a {@code LiveMap}.
+     * <p>Because an {@code Instance} wraps an already-resolved value of a known, fixed
+     * type, this fails fast: it throws {@link IllegalStateException} if the wrapped value
+     * is not a {@code LiveMap}, rather than returning a best-effort view. Use
+     * {@link #getType()} to discriminate the type before casting.
      *
-     * <p>Spec: RTTS9a
+     * <p>Spec: RTTS9a / RTTS9d
      *
      * @return a {@link LiveMapInstance} view of this instance
+     * @throws IllegalStateException if the wrapped value is not a {@code LiveMap}
      */
     @NotNull LiveMapInstance asLiveMap();
 
     /**
-     * Returns this instance wrapped as a {@link LiveCounterInstance}.
-     * Best-effort cast; does not validate the underlying type.
+     * Returns this instance viewed as a {@link LiveCounterInstance}.
+     * Fails fast: throws {@link IllegalStateException} if the wrapped value is not a
+     * {@code LiveCounter}.
      *
-     * <p>Spec: RTTS9b
+     * <p>Spec: RTTS9b / RTTS9d
      *
      * @return a {@link LiveCounterInstance} view of this instance
+     * @throws IllegalStateException if the wrapped value is not a {@code LiveCounter}
      */
     @NotNull LiveCounterInstance asLiveCounter();
 
     /**
-     * Returns this instance wrapped as a {@link NumberInstance}.
-     * Best-effort cast; does not validate the underlying type.
+     * Returns this instance viewed as a {@link NumberInstance}.
+     * Fails fast: throws {@link IllegalStateException} if the wrapped value is not a
+     * {@code Number}.
      *
-     * <p>Spec: RTTS9c
+     * <p>Spec: RTTS9c / RTTS9d
      *
      * @return a {@link NumberInstance} view of this instance
+     * @throws IllegalStateException if the wrapped value is not a {@code Number}
      */
     @NotNull NumberInstance asNumber();
 
     /**
-     * Returns this instance wrapped as a {@link StringInstance}.
-     * Best-effort cast; does not validate the underlying type.
+     * Returns this instance viewed as a {@link StringInstance}.
+     * Fails fast: throws {@link IllegalStateException} if the wrapped value is not a
+     * {@code String}.
      *
-     * <p>Spec: RTTS9c
+     * <p>Spec: RTTS9c / RTTS9d
      *
      * @return a {@link StringInstance} view of this instance
+     * @throws IllegalStateException if the wrapped value is not a {@code String}
      */
     @NotNull StringInstance asString();
 
     /**
-     * Returns this instance wrapped as a {@link BooleanInstance}.
-     * Best-effort cast; does not validate the underlying type.
+     * Returns this instance viewed as a {@link BooleanInstance}.
+     * Fails fast: throws {@link IllegalStateException} if the wrapped value is not a
+     * {@code Boolean}.
      *
-     * <p>Spec: RTTS9c
+     * <p>Spec: RTTS9c / RTTS9d
      *
      * @return a {@link BooleanInstance} view of this instance
+     * @throws IllegalStateException if the wrapped value is not a {@code Boolean}
      */
     @NotNull BooleanInstance asBoolean();
 
     /**
-     * Returns this instance wrapped as a {@link BinaryInstance}.
-     * Best-effort cast; does not validate the underlying type.
+     * Returns this instance viewed as a {@link BinaryInstance}.
+     * Fails fast: throws {@link IllegalStateException} if the wrapped value is not a
+     * binary value.
      *
-     * <p>Spec: RTTS9c
+     * <p>Spec: RTTS9c / RTTS9d
      *
      * @return a {@link BinaryInstance} view of this instance
+     * @throws IllegalStateException if the wrapped value is not a binary value
      */
     @NotNull BinaryInstance asBinary();
 
     /**
-     * Returns this instance wrapped as a {@link JsonObjectInstance}.
-     * Best-effort cast; does not validate the underlying type.
+     * Returns this instance viewed as a {@link JsonObjectInstance}.
+     * Fails fast: throws {@link IllegalStateException} if the wrapped value is not a
+     * JSON object.
      *
-     * <p>Spec: RTTS9c
+     * <p>Spec: RTTS9c / RTTS9d
      *
      * @return a {@link JsonObjectInstance} view of this instance
+     * @throws IllegalStateException if the wrapped value is not a JSON object
      */
     @NotNull JsonObjectInstance asJsonObject();
 
     /**
-     * Returns this instance wrapped as a {@link JsonArrayInstance}.
-     * Best-effort cast; does not validate the underlying type.
+     * Returns this instance viewed as a {@link JsonArrayInstance}.
+     * Fails fast: throws {@link IllegalStateException} if the wrapped value is not a
+     * JSON array.
      *
-     * <p>Spec: RTTS9c
+     * <p>Spec: RTTS9c / RTTS9d
      *
      * @return a {@link JsonArrayInstance} view of this instance
+     * @throws IllegalStateException if the wrapped value is not a JSON array
      */
     @NotNull JsonArrayInstance asJsonArray();
 }

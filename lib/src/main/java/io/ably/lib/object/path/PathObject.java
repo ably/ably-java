@@ -21,11 +21,17 @@ import org.jetbrains.annotations.Nullable;
  * {@code LiveMap}.
  *
  * <p>A {@code PathObject} stores a path as an ordered list of string segments and
- * resolves it against the local object graph each time a method is called. Resolution
- * is best-effort: the value at a path may change between two calls (e.g. between
+ * resolves it against the local object graph each time a terminal method is called;
+ * the freshly resolved value is the sole basis for that call's result. Resolution is
+ * best-effort: the value at a path may change between two calls (e.g. between
  * {@link #exists()} and a subsequent write) as updates from other clients are applied.
- * Operations that resolve the path validate the access/write API preconditions and
- * fail with an {@code AblyException} if they are not satisfied.
+ *
+ * <p>When the path does not resolve, or resolves to a type the called method does not
+ * apply to, read operations degrade gracefully - returning {@code null} or an empty
+ * result - whereas write operations fail with an {@code AblyException} (code 92005 if
+ * the path does not resolve, 92007 on a type mismatch). All terminal operations
+ * additionally validate the access/write API preconditions and fail with an
+ * {@code AblyException} if those are not satisfied.
  *
  * <p>This base type exposes only the methods whose behaviour is independent of the
  * resolved type; map and counter reads/writes are partitioned onto the sub-types
