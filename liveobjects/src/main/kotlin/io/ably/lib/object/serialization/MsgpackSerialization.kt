@@ -1,0 +1,908 @@
+package io.ably.lib.`object`.serialization
+
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
+import io.ably.lib.objects.*
+import io.ably.lib.objects.CounterCreate
+import io.ably.lib.objects.CounterCreateWithObjectId
+import io.ably.lib.objects.CounterInc
+import io.ably.lib.objects.MapCreate
+import io.ably.lib.objects.MapCreateWithObjectId
+import io.ably.lib.objects.MapRemove
+import io.ably.lib.objects.MapSet
+import io.ably.lib.objects.MapClear
+import io.ably.lib.objects.ObjectDelete
+import io.ably.lib.objects.ObjectsMapSemantics
+import io.ably.lib.objects.ObjectsCounter
+import io.ably.lib.objects.ObjectData
+import io.ably.lib.objects.ObjectsMap
+import io.ably.lib.objects.ObjectsMapEntry
+import io.ably.lib.objects.ObjectMessage
+import io.ably.lib.objects.ObjectOperation
+import io.ably.lib.objects.ObjectOperationAction
+import io.ably.lib.objects.ObjectState
+import java.util.Base64
+import io.ably.lib.util.Serialisation
+import org.msgpack.core.MessageFormat
+import org.msgpack.core.MessagePacker
+import org.msgpack.core.MessageUnpacker
+
+/**
+ * Write ObjectMessage to MessagePacker
+ */
+internal fun ObjectMessage.writeMsgpack(packer: MessagePacker) {
+  var fieldCount = 0
+
+  if (id != null) fieldCount++
+  if (timestamp != null) fieldCount++
+  if (clientId != null) fieldCount++
+  if (connectionId != null) fieldCount++
+  if (extras != null) fieldCount++
+  if (operation != null) fieldCount++
+  if (objectState != null) fieldCount++
+  if (serial != null) fieldCount++
+  if (serialTimestamp != null) fieldCount++
+  if (siteCode != null) fieldCount++
+
+  packer.packMapHeader(fieldCount)
+
+  if (id != null) {
+    packer.packString("id")
+    packer.packString(id)
+  }
+
+  if (timestamp != null) {
+    packer.packString("timestamp")
+    packer.packLong(timestamp)
+  }
+
+  if (clientId != null) {
+    packer.packString("clientId")
+    packer.packString(clientId)
+  }
+
+  if (connectionId != null) {
+    packer.packString("connectionId")
+    packer.packString(connectionId)
+  }
+
+  if (extras != null) {
+    packer.packString("extras")
+    packer.writePayload(Serialisation.gsonToMsgpack(extras))
+  }
+
+  if (operation != null) {
+    packer.packString("operation")
+    operation.writeMsgpack(packer)
+  }
+
+  if (objectState != null) {
+    packer.packString("object")
+    objectState.writeMsgpack(packer)
+  }
+
+  if (serial != null) {
+    packer.packString("serial")
+    packer.packString(serial)
+  }
+
+  if (serialTimestamp != null) {
+    packer.packString("serialTimestamp")
+    packer.packLong(serialTimestamp)
+  }
+
+  if (siteCode != null) {
+    packer.packString("siteCode")
+    packer.packString(siteCode)
+  }
+}
+
+/**
+ * Read an ObjectMessage from MessageUnpacker
+ */
+internal fun readObjectMessage(unpacker: MessageUnpacker): ObjectMessage {
+  if (unpacker.nextFormat == MessageFormat.NIL) {
+    unpacker.unpackNil()
+    return ObjectMessage() // default/empty message
+  }
+
+  val fieldCount = unpacker.unpackMapHeader()
+
+  var id: String? = null
+  var timestamp: Long? = null
+  var clientId: String? = null
+  var connectionId: String? = null
+  var extras: JsonObject? = null
+  var operation: ObjectOperation? = null
+  var objectState: ObjectState? = null
+  var serial: String? = null
+  var serialTimestamp: Long? = null
+  var siteCode: String? = null
+
+  for (i in 0 until fieldCount) {
+    val fieldName = unpacker.unpackString().intern()
+    val fieldFormat = unpacker.nextFormat
+
+    if (fieldFormat == MessageFormat.NIL) {
+      unpacker.unpackNil()
+      continue
+    }
+
+    when (fieldName) {
+      "id" -> id = unpacker.unpackString()
+      "timestamp" -> timestamp = unpacker.unpackLong()
+      "clientId" -> clientId = unpacker.unpackString()
+      "connectionId" -> connectionId = unpacker.unpackString()
+      "extras" -> extras = Serialisation.msgpackToGson(unpacker.unpackValue()) as? JsonObject
+      "operation" -> operation = readObjectOperation(unpacker)
+      "object" -> objectState = readObjectState(unpacker)
+      "serial" -> serial = unpacker.unpackString()
+      "serialTimestamp" -> serialTimestamp = unpacker.unpackLong()
+      "siteCode" -> siteCode = unpacker.unpackString()
+      else -> unpacker.skipValue()
+    }
+  }
+
+  return ObjectMessage(
+    id = id,
+    timestamp = timestamp,
+    clientId = clientId,
+    connectionId = connectionId,
+    extras = extras,
+    operation = operation,
+    objectState = objectState,
+    serial = serial,
+    serialTimestamp = serialTimestamp,
+    siteCode = siteCode
+  )
+}
+
+/**
+ * Write ObjectOperation to MessagePacker
+ */
+private fun ObjectOperation.writeMsgpack(packer: MessagePacker) {
+  var fieldCount = 1 // action is always required
+  require(objectId.isNotEmpty()) { "objectId must be non-empty per Objects protocol" }
+  fieldCount++
+
+  if (mapCreate != null) fieldCount++
+  if (mapSet != null) fieldCount++
+  if (mapRemove != null) fieldCount++
+  if (counterCreate != null) fieldCount++
+  if (counterInc != null) fieldCount++
+  if (objectDelete != null) fieldCount++
+  if (mapCreateWithObjectId != null) fieldCount++
+  if (counterCreateWithObjectId != null) fieldCount++
+  if (mapClear != null) fieldCount++
+
+  packer.packMapHeader(fieldCount)
+
+  packer.packString("action")
+  packer.packInt(action.code)
+
+  // Always include objectId as per Objects protocol
+  packer.packString("objectId")
+  packer.packString(objectId)
+
+  if (mapCreate != null) {
+    packer.packString("mapCreate")
+    mapCreate.writeMsgpack(packer)
+  }
+
+  if (mapSet != null) {
+    packer.packString("mapSet")
+    mapSet.writeMsgpack(packer)
+  }
+
+  if (mapRemove != null) {
+    packer.packString("mapRemove")
+    mapRemove.writeMsgpack(packer)
+  }
+
+  if (counterCreate != null) {
+    packer.packString("counterCreate")
+    counterCreate.writeMsgpack(packer)
+  }
+
+  if (counterInc != null) {
+    packer.packString("counterInc")
+    counterInc.writeMsgpack(packer)
+  }
+
+  if (objectDelete != null) {
+    packer.packString("objectDelete")
+    packer.packMapHeader(0) // empty map
+  }
+
+  if (mapCreateWithObjectId != null) {
+    packer.packString("mapCreateWithObjectId")
+    mapCreateWithObjectId.writeMsgpack(packer)
+  }
+
+  if (counterCreateWithObjectId != null) {
+    packer.packString("counterCreateWithObjectId")
+    counterCreateWithObjectId.writeMsgpack(packer)
+  }
+
+  if (mapClear != null) {
+    packer.packString("mapClear")
+    packer.packMapHeader(0) // empty map, no fields
+  }
+
+}
+
+/**
+ * Read ObjectOperation from MessageUnpacker
+ */
+private fun readObjectOperation(unpacker: MessageUnpacker): ObjectOperation {
+  val fieldCount = unpacker.unpackMapHeader()
+
+  var action: ObjectOperationAction? = null
+  var objectId: String = ""
+  var mapCreate: MapCreate? = null
+  var mapSet: MapSet? = null
+  var mapRemove: MapRemove? = null
+  var counterCreate: CounterCreate? = null
+  var counterInc: CounterInc? = null
+  var objectDelete: ObjectDelete? = null
+  var mapCreateWithObjectId: MapCreateWithObjectId? = null
+  var counterCreateWithObjectId: CounterCreateWithObjectId? = null
+  var mapClear: MapClear? = null
+
+  for (i in 0 until fieldCount) {
+    val fieldName = unpacker.unpackString().intern()
+    val fieldFormat = unpacker.nextFormat
+
+    if (fieldFormat == MessageFormat.NIL) {
+      unpacker.unpackNil()
+      continue
+    }
+
+    when (fieldName) {
+      "action" -> {
+        val actionCode = unpacker.unpackInt()
+        action = ObjectOperationAction.entries.firstOrNull { it.code == actionCode }
+          ?: ObjectOperationAction.entries.firstOrNull { it.code == -1 }
+          ?: throw objectError("Unknown ObjectOperationAction code: $actionCode and no Unknown fallback found")
+      }
+      "objectId" -> objectId = unpacker.unpackString()
+      "mapCreate" -> mapCreate = readMapCreate(unpacker)
+      "mapSet" -> mapSet = readMapSet(unpacker)
+      "mapRemove" -> mapRemove = readMapRemove(unpacker)
+      "counterCreate" -> counterCreate = readCounterCreate(unpacker)
+      "counterInc" -> counterInc = readCounterInc(unpacker)
+      "objectDelete" -> {
+        unpacker.skipValue() // empty map, just consume it
+        objectDelete = ObjectDelete
+      }
+      "mapCreateWithObjectId" -> mapCreateWithObjectId = readMapCreateWithObjectId(unpacker)
+      "counterCreateWithObjectId" -> counterCreateWithObjectId = readCounterCreateWithObjectId(unpacker)
+      "mapClear" -> {
+        unpacker.skipValue() // empty map, consume it
+        mapClear = MapClear
+      }
+      else -> unpacker.skipValue()
+    }
+  }
+
+  if (action == null) {
+    throw objectError("Missing required 'action' field in ObjectOperation")
+  }
+
+  return ObjectOperation(
+    action = action,
+    objectId = objectId,
+    mapCreate = mapCreate,
+    mapSet = mapSet,
+    mapRemove = mapRemove,
+    counterCreate = counterCreate,
+    counterInc = counterInc,
+    objectDelete = objectDelete,
+    mapCreateWithObjectId = mapCreateWithObjectId,
+    counterCreateWithObjectId = counterCreateWithObjectId,
+    mapClear = mapClear,
+  )
+}
+
+/**
+ * Write ObjectState to MessagePacker
+ */
+private fun ObjectState.writeMsgpack(packer: MessagePacker) {
+  var fieldCount = 3 // objectId, siteTimeserials, and tombstone are required
+
+  if (createOp != null) fieldCount++
+  if (map != null) fieldCount++
+  if (counter != null) fieldCount++
+
+  packer.packMapHeader(fieldCount)
+
+  packer.packString("objectId")
+  packer.packString(objectId)
+
+  packer.packString("siteTimeserials")
+  packer.packMapHeader(siteTimeserials.size)
+  for ((key, value) in siteTimeserials) {
+    packer.packString(key)
+    packer.packString(value)
+  }
+
+  packer.packString("tombstone")
+  packer.packBoolean(tombstone)
+
+  if (createOp != null) {
+    packer.packString("createOp")
+    createOp.writeMsgpack(packer)
+  }
+
+  if (map != null) {
+    packer.packString("map")
+    map.writeMsgpack(packer)
+  }
+
+  if (counter != null) {
+    packer.packString("counter")
+    counter.writeMsgpack(packer)
+  }
+}
+
+/**
+ * Read ObjectState from MessageUnpacker
+ */
+private fun readObjectState(unpacker: MessageUnpacker): ObjectState {
+  val fieldCount = unpacker.unpackMapHeader()
+
+  var objectId = ""
+  var siteTimeserials = mapOf<String, String>()
+  var tombstone = false
+  var createOp: ObjectOperation? = null
+  var map: ObjectsMap? = null
+  var counter: ObjectsCounter? = null
+
+  for (i in 0 until fieldCount) {
+    val fieldName = unpacker.unpackString().intern()
+    val fieldFormat = unpacker.nextFormat
+
+    if (fieldFormat == MessageFormat.NIL) {
+      unpacker.unpackNil()
+      continue
+    }
+
+    when (fieldName) {
+      "objectId" -> objectId = unpacker.unpackString()
+      "siteTimeserials" -> {
+        val mapSize = unpacker.unpackMapHeader()
+        val tempMap = mutableMapOf<String, String>()
+        for (j in 0 until mapSize) {
+          val key = unpacker.unpackString()
+          val value = unpacker.unpackString()
+          tempMap[key] = value
+        }
+        siteTimeserials = tempMap
+      }
+      "tombstone" -> tombstone = unpacker.unpackBoolean()
+      "createOp" -> createOp = readObjectOperation(unpacker)
+      "map" -> map = readObjectMap(unpacker)
+      "counter" -> counter = readObjectCounter(unpacker)
+      else -> unpacker.skipValue()
+    }
+  }
+
+  return ObjectState(
+    objectId = objectId,
+    siteTimeserials = siteTimeserials,
+    tombstone = tombstone,
+    createOp = createOp,
+    map = map,
+    counter = counter
+  )
+}
+
+/**
+ * Write MapCreate to MessagePacker
+ */
+private fun MapCreate.writeMsgpack(packer: MessagePacker) {
+  packer.packMapHeader(2)
+  packer.packString("semantics")
+  packer.packInt(semantics.code)
+  packer.packString("entries")
+  packer.packMapHeader(entries.size)
+  for ((key, value) in entries) {
+    packer.packString(key)
+    value.writeMsgpack(packer)
+  }
+}
+
+/**
+ * Read MapCreate from MessageUnpacker
+ */
+private fun readMapCreate(unpacker: MessageUnpacker): MapCreate {
+  val fieldCount = unpacker.unpackMapHeader()
+  var semantics: ObjectsMapSemantics = ObjectsMapSemantics.LWW
+  var entries: Map<String, ObjectsMapEntry> = emptyMap()
+
+  for (i in 0 until fieldCount) {
+    val fieldName = unpacker.unpackString().intern()
+    val fieldFormat = unpacker.nextFormat
+    if (fieldFormat == MessageFormat.NIL) { unpacker.unpackNil(); continue }
+    when (fieldName) {
+      "semantics" -> {
+        val code = unpacker.unpackInt()
+        semantics = ObjectsMapSemantics.entries.firstOrNull { it.code == code }
+          ?: ObjectsMapSemantics.entries.firstOrNull { it.code == -1 }
+          ?: throw objectError("Unknown MapSemantics code: $code and no UNKNOWN fallback found")
+      }
+      "entries" -> {
+        val mapSize = unpacker.unpackMapHeader()
+        val tempMap = mutableMapOf<String, ObjectsMapEntry>()
+        for (j in 0 until mapSize) {
+          tempMap[unpacker.unpackString()] = readObjectMapEntry(unpacker)
+        }
+        entries = tempMap
+      }
+      else -> unpacker.skipValue()
+    }
+  }
+  return MapCreate(semantics = semantics, entries = entries)
+}
+
+/**
+ * Write MapSet to MessagePacker
+ */
+private fun MapSet.writeMsgpack(packer: MessagePacker) {
+  packer.packMapHeader(2)
+  packer.packString("key")
+  packer.packString(key)
+  packer.packString("value")
+  value.writeMsgpack(packer)
+}
+
+/**
+ * Read MapSet from MessageUnpacker
+ */
+private fun readMapSet(unpacker: MessageUnpacker): MapSet {
+  val fieldCount = unpacker.unpackMapHeader()
+  var key: String? = null
+  var value: ObjectData? = null
+
+  for (i in 0 until fieldCount) {
+    val fieldName = unpacker.unpackString().intern()
+    val fieldFormat = unpacker.nextFormat
+    if (fieldFormat == MessageFormat.NIL) { unpacker.unpackNil(); continue }
+    when (fieldName) {
+      "key" -> key = unpacker.unpackString()
+      "value" -> value = readObjectData(unpacker)
+      else -> unpacker.skipValue()
+    }
+  }
+  return MapSet(
+    key = key ?: throw objectError("Missing 'key' in MapSet payload"),
+    value = value ?: throw objectError("Missing 'value' in MapSet payload")
+  )
+}
+
+/**
+ * Write MapRemove to MessagePacker
+ */
+private fun MapRemove.writeMsgpack(packer: MessagePacker) {
+  packer.packMapHeader(1)
+  packer.packString("key")
+  packer.packString(key)
+}
+
+/**
+ * Read MapRemove from MessageUnpacker
+ */
+private fun readMapRemove(unpacker: MessageUnpacker): MapRemove {
+  val fieldCount = unpacker.unpackMapHeader()
+  var key: String? = null
+
+  for (i in 0 until fieldCount) {
+    val fieldName = unpacker.unpackString().intern()
+    val fieldFormat = unpacker.nextFormat
+    if (fieldFormat == MessageFormat.NIL) { unpacker.unpackNil(); continue }
+    when (fieldName) {
+      "key" -> key = unpacker.unpackString()
+      else -> unpacker.skipValue()
+    }
+  }
+  return MapRemove(key = key ?: throw objectError("Missing 'key' in MapRemove payload"))
+}
+
+/**
+ * Write CounterCreate to MessagePacker
+ */
+private fun CounterCreate.writeMsgpack(packer: MessagePacker) {
+  packer.packMapHeader(1)
+  packer.packString("count")
+  packer.packDouble(count)
+}
+
+/**
+ * Read CounterCreate from MessageUnpacker
+ */
+private fun readCounterCreate(unpacker: MessageUnpacker): CounterCreate {
+  val fieldCount = unpacker.unpackMapHeader()
+  var count: Double? = null
+
+  for (i in 0 until fieldCount) {
+    val fieldName = unpacker.unpackString().intern()
+    val fieldFormat = unpacker.nextFormat
+    if (fieldFormat == MessageFormat.NIL) { unpacker.unpackNil(); continue }
+    when (fieldName) {
+      "count" -> count = unpacker.unpackDouble()
+      else -> unpacker.skipValue()
+    }
+  }
+  return CounterCreate(count = count ?: throw objectError("Missing 'count' in CounterCreate payload"))
+}
+
+/**
+ * Write CounterInc to MessagePacker
+ */
+private fun CounterInc.writeMsgpack(packer: MessagePacker) {
+  packer.packMapHeader(1)
+  packer.packString("number")
+  packer.packDouble(number)
+}
+
+/**
+ * Read CounterInc from MessageUnpacker
+ */
+private fun readCounterInc(unpacker: MessageUnpacker): CounterInc {
+  val fieldCount = unpacker.unpackMapHeader()
+  var number: Double? = null
+
+  for (i in 0 until fieldCount) {
+    val fieldName = unpacker.unpackString().intern()
+    val fieldFormat = unpacker.nextFormat
+    if (fieldFormat == MessageFormat.NIL) { unpacker.unpackNil(); continue }
+    when (fieldName) {
+      "number" -> number = unpacker.unpackDouble()
+      else -> unpacker.skipValue()
+    }
+  }
+  return CounterInc(number = number ?: throw objectError("Missing 'number' in CounterInc payload"))
+}
+
+/**
+ * Write MapCreateWithObjectId to MessagePacker
+ */
+private fun MapCreateWithObjectId.writeMsgpack(packer: MessagePacker) {
+  packer.packMapHeader(2)
+  packer.packString("initialValue")
+  packer.packString(initialValue)
+  packer.packString("nonce")
+  packer.packString(nonce)
+}
+
+/**
+ * Read MapCreateWithObjectId from MessageUnpacker
+ */
+private fun readMapCreateWithObjectId(unpacker: MessageUnpacker): MapCreateWithObjectId {
+  val fieldCount = unpacker.unpackMapHeader()
+  var initialValue: String? = null
+  var nonce: String? = null
+
+  for (i in 0 until fieldCount) {
+    val fieldName = unpacker.unpackString().intern()
+    val fieldFormat = unpacker.nextFormat
+    if (fieldFormat == MessageFormat.NIL) { unpacker.unpackNil(); continue }
+    when (fieldName) {
+      "initialValue" -> initialValue = unpacker.unpackString()
+      "nonce" -> nonce = unpacker.unpackString()
+      else -> unpacker.skipValue()
+    }
+  }
+  return MapCreateWithObjectId(
+    initialValue = initialValue ?: throw objectError("Missing 'initialValue' in MapCreateWithObjectId payload"),
+    nonce = nonce ?: throw objectError("Missing 'nonce' in MapCreateWithObjectId payload")
+  )
+}
+
+/**
+ * Write CounterCreateWithObjectId to MessagePacker
+ */
+private fun CounterCreateWithObjectId.writeMsgpack(packer: MessagePacker) {
+  packer.packMapHeader(2)
+  packer.packString("initialValue")
+  packer.packString(initialValue)
+  packer.packString("nonce")
+  packer.packString(nonce)
+}
+
+/**
+ * Read CounterCreateWithObjectId from MessageUnpacker
+ */
+private fun readCounterCreateWithObjectId(unpacker: MessageUnpacker): CounterCreateWithObjectId {
+  val fieldCount = unpacker.unpackMapHeader()
+  var initialValue: String? = null
+  var nonce: String? = null
+
+  for (i in 0 until fieldCount) {
+    val fieldName = unpacker.unpackString().intern()
+    val fieldFormat = unpacker.nextFormat
+    if (fieldFormat == MessageFormat.NIL) { unpacker.unpackNil(); continue }
+    when (fieldName) {
+      "initialValue" -> initialValue = unpacker.unpackString()
+      "nonce" -> nonce = unpacker.unpackString()
+      else -> unpacker.skipValue()
+    }
+  }
+  return CounterCreateWithObjectId(
+    initialValue = initialValue ?: throw objectError("Missing 'initialValue' in CounterCreateWithObjectId payload"),
+    nonce = nonce ?: throw objectError("Missing 'nonce' in CounterCreateWithObjectId payload")
+  )
+}
+
+/**
+ * Write ObjectMap to MessagePacker
+ */
+private fun ObjectsMap.writeMsgpack(packer: MessagePacker) {
+  var fieldCount = 0
+
+  if (semantics != null) fieldCount++
+  if (entries != null) fieldCount++
+  if (clearTimeserial != null) fieldCount++
+
+  packer.packMapHeader(fieldCount)
+
+  if (semantics != null) {
+    packer.packString("semantics")
+    packer.packInt(semantics.code)
+  }
+
+  if (entries != null) {
+    packer.packString("entries")
+    packer.packMapHeader(entries.size)
+    for ((key, value) in entries) {
+      packer.packString(key)
+      value.writeMsgpack(packer)
+    }
+  }
+
+  if (clearTimeserial != null) {
+    packer.packString("clearTimeserial")
+    packer.packString(clearTimeserial)
+  }
+}
+
+/**
+ * Read ObjectMap from MessageUnpacker
+ */
+private fun readObjectMap(unpacker: MessageUnpacker): ObjectsMap {
+  val fieldCount = unpacker.unpackMapHeader()
+
+  var semantics: ObjectsMapSemantics? = null
+  var entries: Map<String, ObjectsMapEntry>? = null
+  var clearTimeserial: String? = null
+
+  for (i in 0 until fieldCount) {
+    val fieldName = unpacker.unpackString().intern()
+    val fieldFormat = unpacker.nextFormat
+
+    if (fieldFormat == MessageFormat.NIL) {
+      unpacker.unpackNil()
+      continue
+    }
+
+    when (fieldName) {
+      "semantics" -> {
+        val semanticsCode = unpacker.unpackInt()
+        semantics = ObjectsMapSemantics.entries.firstOrNull { it.code == semanticsCode }
+          ?: ObjectsMapSemantics.entries.firstOrNull { it.code == -1 }
+          ?: throw objectError("Unknown MapSemantics code: $semanticsCode and no UNKNOWN fallback found")
+      }
+      "entries" -> {
+        val mapSize = unpacker.unpackMapHeader()
+        val tempMap = mutableMapOf<String, ObjectsMapEntry>()
+        for (j in 0 until mapSize) {
+          val key = unpacker.unpackString()
+          val value = readObjectMapEntry(unpacker)
+          tempMap[key] = value
+        }
+        entries = tempMap
+      }
+      "clearTimeserial" -> clearTimeserial = unpacker.unpackString()
+      else -> unpacker.skipValue()
+    }
+  }
+
+  return ObjectsMap(semantics = semantics, entries = entries, clearTimeserial = clearTimeserial)
+}
+
+/**
+ * Write ObjectCounter to MessagePacker
+ */
+private fun ObjectsCounter.writeMsgpack(packer: MessagePacker) {
+  var fieldCount = 0
+
+  if (count != null) fieldCount++
+
+  packer.packMapHeader(fieldCount)
+
+  if (count != null) {
+    packer.packString("count")
+    packer.packDouble(count)
+  }
+}
+
+/**
+ * Read ObjectCounter from MessageUnpacker
+ */
+private fun readObjectCounter(unpacker: MessageUnpacker): ObjectsCounter {
+  val fieldCount = unpacker.unpackMapHeader()
+
+  var count: Double? = null
+
+  for (i in 0 until fieldCount) {
+    val fieldName = unpacker.unpackString().intern()
+    val fieldFormat = unpacker.nextFormat
+
+    if (fieldFormat == MessageFormat.NIL) {
+      unpacker.unpackNil()
+      continue
+    }
+
+    when (fieldName) {
+      "count" -> count = unpacker.unpackDouble()
+      else -> unpacker.skipValue()
+    }
+  }
+
+  return ObjectsCounter(count = count)
+}
+
+/**
+ * Write ObjectMapEntry to MessagePacker
+ */
+private fun ObjectsMapEntry.writeMsgpack(packer: MessagePacker) {
+  var fieldCount = 0
+
+  if (tombstone != null) fieldCount++
+  if (timeserial != null) fieldCount++
+  if (serialTimestamp != null) fieldCount++
+  if (data != null) fieldCount++
+
+  packer.packMapHeader(fieldCount)
+
+  if (tombstone != null) {
+    packer.packString("tombstone")
+    packer.packBoolean(tombstone)
+  }
+
+  if (timeserial != null) {
+    packer.packString("timeserial")
+    packer.packString(timeserial)
+  }
+
+  if (serialTimestamp != null) {
+    packer.packString("serialTimestamp")
+    packer.packLong(serialTimestamp)
+  }
+
+  if (data != null) {
+    packer.packString("data")
+    data.writeMsgpack(packer)
+  }
+}
+
+/**
+ * Read ObjectMapEntry from MessageUnpacker
+ */
+private fun readObjectMapEntry(unpacker: MessageUnpacker): ObjectsMapEntry {
+  val fieldCount = unpacker.unpackMapHeader()
+
+  var tombstone: Boolean? = null
+  var timeserial: String? = null
+  var serialTimestamp: Long? = null
+  var data: ObjectData? = null
+
+  for (i in 0 until fieldCount) {
+    val fieldName = unpacker.unpackString().intern()
+    val fieldFormat = unpacker.nextFormat
+
+    if (fieldFormat == MessageFormat.NIL) {
+      unpacker.unpackNil()
+      continue
+    }
+
+    when (fieldName) {
+      "tombstone" -> tombstone = unpacker.unpackBoolean()
+      "timeserial" -> timeserial = unpacker.unpackString()
+      "serialTimestamp" -> serialTimestamp = unpacker.unpackLong()
+      "data" -> data = readObjectData(unpacker)
+      else -> unpacker.skipValue()
+    }
+  }
+
+  return ObjectsMapEntry(tombstone = tombstone, timeserial = timeserial, serialTimestamp = serialTimestamp, data = data)
+}
+
+/**
+ * Write ObjectData to MessagePacker
+ */
+private fun ObjectData.writeMsgpack(packer: MessagePacker) {
+  var fieldCount = 0
+
+  if (objectId != null) fieldCount++
+  if (string != null) fieldCount++
+  if (number != null) fieldCount++
+  if (boolean != null) fieldCount++
+  if (bytes != null) fieldCount++
+  if (json != null) fieldCount++
+
+  packer.packMapHeader(fieldCount)
+
+  if (objectId != null) {
+    packer.packString("objectId")
+    packer.packString(objectId)
+  }
+
+  if (string != null) {
+    packer.packString("string")
+    packer.packString(string)
+  }
+
+  if (number != null) {
+    packer.packString("number")
+    packer.packDouble(number)
+  }
+
+  if (boolean != null) {
+    packer.packString("boolean")
+    packer.packBoolean(boolean)
+  }
+
+  if (bytes != null) {
+    val rawBytes = Base64.getDecoder().decode(bytes)
+    packer.packString("bytes")
+    packer.packBinaryHeader(rawBytes.size)
+    packer.writePayload(rawBytes)
+  }
+
+  if (json != null) {
+    packer.packString("json")
+    packer.packString(json.toString())
+  }
+}
+
+/**
+ * Read ObjectData from MessageUnpacker
+ */
+private fun readObjectData(unpacker: MessageUnpacker): ObjectData {
+  val fieldCount = unpacker.unpackMapHeader()
+  var objectId: String? = null
+  var string: String? = null
+  var number: Double? = null
+  var boolean: Boolean? = null
+  var bytes: String? = null
+  var json: JsonElement? = null
+
+  for (i in 0 until fieldCount) {
+    val fieldName = unpacker.unpackString().intern()
+    val fieldFormat = unpacker.nextFormat
+
+    if (fieldFormat == MessageFormat.NIL) {
+      unpacker.unpackNil()
+      continue
+    }
+
+    when (fieldName) {
+      "objectId" -> objectId = unpacker.unpackString()
+      "string" -> string = unpacker.unpackString()
+      "number" -> number = unpacker.unpackDouble()
+      "boolean" -> boolean = unpacker.unpackBoolean()
+      "bytes" -> {
+        val size = unpacker.unpackBinaryHeader()
+        val rawBytes = ByteArray(size)
+        unpacker.readPayload(rawBytes)
+        bytes = Base64.getEncoder().encodeToString(rawBytes)
+      }
+      "json" -> json = JsonParser.parseString(unpacker.unpackString())
+      else -> unpacker.skipValue()
+    }
+  }
+
+  return ObjectData(objectId = objectId, string = string, number = number, boolean = boolean, bytes = bytes, json = json)
+}
