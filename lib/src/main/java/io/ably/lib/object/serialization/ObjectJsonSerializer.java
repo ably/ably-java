@@ -1,0 +1,33 @@
+package io.ably.lib.object.serialization;
+
+import com.google.gson.*;
+import io.ably.lib.util.Log;
+
+import java.lang.reflect.Type;
+
+public class ObjectJsonSerializer implements JsonSerializer<Object[]>, JsonDeserializer<Object[]> {
+    private static final String TAG = ObjectJsonSerializer.class.getName();
+
+    @Override
+    public Object[] deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+        ObjectSerializer serializer = ObjectSerializer.tryGet();
+        if (serializer == null) {
+            Log.w(TAG, "Skipping 'state' field json deserialization because ObjectsSerializer not found.");
+            return null;
+        }
+        if (!json.isJsonArray()) {
+            throw new JsonParseException("Expected a JSON array for 'state' field, but got: " + json);
+        }
+        return serializer.readFromJsonArray(json.getAsJsonArray());
+    }
+
+    @Override
+    public JsonElement serialize(Object[] src, Type typeOfSrc, JsonSerializationContext context) {
+        ObjectSerializer serializer = ObjectSerializer.tryGet();
+        if (serializer == null) {
+            Log.w(TAG, "Skipping 'state' field json serialization because ObjectsSerializer not found.");
+            return JsonNull.INSTANCE;
+        }
+        return serializer.asJsonArray(src);
+    }
+}
