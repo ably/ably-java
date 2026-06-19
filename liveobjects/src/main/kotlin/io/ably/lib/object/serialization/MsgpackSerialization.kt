@@ -3,35 +3,35 @@ package io.ably.lib.`object`.serialization
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import io.ably.lib.objects.*
-import io.ably.lib.objects.CounterCreate
-import io.ably.lib.objects.CounterCreateWithObjectId
-import io.ably.lib.objects.CounterInc
-import io.ably.lib.objects.MapCreate
-import io.ably.lib.objects.MapCreateWithObjectId
-import io.ably.lib.objects.MapRemove
-import io.ably.lib.objects.MapSet
-import io.ably.lib.objects.MapClear
-import io.ably.lib.objects.ObjectDelete
-import io.ably.lib.objects.ObjectsMapSemantics
-import io.ably.lib.objects.ObjectsCounter
-import io.ably.lib.objects.ObjectData
-import io.ably.lib.objects.ObjectsMap
-import io.ably.lib.objects.ObjectsMapEntry
-import io.ably.lib.objects.ObjectMessage
-import io.ably.lib.objects.ObjectOperation
-import io.ably.lib.objects.ObjectOperationAction
-import io.ably.lib.objects.ObjectState
-import java.util.Base64
+import io.ably.lib.`object`.message.WireCounterCreate
+import io.ably.lib.`object`.message.WireCounterCreateWithObjectId
+import io.ably.lib.`object`.message.WireCounterInc
+import io.ably.lib.`object`.message.WireMapClear
+import io.ably.lib.`object`.message.WireMapCreate
+import io.ably.lib.`object`.message.WireMapCreateWithObjectId
+import io.ably.lib.`object`.message.WireMapRemove
+import io.ably.lib.`object`.message.WireMapSet
+import io.ably.lib.`object`.message.WireObjectData
+import io.ably.lib.`object`.message.WireObjectDelete
+import io.ably.lib.`object`.message.WireObjectMessage
+import io.ably.lib.`object`.message.WireObjectOperation
+import io.ably.lib.`object`.message.WireObjectOperationAction
+import io.ably.lib.`object`.message.WireObjectState
+import io.ably.lib.`object`.message.WireObjectsCounter
+import io.ably.lib.`object`.message.WireObjectsMap
+import io.ably.lib.`object`.message.WireObjectsMapEntry
+import io.ably.lib.`object`.message.WireObjectsMapSemantics
+import io.ably.lib.`object`.objectStateError
 import io.ably.lib.util.Serialisation
+import java.util.Base64
 import org.msgpack.core.MessageFormat
 import org.msgpack.core.MessagePacker
 import org.msgpack.core.MessageUnpacker
 
 /**
- * Write ObjectMessage to MessagePacker
+ * Write WireObjectMessage to MessagePacker
  */
-internal fun ObjectMessage.writeMsgpack(packer: MessagePacker) {
+internal fun WireObjectMessage.writeMsgpack(packer: MessagePacker) {
   var fieldCount = 0
 
   if (id != null) fieldCount++
@@ -99,12 +99,12 @@ internal fun ObjectMessage.writeMsgpack(packer: MessagePacker) {
 }
 
 /**
- * Read an ObjectMessage from MessageUnpacker
+ * Read a WireObjectMessage from MessageUnpacker
  */
-internal fun readObjectMessage(unpacker: MessageUnpacker): ObjectMessage {
+internal fun readObjectMessage(unpacker: MessageUnpacker): WireObjectMessage {
   if (unpacker.nextFormat == MessageFormat.NIL) {
     unpacker.unpackNil()
-    return ObjectMessage() // default/empty message
+    return WireObjectMessage() // default/empty message
   }
 
   val fieldCount = unpacker.unpackMapHeader()
@@ -114,8 +114,8 @@ internal fun readObjectMessage(unpacker: MessageUnpacker): ObjectMessage {
   var clientId: String? = null
   var connectionId: String? = null
   var extras: JsonObject? = null
-  var operation: ObjectOperation? = null
-  var objectState: ObjectState? = null
+  var operation: WireObjectOperation? = null
+  var objectState: WireObjectState? = null
   var serial: String? = null
   var serialTimestamp: Long? = null
   var siteCode: String? = null
@@ -144,7 +144,7 @@ internal fun readObjectMessage(unpacker: MessageUnpacker): ObjectMessage {
     }
   }
 
-  return ObjectMessage(
+  return WireObjectMessage(
     id = id,
     timestamp = timestamp,
     clientId = clientId,
@@ -159,9 +159,9 @@ internal fun readObjectMessage(unpacker: MessageUnpacker): ObjectMessage {
 }
 
 /**
- * Write ObjectOperation to MessagePacker
+ * Write WireObjectOperation to MessagePacker
  */
-private fun ObjectOperation.writeMsgpack(packer: MessagePacker) {
+private fun WireObjectOperation.writeMsgpack(packer: MessagePacker) {
   var fieldCount = 1 // action is always required
   require(objectId.isNotEmpty()) { "objectId must be non-empty per Objects protocol" }
   fieldCount++
@@ -233,22 +233,22 @@ private fun ObjectOperation.writeMsgpack(packer: MessagePacker) {
 }
 
 /**
- * Read ObjectOperation from MessageUnpacker
+ * Read WireObjectOperation from MessageUnpacker
  */
-private fun readObjectOperation(unpacker: MessageUnpacker): ObjectOperation {
+private fun readObjectOperation(unpacker: MessageUnpacker): WireObjectOperation {
   val fieldCount = unpacker.unpackMapHeader()
 
-  var action: ObjectOperationAction? = null
+  var action: WireObjectOperationAction? = null
   var objectId: String = ""
-  var mapCreate: MapCreate? = null
-  var mapSet: MapSet? = null
-  var mapRemove: MapRemove? = null
-  var counterCreate: CounterCreate? = null
-  var counterInc: CounterInc? = null
-  var objectDelete: ObjectDelete? = null
-  var mapCreateWithObjectId: MapCreateWithObjectId? = null
-  var counterCreateWithObjectId: CounterCreateWithObjectId? = null
-  var mapClear: MapClear? = null
+  var mapCreate: WireMapCreate? = null
+  var mapSet: WireMapSet? = null
+  var mapRemove: WireMapRemove? = null
+  var counterCreate: WireCounterCreate? = null
+  var counterInc: WireCounterInc? = null
+  var objectDelete: WireObjectDelete? = null
+  var mapCreateWithObjectId: WireMapCreateWithObjectId? = null
+  var counterCreateWithObjectId: WireCounterCreateWithObjectId? = null
+  var mapClear: WireMapClear? = null
 
   for (i in 0 until fieldCount) {
     val fieldName = unpacker.unpackString().intern()
@@ -262,9 +262,9 @@ private fun readObjectOperation(unpacker: MessageUnpacker): ObjectOperation {
     when (fieldName) {
       "action" -> {
         val actionCode = unpacker.unpackInt()
-        action = ObjectOperationAction.entries.firstOrNull { it.code == actionCode }
-          ?: ObjectOperationAction.entries.firstOrNull { it.code == -1 }
-          ?: throw objectError("Unknown ObjectOperationAction code: $actionCode and no Unknown fallback found")
+        action = WireObjectOperationAction.entries.firstOrNull { it.code == actionCode }
+          ?: WireObjectOperationAction.entries.firstOrNull { it.code == -1 }
+          ?: throw objectStateError("Unknown WireObjectOperationAction code: $actionCode and no Unknown fallback found")
       }
       "objectId" -> objectId = unpacker.unpackString()
       "mapCreate" -> mapCreate = readMapCreate(unpacker)
@@ -274,23 +274,23 @@ private fun readObjectOperation(unpacker: MessageUnpacker): ObjectOperation {
       "counterInc" -> counterInc = readCounterInc(unpacker)
       "objectDelete" -> {
         unpacker.skipValue() // empty map, just consume it
-        objectDelete = ObjectDelete
+        objectDelete = WireObjectDelete
       }
       "mapCreateWithObjectId" -> mapCreateWithObjectId = readMapCreateWithObjectId(unpacker)
       "counterCreateWithObjectId" -> counterCreateWithObjectId = readCounterCreateWithObjectId(unpacker)
       "mapClear" -> {
         unpacker.skipValue() // empty map, consume it
-        mapClear = MapClear
+        mapClear = WireMapClear
       }
       else -> unpacker.skipValue()
     }
   }
 
   if (action == null) {
-    throw objectError("Missing required 'action' field in ObjectOperation")
+    throw objectStateError("Missing required 'action' field in WireObjectOperation")
   }
 
-  return ObjectOperation(
+  return WireObjectOperation(
     action = action,
     objectId = objectId,
     mapCreate = mapCreate,
@@ -306,9 +306,9 @@ private fun readObjectOperation(unpacker: MessageUnpacker): ObjectOperation {
 }
 
 /**
- * Write ObjectState to MessagePacker
+ * Write WireObjectState to MessagePacker
  */
-private fun ObjectState.writeMsgpack(packer: MessagePacker) {
+private fun WireObjectState.writeMsgpack(packer: MessagePacker) {
   var fieldCount = 3 // objectId, siteTimeserials, and tombstone are required
 
   if (createOp != null) fieldCount++
@@ -347,17 +347,17 @@ private fun ObjectState.writeMsgpack(packer: MessagePacker) {
 }
 
 /**
- * Read ObjectState from MessageUnpacker
+ * Read WireObjectState from MessageUnpacker
  */
-private fun readObjectState(unpacker: MessageUnpacker): ObjectState {
+private fun readObjectState(unpacker: MessageUnpacker): WireObjectState {
   val fieldCount = unpacker.unpackMapHeader()
 
   var objectId = ""
   var siteTimeserials = mapOf<String, String>()
   var tombstone = false
-  var createOp: ObjectOperation? = null
-  var map: ObjectsMap? = null
-  var counter: ObjectsCounter? = null
+  var createOp: WireObjectOperation? = null
+  var map: WireObjectsMap? = null
+  var counter: WireObjectsCounter? = null
 
   for (i in 0 until fieldCount) {
     val fieldName = unpacker.unpackString().intern()
@@ -388,7 +388,7 @@ private fun readObjectState(unpacker: MessageUnpacker): ObjectState {
     }
   }
 
-  return ObjectState(
+  return WireObjectState(
     objectId = objectId,
     siteTimeserials = siteTimeserials,
     tombstone = tombstone,
@@ -399,9 +399,9 @@ private fun readObjectState(unpacker: MessageUnpacker): ObjectState {
 }
 
 /**
- * Write MapCreate to MessagePacker
+ * Write WireMapCreate to MessagePacker
  */
-private fun MapCreate.writeMsgpack(packer: MessagePacker) {
+private fun WireMapCreate.writeMsgpack(packer: MessagePacker) {
   packer.packMapHeader(2)
   packer.packString("semantics")
   packer.packInt(semantics.code)
@@ -414,12 +414,12 @@ private fun MapCreate.writeMsgpack(packer: MessagePacker) {
 }
 
 /**
- * Read MapCreate from MessageUnpacker
+ * Read WireMapCreate from MessageUnpacker
  */
-private fun readMapCreate(unpacker: MessageUnpacker): MapCreate {
+private fun readMapCreate(unpacker: MessageUnpacker): WireMapCreate {
   val fieldCount = unpacker.unpackMapHeader()
-  var semantics: ObjectsMapSemantics = ObjectsMapSemantics.LWW
-  var entries: Map<String, ObjectsMapEntry> = emptyMap()
+  var semantics: WireObjectsMapSemantics = WireObjectsMapSemantics.LWW
+  var entries: Map<String, WireObjectsMapEntry> = emptyMap()
 
   for (i in 0 until fieldCount) {
     val fieldName = unpacker.unpackString().intern()
@@ -428,13 +428,13 @@ private fun readMapCreate(unpacker: MessageUnpacker): MapCreate {
     when (fieldName) {
       "semantics" -> {
         val code = unpacker.unpackInt()
-        semantics = ObjectsMapSemantics.entries.firstOrNull { it.code == code }
-          ?: ObjectsMapSemantics.entries.firstOrNull { it.code == -1 }
-          ?: throw objectError("Unknown MapSemantics code: $code and no UNKNOWN fallback found")
+        semantics = WireObjectsMapSemantics.entries.firstOrNull { it.code == code }
+          ?: WireObjectsMapSemantics.entries.firstOrNull { it.code == -1 }
+          ?: throw objectStateError("Unknown MapSemantics code: $code and no UNKNOWN fallback found")
       }
       "entries" -> {
         val mapSize = unpacker.unpackMapHeader()
-        val tempMap = mutableMapOf<String, ObjectsMapEntry>()
+        val tempMap = mutableMapOf<String, WireObjectsMapEntry>()
         for (j in 0 until mapSize) {
           tempMap[unpacker.unpackString()] = readObjectMapEntry(unpacker)
         }
@@ -443,13 +443,13 @@ private fun readMapCreate(unpacker: MessageUnpacker): MapCreate {
       else -> unpacker.skipValue()
     }
   }
-  return MapCreate(semantics = semantics, entries = entries)
+  return WireMapCreate(semantics = semantics, entries = entries)
 }
 
 /**
- * Write MapSet to MessagePacker
+ * Write WireMapSet to MessagePacker
  */
-private fun MapSet.writeMsgpack(packer: MessagePacker) {
+private fun WireMapSet.writeMsgpack(packer: MessagePacker) {
   packer.packMapHeader(2)
   packer.packString("key")
   packer.packString(key)
@@ -458,12 +458,12 @@ private fun MapSet.writeMsgpack(packer: MessagePacker) {
 }
 
 /**
- * Read MapSet from MessageUnpacker
+ * Read WireMapSet from MessageUnpacker
  */
-private fun readMapSet(unpacker: MessageUnpacker): MapSet {
+private fun readMapSet(unpacker: MessageUnpacker): WireMapSet {
   val fieldCount = unpacker.unpackMapHeader()
   var key: String? = null
-  var value: ObjectData? = null
+  var value: WireObjectData? = null
 
   for (i in 0 until fieldCount) {
     val fieldName = unpacker.unpackString().intern()
@@ -475,25 +475,25 @@ private fun readMapSet(unpacker: MessageUnpacker): MapSet {
       else -> unpacker.skipValue()
     }
   }
-  return MapSet(
-    key = key ?: throw objectError("Missing 'key' in MapSet payload"),
-    value = value ?: throw objectError("Missing 'value' in MapSet payload")
+  return WireMapSet(
+    key = key ?: throw objectStateError("Missing 'key' in WireMapSet payload"),
+    value = value ?: throw objectStateError("Missing 'value' in WireMapSet payload")
   )
 }
 
 /**
- * Write MapRemove to MessagePacker
+ * Write WireMapRemove to MessagePacker
  */
-private fun MapRemove.writeMsgpack(packer: MessagePacker) {
+private fun WireMapRemove.writeMsgpack(packer: MessagePacker) {
   packer.packMapHeader(1)
   packer.packString("key")
   packer.packString(key)
 }
 
 /**
- * Read MapRemove from MessageUnpacker
+ * Read WireMapRemove from MessageUnpacker
  */
-private fun readMapRemove(unpacker: MessageUnpacker): MapRemove {
+private fun readMapRemove(unpacker: MessageUnpacker): WireMapRemove {
   val fieldCount = unpacker.unpackMapHeader()
   var key: String? = null
 
@@ -506,22 +506,22 @@ private fun readMapRemove(unpacker: MessageUnpacker): MapRemove {
       else -> unpacker.skipValue()
     }
   }
-  return MapRemove(key = key ?: throw objectError("Missing 'key' in MapRemove payload"))
+  return WireMapRemove(key = key ?: throw objectStateError("Missing 'key' in WireMapRemove payload"))
 }
 
 /**
- * Write CounterCreate to MessagePacker
+ * Write WireCounterCreate to MessagePacker
  */
-private fun CounterCreate.writeMsgpack(packer: MessagePacker) {
+private fun WireCounterCreate.writeMsgpack(packer: MessagePacker) {
   packer.packMapHeader(1)
   packer.packString("count")
   packer.packDouble(count)
 }
 
 /**
- * Read CounterCreate from MessageUnpacker
+ * Read WireCounterCreate from MessageUnpacker
  */
-private fun readCounterCreate(unpacker: MessageUnpacker): CounterCreate {
+private fun readCounterCreate(unpacker: MessageUnpacker): WireCounterCreate {
   val fieldCount = unpacker.unpackMapHeader()
   var count: Double? = null
 
@@ -534,22 +534,22 @@ private fun readCounterCreate(unpacker: MessageUnpacker): CounterCreate {
       else -> unpacker.skipValue()
     }
   }
-  return CounterCreate(count = count ?: throw objectError("Missing 'count' in CounterCreate payload"))
+  return WireCounterCreate(count = count ?: throw objectStateError("Missing 'count' in WireCounterCreate payload"))
 }
 
 /**
- * Write CounterInc to MessagePacker
+ * Write WireCounterInc to MessagePacker
  */
-private fun CounterInc.writeMsgpack(packer: MessagePacker) {
+private fun WireCounterInc.writeMsgpack(packer: MessagePacker) {
   packer.packMapHeader(1)
   packer.packString("number")
   packer.packDouble(number)
 }
 
 /**
- * Read CounterInc from MessageUnpacker
+ * Read WireCounterInc from MessageUnpacker
  */
-private fun readCounterInc(unpacker: MessageUnpacker): CounterInc {
+private fun readCounterInc(unpacker: MessageUnpacker): WireCounterInc {
   val fieldCount = unpacker.unpackMapHeader()
   var number: Double? = null
 
@@ -562,13 +562,13 @@ private fun readCounterInc(unpacker: MessageUnpacker): CounterInc {
       else -> unpacker.skipValue()
     }
   }
-  return CounterInc(number = number ?: throw objectError("Missing 'number' in CounterInc payload"))
+  return WireCounterInc(number = number ?: throw objectStateError("Missing 'number' in WireCounterInc payload"))
 }
 
 /**
- * Write MapCreateWithObjectId to MessagePacker
+ * Write WireMapCreateWithObjectId to MessagePacker
  */
-private fun MapCreateWithObjectId.writeMsgpack(packer: MessagePacker) {
+private fun WireMapCreateWithObjectId.writeMsgpack(packer: MessagePacker) {
   packer.packMapHeader(2)
   packer.packString("initialValue")
   packer.packString(initialValue)
@@ -577,9 +577,9 @@ private fun MapCreateWithObjectId.writeMsgpack(packer: MessagePacker) {
 }
 
 /**
- * Read MapCreateWithObjectId from MessageUnpacker
+ * Read WireMapCreateWithObjectId from MessageUnpacker
  */
-private fun readMapCreateWithObjectId(unpacker: MessageUnpacker): MapCreateWithObjectId {
+private fun readMapCreateWithObjectId(unpacker: MessageUnpacker): WireMapCreateWithObjectId {
   val fieldCount = unpacker.unpackMapHeader()
   var initialValue: String? = null
   var nonce: String? = null
@@ -594,16 +594,16 @@ private fun readMapCreateWithObjectId(unpacker: MessageUnpacker): MapCreateWithO
       else -> unpacker.skipValue()
     }
   }
-  return MapCreateWithObjectId(
-    initialValue = initialValue ?: throw objectError("Missing 'initialValue' in MapCreateWithObjectId payload"),
-    nonce = nonce ?: throw objectError("Missing 'nonce' in MapCreateWithObjectId payload")
+  return WireMapCreateWithObjectId(
+    initialValue = initialValue ?: throw objectStateError("Missing 'initialValue' in WireMapCreateWithObjectId payload"),
+    nonce = nonce ?: throw objectStateError("Missing 'nonce' in WireMapCreateWithObjectId payload")
   )
 }
 
 /**
- * Write CounterCreateWithObjectId to MessagePacker
+ * Write WireCounterCreateWithObjectId to MessagePacker
  */
-private fun CounterCreateWithObjectId.writeMsgpack(packer: MessagePacker) {
+private fun WireCounterCreateWithObjectId.writeMsgpack(packer: MessagePacker) {
   packer.packMapHeader(2)
   packer.packString("initialValue")
   packer.packString(initialValue)
@@ -612,9 +612,9 @@ private fun CounterCreateWithObjectId.writeMsgpack(packer: MessagePacker) {
 }
 
 /**
- * Read CounterCreateWithObjectId from MessageUnpacker
+ * Read WireCounterCreateWithObjectId from MessageUnpacker
  */
-private fun readCounterCreateWithObjectId(unpacker: MessageUnpacker): CounterCreateWithObjectId {
+private fun readCounterCreateWithObjectId(unpacker: MessageUnpacker): WireCounterCreateWithObjectId {
   val fieldCount = unpacker.unpackMapHeader()
   var initialValue: String? = null
   var nonce: String? = null
@@ -629,16 +629,16 @@ private fun readCounterCreateWithObjectId(unpacker: MessageUnpacker): CounterCre
       else -> unpacker.skipValue()
     }
   }
-  return CounterCreateWithObjectId(
-    initialValue = initialValue ?: throw objectError("Missing 'initialValue' in CounterCreateWithObjectId payload"),
-    nonce = nonce ?: throw objectError("Missing 'nonce' in CounterCreateWithObjectId payload")
+  return WireCounterCreateWithObjectId(
+    initialValue = initialValue ?: throw objectStateError("Missing 'initialValue' in WireCounterCreateWithObjectId payload"),
+    nonce = nonce ?: throw objectStateError("Missing 'nonce' in WireCounterCreateWithObjectId payload")
   )
 }
 
 /**
  * Write ObjectMap to MessagePacker
  */
-private fun ObjectsMap.writeMsgpack(packer: MessagePacker) {
+private fun WireObjectsMap.writeMsgpack(packer: MessagePacker) {
   var fieldCount = 0
 
   if (semantics != null) fieldCount++
@@ -670,11 +670,11 @@ private fun ObjectsMap.writeMsgpack(packer: MessagePacker) {
 /**
  * Read ObjectMap from MessageUnpacker
  */
-private fun readObjectMap(unpacker: MessageUnpacker): ObjectsMap {
+private fun readObjectMap(unpacker: MessageUnpacker): WireObjectsMap {
   val fieldCount = unpacker.unpackMapHeader()
 
-  var semantics: ObjectsMapSemantics? = null
-  var entries: Map<String, ObjectsMapEntry>? = null
+  var semantics: WireObjectsMapSemantics? = null
+  var entries: Map<String, WireObjectsMapEntry>? = null
   var clearTimeserial: String? = null
 
   for (i in 0 until fieldCount) {
@@ -689,13 +689,13 @@ private fun readObjectMap(unpacker: MessageUnpacker): ObjectsMap {
     when (fieldName) {
       "semantics" -> {
         val semanticsCode = unpacker.unpackInt()
-        semantics = ObjectsMapSemantics.entries.firstOrNull { it.code == semanticsCode }
-          ?: ObjectsMapSemantics.entries.firstOrNull { it.code == -1 }
-          ?: throw objectError("Unknown MapSemantics code: $semanticsCode and no UNKNOWN fallback found")
+        semantics = WireObjectsMapSemantics.entries.firstOrNull { it.code == semanticsCode }
+          ?: WireObjectsMapSemantics.entries.firstOrNull { it.code == -1 }
+          ?: throw objectStateError("Unknown MapSemantics code: $semanticsCode and no UNKNOWN fallback found")
       }
       "entries" -> {
         val mapSize = unpacker.unpackMapHeader()
-        val tempMap = mutableMapOf<String, ObjectsMapEntry>()
+        val tempMap = mutableMapOf<String, WireObjectsMapEntry>()
         for (j in 0 until mapSize) {
           val key = unpacker.unpackString()
           val value = readObjectMapEntry(unpacker)
@@ -708,13 +708,13 @@ private fun readObjectMap(unpacker: MessageUnpacker): ObjectsMap {
     }
   }
 
-  return ObjectsMap(semantics = semantics, entries = entries, clearTimeserial = clearTimeserial)
+  return WireObjectsMap(semantics = semantics, entries = entries, clearTimeserial = clearTimeserial)
 }
 
 /**
  * Write ObjectCounter to MessagePacker
  */
-private fun ObjectsCounter.writeMsgpack(packer: MessagePacker) {
+private fun WireObjectsCounter.writeMsgpack(packer: MessagePacker) {
   var fieldCount = 0
 
   if (count != null) fieldCount++
@@ -730,7 +730,7 @@ private fun ObjectsCounter.writeMsgpack(packer: MessagePacker) {
 /**
  * Read ObjectCounter from MessageUnpacker
  */
-private fun readObjectCounter(unpacker: MessageUnpacker): ObjectsCounter {
+private fun readObjectCounter(unpacker: MessageUnpacker): WireObjectsCounter {
   val fieldCount = unpacker.unpackMapHeader()
 
   var count: Double? = null
@@ -750,13 +750,13 @@ private fun readObjectCounter(unpacker: MessageUnpacker): ObjectsCounter {
     }
   }
 
-  return ObjectsCounter(count = count)
+  return WireObjectsCounter(count = count)
 }
 
 /**
  * Write ObjectMapEntry to MessagePacker
  */
-private fun ObjectsMapEntry.writeMsgpack(packer: MessagePacker) {
+private fun WireObjectsMapEntry.writeMsgpack(packer: MessagePacker) {
   var fieldCount = 0
 
   if (tombstone != null) fieldCount++
@@ -790,13 +790,13 @@ private fun ObjectsMapEntry.writeMsgpack(packer: MessagePacker) {
 /**
  * Read ObjectMapEntry from MessageUnpacker
  */
-private fun readObjectMapEntry(unpacker: MessageUnpacker): ObjectsMapEntry {
+private fun readObjectMapEntry(unpacker: MessageUnpacker): WireObjectsMapEntry {
   val fieldCount = unpacker.unpackMapHeader()
 
   var tombstone: Boolean? = null
   var timeserial: String? = null
   var serialTimestamp: Long? = null
-  var data: ObjectData? = null
+  var data: WireObjectData? = null
 
   for (i in 0 until fieldCount) {
     val fieldName = unpacker.unpackString().intern()
@@ -816,13 +816,13 @@ private fun readObjectMapEntry(unpacker: MessageUnpacker): ObjectsMapEntry {
     }
   }
 
-  return ObjectsMapEntry(tombstone = tombstone, timeserial = timeserial, serialTimestamp = serialTimestamp, data = data)
+  return WireObjectsMapEntry(tombstone = tombstone, timeserial = timeserial, serialTimestamp = serialTimestamp, data = data)
 }
 
 /**
- * Write ObjectData to MessagePacker
+ * Write WireObjectData to MessagePacker
  */
-private fun ObjectData.writeMsgpack(packer: MessagePacker) {
+private fun WireObjectData.writeMsgpack(packer: MessagePacker) {
   var fieldCount = 0
 
   if (objectId != null) fieldCount++
@@ -868,9 +868,9 @@ private fun ObjectData.writeMsgpack(packer: MessagePacker) {
 }
 
 /**
- * Read ObjectData from MessageUnpacker
+ * Read WireObjectData from MessageUnpacker
  */
-private fun readObjectData(unpacker: MessageUnpacker): ObjectData {
+private fun readObjectData(unpacker: MessageUnpacker): WireObjectData {
   val fieldCount = unpacker.unpackMapHeader()
   var objectId: String? = null
   var string: String? = null
@@ -904,5 +904,5 @@ private fun readObjectData(unpacker: MessageUnpacker): ObjectData {
     }
   }
 
-  return ObjectData(objectId = objectId, string = string, number = number, boolean = boolean, bytes = bytes, json = json)
+  return WireObjectData(objectId = objectId, string = string, number = number, boolean = boolean, bytes = bytes, json = json)
 }

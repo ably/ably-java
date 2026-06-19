@@ -1,26 +1,25 @@
 package io.ably.lib.`object`.serialization
 
 import com.google.gson.*
-import io.ably.lib.objects.ObjectsMapSemantics
-import io.ably.lib.objects.ObjectData
-import io.ably.lib.objects.ObjectMessage
-import io.ably.lib.objects.ObjectOperationAction
-import io.ably.lib.objects.serialization.EnumCodeTypeAdapter
+import io.ably.lib.`object`.message.WireObjectData
+import io.ably.lib.`object`.message.WireObjectMessage
+import io.ably.lib.`object`.message.WireObjectOperationAction
+import io.ably.lib.`object`.message.WireObjectsMapSemantics
 import java.lang.reflect.Type
 import kotlin.enums.EnumEntries
 
 // Gson instance for JSON serialization/deserialization
 internal val gson = GsonBuilder()
-  .registerTypeAdapter(ObjectOperationAction::class.java, EnumCodeTypeAdapter({ it.code }, ObjectOperationAction.entries))
-  .registerTypeAdapter(ObjectsMapSemantics::class.java, EnumCodeTypeAdapter({ it.code }, ObjectsMapSemantics.entries))
+  .registerTypeAdapter(WireObjectOperationAction::class.java, EnumCodeTypeAdapter({ it.code }, WireObjectOperationAction.entries))
+  .registerTypeAdapter(WireObjectsMapSemantics::class.java, EnumCodeTypeAdapter({ it.code }, WireObjectsMapSemantics.entries))
   .create()
 
-internal fun ObjectMessage.toJsonObject(): JsonObject {
+internal fun WireObjectMessage.toJsonObject(): JsonObject {
   return gson.toJsonTree(this).asJsonObject
 }
 
-internal fun JsonObject.toObjectMessage(): ObjectMessage {
-  return gson.fromJson(this, ObjectMessage::class.java)
+internal fun JsonObject.toObjectMessage(): WireObjectMessage {
+  return gson.fromJson(this, WireObjectMessage::class.java)
 }
 
 internal class EnumCodeTypeAdapter<T : Enum<T>>(
@@ -39,8 +38,8 @@ internal class EnumCodeTypeAdapter<T : Enum<T>>(
   }
 }
 
-internal class ObjectDataJsonSerializer : JsonSerializer<ObjectData>, JsonDeserializer<ObjectData> {
-  override fun serialize(src: ObjectData, typeOfSrc: Type?, context: JsonSerializationContext?): JsonElement {
+internal class WireObjectDataJsonSerializer : JsonSerializer<WireObjectData>, JsonDeserializer<WireObjectData> {
+  override fun serialize(src: WireObjectData, typeOfSrc: Type?, context: JsonSerializationContext?): JsonElement {
     val obj = JsonObject()
     src.objectId?.let { obj.addProperty("objectId", it) }
     src.string?.let { obj.addProperty("string", it) }
@@ -51,7 +50,7 @@ internal class ObjectDataJsonSerializer : JsonSerializer<ObjectData>, JsonDeseri
     return obj
   }
 
-  override fun deserialize(json: JsonElement, typeOfT: Type?, context: JsonDeserializationContext?): ObjectData {
+  override fun deserialize(json: JsonElement, typeOfT: Type?, context: JsonDeserializationContext?): WireObjectData {
     val obj = if (json.isJsonObject) json.asJsonObject else throw JsonParseException("Expected JsonObject")
     val objectId = if (obj.has("objectId")) obj.get("objectId").asString else null
     val string = if (obj.has("string")) obj.get("string").asString else null
@@ -63,6 +62,6 @@ internal class ObjectDataJsonSerializer : JsonSerializer<ObjectData>, JsonDeseri
     if (objectId == null && string == null && number == null && boolean == null && bytes == null && json == null) {
       throw JsonParseException("Since objectId is not present, at least one of the value fields must be present")
     }
-    return ObjectData(objectId = objectId, string = string, number = number, boolean = boolean, bytes = bytes, json = json)
+    return WireObjectData(objectId = objectId, string = string, number = number, boolean = boolean, bytes = bytes, json = json)
   }
 }

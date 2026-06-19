@@ -1,19 +1,17 @@
 package io.ably.lib.`object`.serialization
 
 import com.google.gson.*
-import io.ably.lib.objects.*
-
-import io.ably.lib.objects.ObjectMessage
+import io.ably.lib.`object`.message.WireObjectMessage
 import org.msgpack.core.MessagePacker
 import org.msgpack.core.MessageUnpacker
 
 /**
- * Default implementation of {@link ObjectsSerializer} that handles serialization/deserialization
- * of ObjectMessage arrays for both JSON and MessagePack formats using Jackson and Gson.
- * Dynamically loaded by ObjectsHelper#getSerializer() to avoid hard dependencies.
+ * Default implementation of {@link ObjectSerializer} that handles serialization/deserialization
+ * of WireObjectMessage arrays for both JSON and MessagePack formats using Gson and MessagePack.
+ * Dynamically loaded by ObjectSerializer#tryGet() to avoid hard dependencies.
  */
-@Suppress("unused") // Used via reflection in ObjectsHelper
-internal class DefaultObjectsSerializer : ObjectsSerializer {
+@Suppress("unused") // Used via reflection in ObjectSerializer.Holder
+internal class DefaultObjectsSerializer : ObjectSerializer {
 
   override fun readMsgpackArray(unpacker: MessageUnpacker): Array<Any> {
     val objectMessagesCount = unpacker.unpackArrayHeader()
@@ -21,7 +19,7 @@ internal class DefaultObjectsSerializer : ObjectsSerializer {
   }
 
   override fun writeMsgpackArray(objects: Array<out Any>, packer: MessagePacker) {
-    val objectMessages = objects.map { it as ObjectMessage }
+    val objectMessages = objects.map { it as WireObjectMessage }
     packer.packArrayHeader(objectMessages.size)
     objectMessages.forEach { it.writeMsgpack(packer) }
   }
@@ -34,7 +32,7 @@ internal class DefaultObjectsSerializer : ObjectsSerializer {
   }
 
   override fun asJsonArray(objects: Array<out Any>): JsonArray {
-    val objectMessages = objects.map { it as ObjectMessage }
+    val objectMessages = objects.map { it as WireObjectMessage }
     val jsonArray = JsonArray()
     for (objectMessage in objectMessages) {
       jsonArray.add(objectMessage.toJsonObject())
