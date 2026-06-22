@@ -97,6 +97,6 @@ internal open class DefaultPathObject(
 
   protected fun resolveValueAtPath(path: String): ResolvedValue? {
     // TODO - resolve the path against the live objects graph and return the value at that position
-    return null
+    TODO("Not yet implemented")
   }
 }
