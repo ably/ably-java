@@ -86,7 +86,7 @@ public interface ObjectSerializer {
                         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException |
                                  NoSuchMethodException |
                                  InvocationTargetException e) {
-                            Log.w(TAG, "Failed to init ObjectsSerializer, LiveObjects plugin not included in the classpath", e);
+                            Log.w(TAG, "Failed to init ObjectSerializer, LiveObjects plugin not included in the classpath", e);
                             return null;
                         }
                     }

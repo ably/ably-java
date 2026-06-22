@@ -18,7 +18,7 @@ public class ObjectJsonSerializer implements JsonSerializer<Object[]>, JsonDeser
     public Object[] deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
         ObjectSerializer serializer = ObjectSerializer.tryGet();
         if (serializer == null) {
-            Log.w(TAG, "Skipping 'state' field json deserialization because ObjectsSerializer not found.");
+            Log.w(TAG, "Skipping 'state' field json deserialization because ObjectSerializer not found.");
             return null;
         }
         if (!json.isJsonArray()) {
@@ -31,7 +31,7 @@ public class ObjectJsonSerializer implements JsonSerializer<Object[]>, JsonDeser
     public JsonElement serialize(Object[] src, Type typeOfSrc, JsonSerializationContext context) {
         ObjectSerializer serializer = ObjectSerializer.tryGet();
         if (serializer == null) {
-            Log.w(TAG, "Skipping 'state' field json serialization because ObjectsSerializer not found.");
+            Log.w(TAG, "Skipping 'state' field json serialization because ObjectSerializer not found.");
             return JsonNull.INSTANCE;
         }
         return serializer.asJsonArray(src);

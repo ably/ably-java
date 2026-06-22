@@ -290,6 +290,10 @@ private fun readObjectOperation(unpacker: MessageUnpacker): WireObjectOperation 
     throw objectStateError("Missing required 'action' field in WireObjectOperation")
   }
 
+  if (objectId.isEmpty()) {
+    throw objectStateError("Missing required 'objectId' field in WireObjectOperation")
+  }
+
   return WireObjectOperation(
     action = action,
     objectId = objectId,
@@ -386,6 +390,10 @@ private fun readObjectState(unpacker: MessageUnpacker): WireObjectState {
       "counter" -> counter = readObjectCounter(unpacker)
       else -> unpacker.skipValue()
     }
+  }
+
+  if (objectId.isEmpty()) {
+    throw objectStateError("Missing required 'objectId' field in WireObjectState")
   }
 
   return WireObjectState(
