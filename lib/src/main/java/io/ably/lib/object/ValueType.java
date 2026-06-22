@@ -23,6 +23,6 @@ public enum ValueType {
     LIVE_MAP,
     /** Corresponds to a {@code LiveCounter} object. Spec: RTTS2a8 */
     LIVE_COUNTER,
-    /** Returned when path resolution fails or the resolved value has none of the known types; never produced by an {@code Instance} in normal operation. Spec: RTTS2a9 */
+    /** Returned by {@code PathObject#getType()} only when a value is present but matches none of the known types. Never produced by an {@code Instance} in normal operation. Spec: RTTS2a9 */
     UNKNOWN,
 }

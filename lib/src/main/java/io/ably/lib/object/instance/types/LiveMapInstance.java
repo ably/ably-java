@@ -1,5 +1,6 @@
 package io.ably.lib.object.instance.types;
 
+import com.google.gson.JsonObject;
 import io.ably.lib.object.instance.Instance;
 import io.ably.lib.object.instance.InstanceListener;
 import io.ably.lib.object.Subscription;
@@ -33,6 +34,18 @@ public interface LiveMapInstance extends Instance {
      */
     @NotNull
     String getId();
+
+    /**
+     * Returns the compacted JSON snapshot of the wrapped value, narrowed to a
+     * {@link JsonObject}: a {@code LiveMapInstance} compacts to a JSON object (or, for a
+     * cyclic reference, an object-id reference object).
+     *
+     * <p>Spec: RTTS7a
+     *
+     * @return the compacted JSON object
+     */
+    @Override
+    @NotNull JsonObject compactJson();
 
     /**
      * Returns a {@link Instance} wrapping the value at {@code key} of the

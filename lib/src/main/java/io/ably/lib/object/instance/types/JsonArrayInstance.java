@@ -23,4 +23,15 @@ public interface JsonArrayInstance extends Instance {
      */
     @NotNull
     JsonArray value();
+
+    /**
+     * Returns the compacted JSON snapshot of the wrapped value, narrowed to a
+     * {@link JsonArray}: a {@code JsonArrayInstance} always compacts to a JSON array.
+     *
+     * <p>Spec: RTTS7a
+     *
+     * @return the compacted JSON array
+     */
+    @Override
+    @NotNull JsonArray compactJson();
 }

@@ -21,11 +21,17 @@ import org.jetbrains.annotations.Nullable;
  * {@code LiveMap}.
  *
  * <p>A {@code PathObject} stores a path as an ordered list of string segments and
- * resolves it against the local object graph each time a method is called. Resolution
- * is best-effort: the value at a path may change between two calls (e.g. between
+ * resolves it against the local object graph each time a terminal method is called;
+ * the freshly resolved value is the sole basis for that call's result. Resolution is
+ * best-effort: the value at a path may change between two calls (e.g. between
  * {@link #exists()} and a subsequent write) as updates from other clients are applied.
- * Operations that resolve the path validate the access/write API preconditions and
- * fail with an {@code AblyException} if they are not satisfied.
+ *
+ * <p>When the path does not resolve, or resolves to a type the called method does not
+ * apply to, read operations degrade gracefully - returning {@code null} or an empty
+ * result - whereas write operations fail with an {@code AblyException} (code 92005 if
+ * the path does not resolve, 92007 on a type mismatch). All terminal operations
+ * additionally validate the access/write API preconditions and fail with an
+ * {@code AblyException} if those are not satisfied.
  *
  * <p>This base type exposes only the methods whose behaviour is independent of the
  * resolved type; map and counter reads/writes are partitioned onto the sub-types
@@ -43,17 +49,22 @@ import org.jetbrains.annotations.Nullable;
 public interface PathObject {
 
     /**
-     * Returns the {@link ValueType} of the value resolved at this path currently.
-     * Use this instead of dedicated {@code isLiveMap}/{@code isLiveCounter}/etc. checks.
+     * Returns the {@link ValueType} of the value currently resolved at this path, or
+     * {@code null} when the path does not resolve to any value. Use this instead of
+     * dedicated {@code isLiveMap}/{@code isLiveCounter}/etc. checks.
      *
-     * <p>Returns {@link ValueType#UNKNOWN} when the path does not resolve or the
-     * resolved value falls into none of the known categories.
+     * <p>A {@code null} result means there is no value at this path - nothing is stored
+     * there (e.g. an absent or removed map entry). This is deliberately distinct from
+     * {@link ValueType#UNKNOWN}, which is returned only when a value <em>is</em> present
+     * but its type matches none of the known categories. In other words: {@code null}
+     * means "no value", {@code UNKNOWN} means "a value of an unrecognized type".
      *
      * <p>Spec: RTTS4b
      *
-     * @return the resolved value type at this path
+     * @return the resolved value type at this path, or {@code null} if the path does
+     *         not resolve to a value
      */
-    @NotNull ValueType getType();
+    @Nullable ValueType getType();
 
     /**
      * Returns a dot-delimited string representation of the stored path segments.

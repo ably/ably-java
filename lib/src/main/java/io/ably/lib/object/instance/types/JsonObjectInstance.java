@@ -23,4 +23,15 @@ public interface JsonObjectInstance extends Instance {
      */
     @NotNull
     JsonObject value();
+
+    /**
+     * Returns the compacted JSON snapshot of the wrapped value, narrowed to a
+     * {@link JsonObject}: a {@code JsonObjectInstance} always compacts to a JSON object.
+     *
+     * <p>Spec: RTTS7a
+     *
+     * @return the compacted JSON object
+     */
+    @Override
+    @NotNull JsonObject compactJson();
 }

@@ -26,7 +26,7 @@ public interface ObjectData {
     /**
      * Returns the string value.
      *
-     * <p>Spec: OD2c
+     * <p>Spec: OD2f
      *
      * @return the string value, or {@code null} if not applicable
      */
@@ -35,7 +35,7 @@ public interface ObjectData {
     /**
      * Returns the numeric value.
      *
-     * <p>Spec: OD2c
+     * <p>Spec: OD2e
      *
      * @return the numeric value, or {@code null} if not applicable
      */
@@ -54,7 +54,7 @@ public interface ObjectData {
      * Returns the binary value. The returned array is the underlying message
      * payload and is not defensively copied; callers must treat it as read-only.
      *
-     * <p>Spec: OD2c
+     * <p>Spec: OD2d
      *
      * @return the binary value, or {@code null} if not applicable
      */
@@ -63,7 +63,7 @@ public interface ObjectData {
     /**
      * Returns the JSON object or array value.
      *
-     * <p>Spec: OD2c
+     * <p>Spec: OD2g
      *
      * @return the JSON value, or {@code null} if not applicable
      */
