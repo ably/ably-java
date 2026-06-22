@@ -1,12 +1,12 @@
 package io.ably.lib.`object`.message
 
-import com.google.gson.Gson
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.annotations.JsonAdapter
 import com.google.gson.annotations.SerializedName
+import io.ably.lib.`object`.byteSize
 import io.ably.lib.`object`.serialization.WireObjectDataJsonSerializer
-import java.nio.charset.StandardCharsets
+import io.ably.lib.`object`.serialization.gson
 import java.util.Base64
 
 /**
@@ -155,18 +155,6 @@ internal data class WireObjectMessage(
   val serialTimestamp: Long? = null, // OM2j
   val siteCode: String? = null, // OM2i
 )
-
-// Gson instance for serializing the opaque `extras` field during size calculation.
-// Kept file-local so this package has no dependency on `io.ably.lib.objects`.
-private val gson = Gson()
-
-/**
- * Calculates the byte size of a string.
- * For non-ASCII, the byte size can be 2–4x the character count. For ASCII, there is no difference.
- * e.g. "Hello" has a byte size of 5, while "你" has a byte size of 3 and "😊" has a byte size of 4.
- */
-private val String.byteSize: Int
-  get() = this.toByteArray(StandardCharsets.UTF_8).size
 
 /**
  * Calculates the size of an ObjectMessage in bytes.

@@ -2,7 +2,6 @@ package io.ably.lib.object;
 
 import io.ably.lib.object.adapter.AblyClientAdapter;
 import io.ably.lib.object.adapter.Adapter;
-import io.ably.lib.objects.RealtimeObjects;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.types.ProtocolMessage;
@@ -28,7 +27,7 @@ public interface LiveObjectsPlugin {
      * @return the RealtimeObjects instance associated with the specified channel name.
      */
     @NotNull
-    RealtimeObjects getInstance(@NotNull String channelName);
+    RealtimeObject getInstance(@NotNull String channelName);
 
     /**
      * Handles a protocol message.

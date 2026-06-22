@@ -5,8 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.ably.lib.objects.ObjectsHelper;
-import io.ably.lib.objects.LiveObjectsPlugin;
+import io.ably.lib.object.LiveObjectsPlugin;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.transport.ConnectionManager;
@@ -74,7 +73,7 @@ public class AblyRealtime extends AblyRest {
         final InternalChannels channels = new InternalChannels();
         this.channels = channels;
 
-        liveObjectsPlugin = ObjectsHelper.tryInitializeObjectsPlugin(this);
+        liveObjectsPlugin = LiveObjectsPlugin.tryInitialize(this);
 
         connection = new Connection(this, channels, platformAgentProvider, liveObjectsPlugin);
 
