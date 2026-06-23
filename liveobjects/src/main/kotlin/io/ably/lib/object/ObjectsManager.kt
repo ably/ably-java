@@ -1,6 +1,5 @@
 package io.ably.lib.`object`
 
-import io.ably.lib.`object`.message.*
 import io.ably.lib.`object`.message.WireObjectMessage
 import io.ably.lib.`object`.message.WireObjectOperation
 import io.ably.lib.`object`.message.WireObjectOperationAction
@@ -8,8 +7,8 @@ import io.ably.lib.`object`.message.WireObjectState
 import io.ably.lib.`object`.message.WireObjectsMap
 import io.ably.lib.`object`.value.BaseRealtimeObject
 import io.ably.lib.`object`.value.ObjectUpdate
-import io.ably.lib.objects.type.livecounter.InternalLiveCounter
-import io.ably.lib.objects.type.livemap.InternalLiveMap
+import io.ably.lib.`object`.value.livecounter.InternalLiveCounter
+import io.ably.lib.`object`.value.livemap.InternalLiveMap
 import io.ably.lib.types.AblyException
 import io.ably.lib.util.Log
 import kotlinx.coroutines.CompletableDeferred
@@ -18,7 +17,7 @@ import kotlinx.coroutines.CompletableDeferred
  * @spec RTO5 - Processes OBJECT and OBJECT_SYNC messages during sync sequences
  * @spec RTO6 - Creates zero-value objects when needed
  */
-internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObjects): ObjectsStateCoordinator() {
+internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject): ObjectsStateCoordinator() {
   private val tag = "ObjectsManager"
   /**
    * @spec RTO5 - Sync objects pool for collecting sync messages

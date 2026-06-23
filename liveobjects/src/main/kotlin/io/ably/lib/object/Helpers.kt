@@ -1,9 +1,18 @@
 package io.ably.lib.`object`
 
 import io.ably.lib.`object`.adapter.AblyClientAdapter
+import io.ably.lib.`object`.message.WireObjectMessage
+import io.ably.lib.`object`.message.size
 import io.ably.lib.realtime.ChannelState
-import io.ably.lib.types.ChannelMode
+import io.ably.lib.realtime.CompletionListener
+import io.ably.lib.realtime.ConnectionEvent
+import io.ably.lib.realtime.ConnectionStateListener
+import io.ably.lib.types.*
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 /**
  * Wraps [onUnsubscribe] in a [Subscription] that runs the cleanup at most once; further
@@ -84,5 +93,105 @@ private fun AblyClientAdapter.throwIfEchoMessagesDisabled() {
       "\"echoMessages\" client option must be enabled for this operation",
       ObjectErrorCode.BadRequest,
     )
+  }
+}
+
+internal fun AblyClientAdapter.throwIfUnpublishableState(channelName: String) {
+  if (!connectionManager.isActive) {
+    throw ablyException(connectionManager.stateErrorInfo)
+  }
+  throwIfInChannelState(channelName, arrayOf(ChannelState.failed, ChannelState.suspended))
+}
+
+internal val AblyClientAdapter.connectionManager get() = connection.connectionManager
+
+internal fun AblyClientAdapter.onGCGracePeriodUpdated(block : (Long?) -> Unit) : Subscription {
+  connectionManager.objectsGCGracePeriod?.let { block(it) }
+  // Return new objectsGCGracePeriod whenever connection state changes to connected
+  val listener: (_: ConnectionStateListener.ConnectionStateChange) -> Unit = {
+    block(connectionManager.objectsGCGracePeriod)
+  }
+  connection.on(ConnectionEvent.connected, listener)
+  return onceSubscription { connection.off(listener) }
+}
+
+/**
+ * Spec: RTO15g
+ */
+internal suspend fun AblyClientAdapter.sendAsync(message: ProtocolMessage): PublishResult = suspendCancellableCoroutine { continuation ->
+  try {
+    connectionManager.send(message, clientOptions.queueMessages, object : Callback<PublishResult> {
+      override fun onSuccess(result: PublishResult) {
+        continuation.resume(result)
+      }
+
+      override fun onError(reason: ErrorInfo) {
+        continuation.resumeWithException(ablyException(reason))
+      }
+    })
+  } catch (e: Exception) {
+    continuation.resumeWithException(e)
+  }
+}
+
+internal suspend fun AblyClientAdapter.attachAsync(channelName: String) = suspendCancellableCoroutine { continuation ->
+  try {
+    getChannel(channelName).attach(object : CompletionListener {
+      override fun onSuccess() {
+        continuation.resume(Unit)
+      }
+
+      override fun onError(reason: ErrorInfo) {
+        continuation.resumeWithException(ablyException(reason))
+      }
+    })
+  } catch (e: Exception) {
+    continuation.resumeWithException(e)
+  }
+}
+
+/**
+ * Spec: RTO15d
+ */
+internal fun AblyClientAdapter.ensureMessageSizeWithinLimit(wireObjectMessages: Array<WireObjectMessage>) {
+  val maximumAllowedSize = connectionManager.maxMessageSize
+  val objectsTotalMessageSize = wireObjectMessages.sumOf { it.size() }
+  if (objectsTotalMessageSize > maximumAllowedSize) {
+    throw ablyException("ObjectMessages size $objectsTotalMessageSize exceeds maximum allowed size of $maximumAllowedSize bytes",
+      ObjectErrorCode.MaxMessageSizeExceeded)
+  }
+}
+
+internal fun AblyClientAdapter.setChannelSerial(channelName: String, protocolMessage: ProtocolMessage) {
+  if (protocolMessage.action != ProtocolMessage.Action.`object`) return
+  val channelSerial = protocolMessage.channelSerial
+  if (channelSerial.isNullOrEmpty()) return
+  getChannel(channelName).properties.channelSerial = channelSerial
+}
+
+internal suspend fun AblyClientAdapter.ensureAttached(channelName: String) {
+  val channel = getChannel(channelName)
+  when (val currentChannelStatus = channel.state) {
+    ChannelState.initialized -> attachAsync(channelName)
+    ChannelState.attached -> return
+    ChannelState.attaching -> {
+      val attachDeferred = CompletableDeferred<Unit>()
+      getChannel(channelName).once {
+        when(it.current) {
+          ChannelState.attached -> attachDeferred.complete(Unit)
+          else -> {
+            val exception = ablyException("Channel $channelName is in invalid state: ${it.current}, " +
+              "error: ${it.reason}", ObjectErrorCode.ChannelStateError)
+            attachDeferred.completeExceptionally(exception)
+          }
+        }
+      }
+      if (channel.state == ChannelState.attached) {
+        attachDeferred.complete(Unit)
+      }
+      attachDeferred.await()
+    }
+    else ->
+      throw ablyException("Channel $channelName is in invalid state: $currentChannelStatus", ObjectErrorCode.ChannelStateError)
   }
 }

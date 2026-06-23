@@ -5,6 +5,8 @@ import io.ably.lib.`object`.message.WireObjectMessage
 import io.ably.lib.`object`.message.WireObjectOperation
 import io.ably.lib.`object`.message.WireObjectState
 import io.ably.lib.`object`.objectError
+import io.ably.lib.`object`.value.livecounter.noOpCounterUpdate
+import io.ably.lib.objects.type.livemap.noOpMapUpdate
 import io.ably.lib.util.Clock
 import io.ably.lib.util.Log
 import io.ably.lib.util.SystemClock
@@ -16,7 +18,9 @@ internal enum class ObjectType(val value: String) {
 
 // Spec: RTLO4b4b
 // TODO - Check what to do about `ObjectUpdate` field, whether we really need to keep it or not
-internal object ObjectUpdate
+internal data class ObjectUpdate(val data: Any?)
+
+internal val ObjectUpdate.noOp get() = this.data == null
 
 /**
  * Provides common functionality and base implementation for LiveMap and LiveCounter.
@@ -59,9 +63,9 @@ internal abstract class BaseRealtimeObject(
     if (isTombstoned) {
       // this object is tombstoned. this is a terminal state which can't be overridden. skip the rest of object state message processing
       if (objectType == ObjectType.Map) {
-        return ObjectUpdate
+        return noOpMapUpdate
       }
-      return ObjectUpdate
+      return noOpCounterUpdate
     }
     return applyObjectState(wireObjectState, wireObjectMessage) // RTLM6, RTLC6
   }

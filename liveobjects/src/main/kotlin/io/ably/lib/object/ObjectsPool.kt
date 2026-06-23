@@ -2,8 +2,8 @@ package io.ably.lib.`object`
 
 import io.ably.lib.`object`.value.BaseRealtimeObject
 import io.ably.lib.`object`.value.ObjectType
-import io.ably.lib.objects.type.livecounter.InternalLiveCounter
-import io.ably.lib.objects.type.livemap.InternalLiveMap
+import io.ably.lib.`object`.value.livecounter.InternalLiveCounter
+import io.ably.lib.`object`.value.livemap.InternalLiveMap
 import io.ably.lib.util.Log
 import kotlinx.coroutines.*
 import java.util.concurrent.ConcurrentHashMap
@@ -36,7 +36,7 @@ internal const val ROOT_OBJECT_ID = "root"
  * @spec RTO3 - Maintains an objects pool for all objects on the channel
  */
 internal class ObjectsPool(
-  private val realtimeObjects: DefaultRealtimeObjects
+  private val realtimeObjects: DefaultRealtimeObject
 ) {
   private val tag = "ObjectsPool"
 
