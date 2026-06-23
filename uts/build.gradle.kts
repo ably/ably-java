@@ -24,4 +24,14 @@ tasks.withType<Test>().configureEach {
     jvmArgs("--add-opens", "java.base/java.lang=ALL-UNNAMED")
     beforeTest(closureOf<TestDescriptor> { logger.lifecycle("-> $this") })
     outputs.upToDateWhen { false }
+
+    // Gradle does not forward -D system properties to the forked test JVM, so propagate the
+    // local uts-proxy override explicitly. Accepts either `-Duts.proxy.localPath=...` on the
+    // Gradle invocation or the `UTS_PROXY_LOCAL_PATH` environment variable. See ProxyManager.
+    systemProperty(
+        "uts.proxy.localPath",
+        providers.systemProperty("uts.proxy.localPath")
+            .orElse(providers.environmentVariable("UTS_PROXY_LOCAL_PATH"))
+            .getOrElse(""),
+    )
 }

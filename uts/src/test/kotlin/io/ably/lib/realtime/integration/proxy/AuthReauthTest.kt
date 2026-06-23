@@ -3,7 +3,6 @@ package io.ably.lib.realtime.integration.proxy
 import io.ably.lib.awaitState
 import io.ably.lib.pollUntil
 import io.ably.lib.realtime.ConnectionState
-import io.ably.lib.realtime.ConnectionStateListener
 import io.ably.lib.rest.AblyRest
 import io.ably.lib.rest.Auth
 import io.ably.lib.test.helper.ProxyManager
@@ -91,7 +90,7 @@ class AuthReauthTest {
 
             // Record state changes from this point
             val stateChanges = Collections.synchronizedList(mutableListOf<ConnectionState>())
-            client.connection.on(ConnectionStateListener { change -> stateChanges.add(change.current) })
+            client.connection.on { change -> stateChanges.add(change.current) }
 
             // Inject a server-initiated AUTH ProtocolMessage (action 17), simulating Ably
             // requesting re-authentication.
@@ -101,7 +100,7 @@ class AuthReauthTest {
 
             // Wait for the SDK to invoke authCallback again and send its AUTH response.
             // Allow time for the token request round-trip to the sandbox.
-            pollUntil { authCallbackCount.get() > originalAuthCallbackCount }
+            pollUntil { stateChanges.size > 1 }
 
             // authCallback was called again (re-authentication triggered)
             assertEquals(originalAuthCallbackCount + 1, authCallbackCount.get())
@@ -121,7 +120,7 @@ class AuthReauthTest {
                 it.type == "ws_frame" &&
                     it.direction == "client_to_server" &&
                     it.message?.get("action")?.asInt == 17 &&
-                    it.message?.get("auth")?.isJsonNull == false
+                    it.message.get("auth")?.isJsonNull == false
             }
 
             assertTrue(

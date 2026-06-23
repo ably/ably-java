@@ -512,7 +512,7 @@ val client = TestRealtimeClient {
 }
 ```
 
-ably-java has **no `endpoint` ClientOptions field** (that's a Dart-ism); `connectThroughProxy` sets the discrete host fields for you:
+ably-java has **no `endpoint` ClientOptions field**; `connectThroughProxy` sets the discrete host fields for you:
 
 | Proxy-def option | What `connectThroughProxy` sets |
 |---|---|

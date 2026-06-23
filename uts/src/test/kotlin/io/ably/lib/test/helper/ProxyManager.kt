@@ -45,12 +45,17 @@ private val client = HttpClient(CIO) {
  * The spawned process is reaped by a JVM shutdown hook registered in `init`; [stopProxy] stops it
  * explicitly.
  *
+ * To run against a locally built proxy instead of downloading a release, point
+ * [localDistributive] at a local `uts-proxy` binary or a `.tar.gz` distributive — set
+ * either the `uts.proxy.localPath` system property or the `UTS_PROXY_LOCAL_PATH`
+ * environment variable. When set, the download and checksum verification are skipped.
+ *
  * Call [ensureProxy] in `@BeforeAll` / `setUpAll()` for every proxy integration test suite.
  */
 object ProxyManager {
 
-    private const val PROXY_VERSION = "v0.2.0"
-    private const val VERSION_BARE = "0.2.0"
+    private const val PROXY_VERSION = "v0.3.0"
+    private const val VERSION_BARE = "0.3.0"
     const val CONTROL_PORT = 10100
     private const val SANDBOX_HOST = "sandbox.realtime.ably-nonprod.net"
     private const val GITHUB_BASE =
@@ -61,13 +66,13 @@ object ProxyManager {
 
     private val CHECKSUMS = mapOf(
         "uts-proxy_${VERSION_BARE}_darwin_amd64.tar.gz" to
-            "4abc4bd0682b61d53889c3ad3b240b44cf942878ed9fb04e8912a48070d2666d",
+            "1355526543c3022f87efb7f564f55200b78edc68d84c7dba2e49f63429e3b788",
         "uts-proxy_${VERSION_BARE}_darwin_arm64.tar.gz" to
-            "2b95cdb5659988f54ad3d413c713f94f944e3b0014011aba2e339b9537c59b2f",
+            "a948f99b7daf9b3bffff742f6405637d40a79947389309eed5f87e59026de9a5",
         "uts-proxy_${VERSION_BARE}_linux_amd64.tar.gz"  to
-            "aa6d536101ebc3bfa6870ca4cfb75be1947360dc5c1c77d7a8536baa1fee7caa",
+            "de741ba21f3630fea4f59714d00585638d565005599ecd84179931eba248f280",
         "uts-proxy_${VERSION_BARE}_linux_arm64.tar.gz"  to
-            "c8f9363ae579508004727175a098bd0b73518ee3f08cf9071b0c372f8199767a",
+            "15b5ca87c40c2c4ff350c94af1911cea0ad6be5a2d890ba41029bc4b8bc52c61",
     )
 
     private val os: String by lazy {
@@ -93,6 +98,17 @@ object ProxyManager {
         get() = Path.of(System.getProperty("user.home"), ".cache", "uts-proxy", PROXY_VERSION)
 
     private val binaryPath: Path get() = cacheDir.resolve("uts-proxy")
+
+    /**
+     * Optional path to a locally built `uts-proxy` binary or `.tar.gz` distributive, taken
+     * from the `uts.proxy.localPath` system property or the `UTS_PROXY_LOCAL_PATH`
+     * environment variable. When present, the release download + checksum check are bypassed.
+     */
+    private val localDistributive: Path?
+        get() = (System.getProperty("uts.proxy.localPath")
+            ?: System.getenv("UTS_PROXY_LOCAL_PATH"))
+            ?.takeIf { it.isNotBlank() }
+            ?.let { Path.of(it) }
 
     @Volatile private var proxyProcess: Process? = null
     private val mutex = Mutex()
@@ -157,6 +173,7 @@ object ProxyManager {
 
     /** Ensures the binary is present in the cache, downloading and extracting if needed. */
     private suspend fun ensureBinary() = withContext(Dispatchers.IO) {
+        localDistributive?.let { installLocalDistributive(it); return@withContext }
         Files.createDirectories(cacheDir)
         // FileLock serialises across multiple Gradle test worker JVMs.
         val lockFile = cacheDir.resolve("uts-proxy.lock")
@@ -176,6 +193,23 @@ object ProxyManager {
                 binaryPath.toFile().setExecutable(true)
             }
         }
+    }
+
+    /**
+     * Installs a locally provided distributive into the cache, skipping download + checksum.
+     * The path may be a raw `uts-proxy` binary or a `.tar.gz` archive containing one.
+     */
+    private fun installLocalDistributive(path: Path) {
+        require(Files.exists(path)) { "Local uts-proxy distributive not found at $path" }
+        System.err.println("Using local uts-proxy distributive: $path")
+        Files.createDirectories(cacheDir)
+        val binary = if (path.fileName.toString().endsWith(".tar.gz")) {
+            extractFromTarGz(Files.readAllBytes(path))
+        } else {
+            Files.readAllBytes(path)
+        }
+        Files.write(binaryPath, binary, CREATE, TRUNCATE_EXISTING)
+        binaryPath.toFile().setExecutable(true)
     }
 
     private suspend fun downloadArchive(): ByteArray {
