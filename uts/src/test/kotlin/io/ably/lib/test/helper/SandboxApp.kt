@@ -2,7 +2,6 @@ package io.ably.lib.test.helper
 
 import com.google.gson.JsonElement
 import com.google.gson.JsonParser
-import io.ably.lib.test.helper.SandboxApp.Companion.create
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.network.sockets.*
@@ -15,13 +14,22 @@ import java.util.*
 private val client = HttpClient(CIO) {
   install(HttpRequestRetry) {
     maxRetries = 5
-    retryIf { _, response -> !response.status.isSuccess() }
-    retryOnExceptionIf { _, cause ->
-      cause is ConnectTimeoutException ||
-        cause is HttpRequestTimeoutException ||
-        cause is SocketTimeoutException
+    // Only retry idempotent reads (the shared app-setup fetch). Retrying POST /apps risks
+    // provisioning duplicate sandbox apps if the write succeeds but the response is lost.
+    retryIf { request, response -> request.method == HttpMethod.Get && !response.status.isSuccess() }
+    retryOnExceptionIf { request, cause ->
+      request.method == HttpMethod.Get && (
+        cause is ConnectTimeoutException ||
+          cause is HttpRequestTimeoutException ||
+          cause is SocketTimeoutException
+        )
     }
     exponentialDelay()
+  }
+  install(HttpTimeout) {
+    requestTimeoutMillis = 30_000
+    connectTimeoutMillis = 10_000
+    socketTimeoutMillis = 30_000
   }
 }
 

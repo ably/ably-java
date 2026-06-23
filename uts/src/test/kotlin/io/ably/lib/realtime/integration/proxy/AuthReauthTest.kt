@@ -52,6 +52,7 @@ class AuthReauthTest {
 
     /**
      * @UTS realtime/proxy/RTN22/server-initiated-reauth-0
+     * @UTS realtime/proxy/RTC8a/server-initiated-reauth-0
      */
     @Test
     fun `RTN22, RTC8a - server-initiated re-authentication`() = runTest {
@@ -69,8 +70,9 @@ class AuthReauthTest {
             tokenSigner.auth.createTokenRequest(params, null)
         }
 
+        // Keep the JSON protocol (ClientOptionsBuilder default): the proxy injects/inspects frames
+        // as JSON, so the assertions below read `message.get("action")` from the proxy log.
         val client = TestRealtimeClient {
-            useBinaryProtocol = true
             this.authCallback = authCallback
             connectThroughProxy(session)
             autoConnect = false
@@ -114,18 +116,27 @@ class AuthReauthTest {
             val nonConnectedChanges = stateChanges.filter { it != ConnectionState.connected }
             assertEquals(0, nonConnectedChanges.size)
 
+            // RTC8a: the client sends an AUTH (action 17) frame carrying the renewed auth details.
             val clientAuthFrames = session.getLog().filter {
-              it.type == "ws_frame"
-              && it.direction == "client_to_server"
-              && (it.message?.get("action")?.asInt == 17)
-              // && !it.message.get("auth").isJsonNull
+                it.type == "ws_frame" &&
+                    it.direction == "client_to_server" &&
+                    it.message?.get("action")?.asInt == 17 &&
+                    it.message?.get("auth")?.isJsonNull == false
             }
 
-            assertTrue(clientAuthFrames.isNotEmpty(), "Expected at least one client-to-server AUTH frame")
+            assertTrue(
+                clientAuthFrames.isNotEmpty(),
+                "Expected at least one client-to-server AUTH frame carrying auth details",
+            )
         } finally {
-            client.close()
-            awaitState(client, ConnectionState.closed, 10.seconds)
-            session.close()
+            // Nest teardown so session/tokenSigner are always cleaned up even if close-wait times out.
+            try {
+                client.close()
+                awaitState(client, ConnectionState.closed, 10.seconds)
+            } finally {
+                session.close()
+                runCatching { tokenSigner.close() }
+            }
         }
     }
 }

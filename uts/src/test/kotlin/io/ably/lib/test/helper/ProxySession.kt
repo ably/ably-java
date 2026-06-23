@@ -1,12 +1,12 @@
 package io.ably.lib.test.helper
 
 import com.google.gson.Gson
-import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
 import io.ably.lib.uts.infra.ClientOptionsBuilder
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.post
@@ -15,7 +15,14 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 
-private val client = HttpClient(CIO)
+// Finite timeouts so a stalled local proxy/control endpoint fails fast instead of hanging teardown.
+private val client = HttpClient(CIO) {
+    install(HttpTimeout) {
+        requestTimeoutMillis = 15_000
+        connectTimeoutMillis = 5_000
+        socketTimeoutMillis = 15_000
+    }
+}
 
 // ── Rule type alias ────────────────────────────────────────────────────────────
 
@@ -48,8 +55,8 @@ data class Event(
     val url: String? = null,
     val queryParams: Map<String, String>? = null,
     /**
-     * The raw protocol message (proxy `json.RawMessage`), kept as a parsed JSON tree.
-     * Introspect via `message?.asJsonObject?.get("action")` etc.
+     * The raw protocol message (proxy `json.RawMessage`), parsed into a [JsonObject].
+     * Introspect via `message?.get("action")?.asInt` etc.
      */
     val message: JsonObject? = null,
     val method: String? = null,
@@ -184,7 +191,7 @@ fun httpRequestRule(
  * All methods are `suspend` functions backed by a Ktor client.
  *
  * > **Note:** [getLog] returns a typed `List<`[Event]`>`. The raw protocol message is exposed as
- * > [Event.message] (a `JsonElement`); introspect it via `message?.asJsonObject`.
+ * > [Event.message] (a `JsonObject`); introspect it via `message?.get("action")`.
  */
 class ProxySession private constructor(
     /** Opaque session identifier assigned by the proxy. */
@@ -224,7 +231,7 @@ class ProxySession private constructor(
                 if (timeoutMs != null) addProperty("timeoutMs", timeoutMs)
             }
 
-            val responseBody = controlPost("/sessions", body.toString(), expectedStatus = 201)
+            val responseBody = controlPost("/sessions", body.toString())
             val data = gson.fromJson(responseBody, JsonObject::class.java)
             val sessionId = data["sessionId"].asString
             val proxyPort = data.getAsJsonObject("proxy")["port"].asInt
@@ -236,17 +243,13 @@ class ProxySession private constructor(
 
         private fun controlUrl(path: String) = "http://localhost:${ProxyManager.CONTROL_PORT}$path"
 
-        internal suspend fun controlPost(
-            path: String,
-            body: String,
-            expectedStatus: Int = 200,
-        ): String {
+        internal suspend fun controlPost(path: String, body: String): String {
             val response = client.post(controlUrl(path)) {
                 contentType(ContentType.Application.Json)
                 setBody(body)
             }
             val text = response.bodyAsText()
-            check(response.status.value == expectedStatus) {
+            check(response.status.value in 200..299) {
                 "Proxy control API returned ${response.status.value} for POST $path: $text"
             }
             return text
@@ -255,14 +258,18 @@ class ProxySession private constructor(
         internal suspend fun controlGet(path: String): String {
             val response = client.get(controlUrl(path))
             val text = response.bodyAsText()
-            check(response.status.value == 200) {
+            check(response.status.value in 200..299) {
                 "Proxy control API returned ${response.status.value} for GET $path: $text"
             }
             return text
         }
 
         internal suspend fun controlDelete(path: String) {
-            client.delete(controlUrl(path))
+            val response = client.delete(controlUrl(path))
+            if (response.status.value !in 200..299) {
+                // Teardown should never throw, but a failed delete leaks a session — make it visible.
+                System.err.println("Proxy control API returned ${response.status.value} for DELETE $path")
+            }
         }
     }
 

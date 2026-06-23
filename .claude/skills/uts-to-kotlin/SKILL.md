@@ -443,7 +443,7 @@ Three helpers live in `uts/src/test/kotlin/io/ably/lib/test/helper/`. **Read the
 
 - **`ProxyManager`** — downloads/starts the shared `uts-proxy` process and exposes the sandbox host. Call `ProxyManager.ensureProxy()` once per suite in setup. `ProxyManager.sandboxRealtimeHost` / `sandboxRestHost` are the upstream sandbox hosts (the default target of every session).
 - **`ProxySession`** — one programmable session wrapping the proxy control API.
-- **`SandboxApp`** — provisions/deletes a sandbox test app from the shared `test-app-setup.json` in ably-common. `SandboxApp.create()` returns `{ appId, deafultKey, keys }` (`deafultKey` is a full-capability `appId.keyId:keySecret`); `app.delete()` tears it down. Provision in suite setup, delete in teardown.
+- **`SandboxApp`** — provisions/deletes a sandbox test app from the shared `test-app-setup.json` in ably-common. `SandboxApp.create()` returns a `SandboxApp` with `appId`, `defaultKey`, and `keys` (`defaultKey` is a full-capability `appId.keyId:keySecret`); `app.delete()` tears it down. Provision in suite setup, delete in teardown.
 
 `ensureProxy()`, the `ProxySession` methods, and the `SandboxApp` methods are all **`suspend`** functions. Per-test bodies use `runTest { }`; JUnit5 `@BeforeAll`/`@AfterAll` (with `@TestInstance(Lifecycle.PER_CLASS)`) wrap their suspend calls in `runBlocking { }`.
 
@@ -528,7 +528,7 @@ It does **not** touch `autoConnect`, so set that yourself. Setting explicit host
 A spec that needs to observe (re-)authentication uses an `authCallback`. Where the pseudocode "generates a JWT from the key parts", the idiomatic ably-java equivalent is a **locally-signed `TokenRequest`** from the same sandbox key — no JWT library required. The realtime client exchanges it for a token through the proxy:
 
 ```kotlin
-val tokenSigner = AblyRest(app.apiKey)              // local signing only; no network
+val tokenSigner = AblyRest(app.defaultKey)          // local signing only; no network
 val authCallbackCount = AtomicInteger(0)
 val authCallback = Auth.TokenCallback { params ->
     authCallbackCount.incrementAndGet()
@@ -570,7 +570,7 @@ mapOf("type" to "http_respond", "status" to 401, "body" to mapOf(...))
 
 ### Verifying the event log
 
-`getLog()` returns `List<Map<String, Any>>`. **Gson deserializes JSON numbers as `Double`** when the target type is `Any`, so cast numeric fields (`action`, `closeCode`, `status`) with `.toInt()` at the call site.
+`getLog()` returns a typed `List<Event>`. Access fields via dot notation (`it.type`, `it.direction`, `it.queryParams`, `it.status`); numeric fields (`status`, `closeCode`) are already `Int?`. The raw protocol message is exposed as `Event.message` (a Gson `JsonObject?`) — introspect it with `it.message?.get("action")?.asInt`.
 
 ```kotlin
 val log = session.getLog()

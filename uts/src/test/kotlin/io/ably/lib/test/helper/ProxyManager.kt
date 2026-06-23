@@ -3,6 +3,7 @@ package io.ably.lib.test.helper
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.request.get
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -22,15 +23,27 @@ import java.util.zip.GZIPInputStream
 // GitHub release downloads 302-redirect to the asset CDN; Ktor CIO follows redirects by default.
 private val client = HttpClient(CIO) {
     followRedirects = true
+    // Finite timeouts so a stalled download/health endpoint fails fast instead of hanging the suite.
+    // requestTimeout is generous to allow the binary download; connect/socket are tighter.
+    install(HttpTimeout) {
+        requestTimeoutMillis = 60_000
+        connectTimeoutMillis = 10_000
+        socketTimeoutMillis = 30_000
+    }
 }
 
 /**
  * Manages the lifecycle of the `uts-proxy` binary used for integration tests.
  *
  * Downloads the binary from GitHub releases on first use, caching it at
- * `~/.cache/uts-proxy/<version>/uts-proxy`. Safe for concurrent Gradle test workers —
- * a `FileLock` on `uts-proxy.lock` serialises the download across OS processes, while
- * a [Mutex] serialises it within the same JVM.
+ * `~/.cache/uts-proxy/<version>/uts-proxy`. The download is serialised across OS processes by a
+ * `FileLock` on `uts-proxy.lock`, and within a JVM by a [Mutex]. Note: only the *download* is
+ * cross-process locked — process startup relies on the shared health check on [CONTROL_PORT], so
+ * proxy suites should run single-fork (`maxParallelForks = 1`) to avoid two workers racing to bind
+ * the control port.
+ *
+ * The spawned process is reaped by a JVM shutdown hook registered in `init`; [stopProxy] stops it
+ * explicitly.
  *
  * Call [ensureProxy] in `@BeforeAll` / `setUpAll()` for every proxy integration test suite.
  */
@@ -84,6 +97,16 @@ object ProxyManager {
     @Volatile private var proxyProcess: Process? = null
     private val mutex = Mutex()
 
+    init {
+        // A ProcessBuilder child does NOT die with the parent JVM, so kill it explicitly on exit.
+        Runtime.getRuntime().addShutdownHook(
+            Thread {
+                proxyProcess?.destroyForcibly()
+                runCatching { client.close() }
+            },
+        )
+    }
+
     /**
      * Ensures the `uts-proxy` process is running on [CONTROL_PORT].
      *
@@ -105,10 +128,15 @@ object ProxyManager {
     }
 
     /**
-     * No-op retained for Dart API compatibility.
-     * The proxy process is shared for the lifetime of the test suite and exits with the JVM.
+     * Stops the shared proxy process if one is running.
+     *
+     * The process is normally left running for the lifetime of the test run (it is reused across
+     * suites) and reaped by the JVM shutdown hook. This method is exposed for explicit teardown.
      */
-    fun stopProxy() = Unit
+    fun stopProxy() {
+        proxyProcess?.destroyForcibly()
+        proxyProcess = null
+    }
 
     // ── Internal ──────────────────────────────────────────────────────────────
 
@@ -135,7 +163,10 @@ object ProxyManager {
         FileChannel.open(lockFile, CREATE, WRITE).use { channel ->
             channel.lock().use {
                 val file = binaryPath.toFile()
-                if (file.exists() && sha256Hex(file.readBytes()) == CHECKSUMS[archiveName]) {
+                // The archive (not the extracted binary) is checksum-verified at download time, and
+                // the cache dir is keyed on PROXY_VERSION, so a present+executable binary is a hit.
+                // (Comparing the binary's hash to CHECKSUMS — the *archive* hash — could never match.)
+                if (file.exists() && file.canExecute()) {
                     return@withContext  // already cached and valid
                 }
                 val archiveBytes = downloadArchive()
@@ -216,12 +247,16 @@ object ProxyManager {
                     return content
                 }
 
-                // Skip this entry's data blocks (size rounded up to 512-byte boundary)
+                // Skip this entry's data blocks (size rounded up to 512-byte boundary).
+                // Read-and-discard rather than skip(): InputStream.skip() may return 0 before EOF,
+                // which would mis-align the stream and break parsing of later entries.
                 val dataBytes = (size + 511) / 512 * 512
                 var skipped = 0L
+                val skipBuf = ByteArray(8192)
                 while (skipped < dataBytes) {
-                    val n = gzip.skip(dataBytes - skipped)
-                    if (n <= 0) break
+                    val toRead = minOf(skipBuf.size.toLong(), dataBytes - skipped).toInt()
+                    val n = gzip.read(skipBuf, 0, toRead)
+                    if (n < 0) error("Unexpected end of archive while skipping entry '$name'")
                     skipped += n
                 }
             }
