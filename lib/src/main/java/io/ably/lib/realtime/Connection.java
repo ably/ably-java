@@ -1,6 +1,6 @@
 package io.ably.lib.realtime;
 
-import io.ably.lib.object.LiveObjectsPlugin;
+import io.ably.lib.liveobjects.LiveObjectsPlugin;
 import io.ably.lib.realtime.ConnectionStateListener.ConnectionStateChange;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.types.AblyException;

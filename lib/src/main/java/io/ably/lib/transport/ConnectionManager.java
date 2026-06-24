@@ -14,7 +14,7 @@ import java.util.concurrent.Executors;
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.debug.DebugOptions.RawProtocolListener;
 import io.ably.lib.http.HttpHelpers;
-import io.ably.lib.object.LiveObjectsPlugin;
+import io.ably.lib.liveobjects.LiveObjectsPlugin;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;

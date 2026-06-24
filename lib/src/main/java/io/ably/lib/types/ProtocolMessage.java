@@ -5,8 +5,8 @@ import java.lang.reflect.Type;
 import java.util.Map;
 
 import com.google.gson.annotations.JsonAdapter;
-import io.ably.lib.object.serialization.ObjectJsonSerializer;
-import io.ably.lib.object.serialization.ObjectSerializer;
+import io.ably.lib.liveobjects.serialization.ObjectJsonSerializer;
+import io.ably.lib.liveobjects.serialization.ObjectSerializer;
 import org.jetbrains.annotations.Nullable;
 import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessagePacker;
