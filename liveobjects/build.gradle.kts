@@ -32,15 +32,15 @@ tasks.withType<Test>().configureEach {
 
 tasks.register<Test>("runLiveObjectUnitTests") {
     filter {
-        includeTestsMatching("io.ably.lib.objects.unit.*")
+        includeTestsMatching("io.ably.lib.object.unit.*")
     }
 }
 
 tasks.register<Test>("runLiveObjectIntegrationTests") {
     filter {
-        includeTestsMatching("io.ably.lib.objects.integration.*")
+        includeTestsMatching("io.ably.lib.object.integration.*")
         // Exclude the base integration test class
-        excludeTestsMatching("io.ably.lib.objects.integration.setup.IntegrationTest")
+        excludeTestsMatching("io.ably.lib.object.integration.setup.IntegrationTest")
     }
 }
 

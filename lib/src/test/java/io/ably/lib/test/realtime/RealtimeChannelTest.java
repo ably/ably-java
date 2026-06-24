@@ -2644,11 +2644,14 @@ public class RealtimeChannelTest extends ParameterizedTest {
             new ChannelWaiter(channel).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
 
-            AblyException exception = assertThrows(AblyException.class, channel::getObjects);
+            IllegalStateException exception = assertThrows(IllegalStateException.class, () -> channel.object.get());
             assertNotNull(exception);
-            assertEquals(40019, exception.errorInfo.code);
-            assertEquals(400, exception.errorInfo.statusCode);
-            assertTrue(exception.errorInfo.message.contains("LiveObjects plugin hasn't been installed"));
+            assertTrue(exception.getMessage().contains("LiveObjects plugin hasn't been installed"));
+
+            AblyException cause = (AblyException) exception.getCause();
+            assertNotNull(cause);
+            assertEquals(40019, cause.errorInfo.code);
+            assertEquals(400, cause.errorInfo.statusCode);
         }
     }
 

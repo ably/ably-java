@@ -5,9 +5,8 @@ import java.lang.reflect.Type;
 import java.util.Map;
 
 import com.google.gson.annotations.JsonAdapter;
-import io.ably.lib.objects.ObjectsSerializer;
-import io.ably.lib.objects.ObjectsHelper;
-import io.ably.lib.objects.ObjectsJsonSerializer;
+import io.ably.lib.object.serialization.ObjectJsonSerializer;
+import io.ably.lib.object.serialization.ObjectSerializer;
 import org.jetbrains.annotations.Nullable;
 import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessagePacker;
@@ -134,7 +133,7 @@ public class ProtocolMessage {
      * This is targeted and specific to the state field, so won't affect other fields
      */
     @Nullable
-    @JsonAdapter(ObjectsJsonSerializer.class)
+    @JsonAdapter(ObjectJsonSerializer.class)
     public Object[] state;
 
     public @Nullable PublishResult[] res;
@@ -162,7 +161,7 @@ public class ProtocolMessage {
         if(params != null) ++fieldCount;
         if(channelSerial != null) ++fieldCount;
         if(annotations != null) ++fieldCount;
-        if(state != null && ObjectsHelper.getSerializer() != null) ++fieldCount;
+        if(state != null && ObjectSerializer.tryGet() != null) ++fieldCount;
         if(res != null) ++fieldCount;
         packer.packMapHeader(fieldCount);
         packer.packString("action");
@@ -204,7 +203,7 @@ public class ProtocolMessage {
             AnnotationSerializer.writeMsgpackArray(annotations, packer);
         }
         if(state != null) {
-            ObjectsSerializer objectsSerializer = ObjectsHelper.getSerializer();
+            ObjectSerializer objectsSerializer = ObjectSerializer.tryGet();
             if (objectsSerializer != null) {
                 packer.packString("state");
                 objectsSerializer.writeMsgpackArray(state, packer);
@@ -279,7 +278,7 @@ public class ProtocolMessage {
                     annotations = AnnotationSerializer.readMsgpackArray(unpacker);
                     break;
                 case "state":
-                    ObjectsSerializer objectsSerializer = ObjectsHelper.getSerializer();
+                    ObjectSerializer objectsSerializer = ObjectSerializer.tryGet();
                     if (objectsSerializer != null) {
                         state = objectsSerializer.readMsgpackArray(unpacker);
                     } else {
