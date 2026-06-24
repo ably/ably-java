@@ -3,6 +3,9 @@ package io.ably.lib.`object`.message
 import com.google.gson.Gson
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
+import com.google.gson.annotations.JsonAdapter
+import com.google.gson.annotations.SerializedName
+import io.ably.lib.`object`.serialization.WireObjectDataJsonSerializer
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 
@@ -36,6 +39,7 @@ internal enum class WireObjectsMapSemantics(val code: Int) {
 }
 
 /** Spec: OD1, OD2 - binary carried as base64 string on the wire */
+@JsonAdapter(WireObjectDataJsonSerializer::class)
 internal data class WireObjectData(
   val objectId: String? = null, // OD2a
   val string: String? = null, // OD2f
@@ -145,6 +149,7 @@ internal data class WireObjectMessage(
   val connectionId: String? = null, // OM2c
   val extras: JsonObject? = null, // OM2d
   val operation: WireObjectOperation? = null, // OM2f
+  @SerializedName("object")
   val objectState: WireObjectState? = null, // OM2g - wire key "object"
   val serial: String? = null, // OM2h
   val serialTimestamp: Long? = null, // OM2j
