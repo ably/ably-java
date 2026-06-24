@@ -65,8 +65,11 @@ Map the spec path to a test path:
 |---|---|
 | `.../uts/test/rest/unit/<name>.md` | `uts/src/test/kotlin/io/ably/lib/rest/unit/<Name>Test.kt` |
 | `.../uts/test/realtime/unit/<sub>/<name>.md` | `uts/src/test/kotlin/io/ably/lib/realtime/unit/<sub>/<Name>Test.kt` |
+| `.../uts/test/realtime/integration/<sub>/<name>.md` | `uts/src/test/kotlin/io/ably/lib/realtime/integration/<sub>/<Name>Test.kt` |
 
 Class name: take the file name, strip `_test` suffix, convert `snake_case` → `PascalCase`, append `Test`.
+
+**Integration specs that drive traffic through the programmable proxy** (they reference `create_proxy_session()`, proxy rules, or `uts/test/realtime/integration/helpers/proxy.md`) follow a different translation flow — see the **Proxy integration tests** section at the end of this skill instead of the unit-test rules below.
 
 Example: `connection_state_machine_test.md` → `ConnectionStateMachineTest`
 
@@ -417,3 +420,173 @@ For any place where the generated test diverges from the spec pseudocode (adapte
 - [ ] The deviation is recorded in `uts/src/test/kotlin/io/ably/lib/deviations.md`
 
 If you find gaps during this review, fix them and re-run Steps 5–6 before finishing.
+
+---
+
+## Proxy integration tests
+
+Some specs are **integration tests** that exercise fault-handling behaviour against the **real Ably sandbox** instead of a mocked transport. They route the SDK through the [`ably/uts-proxy`](https://github.com/ably/uts-proxy) — a programmable HTTP/WebSocket proxy that forwards traffic transparently by default but can inject faults (dropped connections, modified/injected/delayed frames, error responses) via rules.
+
+Recognise them by: a reference to `create_proxy_session()`, proxy `rules`, `trigger_action`, `get_log`, or a pointer to `uts/test/realtime/integration/helpers/proxy.md`.
+
+### When proxy tests are the right tool
+
+| Test type | When the spec uses it |
+|---|---|
+| **Unit test** (mock HTTP/WS — the rest of this skill) | Client-side logic, state machines, request formation, error parsing. Fast, deterministic. |
+| **Direct sandbox integration** | Happy-path behaviour (connect, publish, subscribe, presence). No fault injection. |
+| **Proxy integration test** | Fault behaviour against the real backend: connection failures, resume, heartbeat starvation, token renewal under network errors, channel error injection. |
+
+### Infrastructure
+
+Three helpers live in `uts/src/test/kotlin/io/ably/lib/test/helper/`. **Read them before translating a proxy spec** — they hold the exact method signatures.
+
+- **`ProxyManager`** — downloads/starts the shared `uts-proxy` process and exposes the sandbox host. Call `ProxyManager.ensureProxy()` once per suite in setup. `ProxyManager.sandboxRealtimeHost` / `sandboxRestHost` are the upstream sandbox hosts (the default target of every session).
+- **`ProxySession`** — one programmable session wrapping the proxy control API.
+- **`SandboxApp`** — provisions/deletes a sandbox test app from the shared `test-app-setup.json` in ably-common. `SandboxApp.create()` returns a `SandboxApp` with `appId`, `defaultKey`, and `keys` (`defaultKey` is a full-capability `appId.keyId:keySecret`); `app.delete()` tears it down. Provision in suite setup, delete in teardown.
+
+`ensureProxy()`, the `ProxySession` methods, and the `SandboxApp` methods are all **`suspend`** functions. Per-test bodies use `runTest { }`; JUnit5 `@BeforeAll`/`@AfterAll` (with `@TestInstance(Lifecycle.PER_CLASS)`) wrap their suspend calls in `runBlocking { }`.
+
+### Test class docstring
+
+Give every proxy integration test class this KDoc:
+
+```kotlin
+/**
+ * Proxy integration test against Ably Sandbox endpoint.
+ *
+ * Uses the programmable proxy (`uts/test/proxy/`) to inject transport-level faults while the
+ * SDK communicates with the real Ably backend. See
+ * `uts/test/realtime/integration/helpers/proxy.md` for proxy infrastructure details.
+ */
+```
+
+### Session lifecycle
+
+`create_proxy_session(endpoint: "nonprod:sandbox", rules: [...])` → `ProxySession.create(...)`. The sandbox is already the default target, so an empty rule set is just:
+
+```kotlin
+val session = ProxySession.create(rules = emptyList())
+```
+
+Always close the session (and the client) in a `finally` block:
+
+```kotlin
+ProxyManager.ensureProxy()
+val session = ProxySession.create(rules = listOf(
+    wsConnectRule(action = mapOf("type" to "refuse_connection"), count = 2),
+))
+try {
+    val client = TestRealtimeClient {
+        key = sandboxKey
+        connectThroughProxy(session)   // routes realtime + REST through the proxy
+        autoConnect = false
+    }
+    client.connect()
+    awaitState(client, ConnectionState.connected)
+    // … scenario …
+    client.close()
+} finally {
+    session.close()
+}
+```
+
+| Pseudocode | Kotlin |
+|---|---|
+| `create_proxy_session(endpoint: "nonprod:sandbox", rules: [...])` | `ProxySession.create(rules = listOf(...))` |
+| `session.add_rules(rules, position: "prepend")` | `session.addRules(rules, position = "prepend")` |
+| `session.trigger_action({ type: "disconnect" })` | `session.triggerAction(mapOf("type" to "disconnect"))` |
+| `session.get_log()` | `session.getLog()` |
+| `session.close()` | `session.close()` |
+| `session.proxy_port` / `session.proxy_host` | `session.proxyPort` / `session.proxyHost` |
+
+### Connecting through the proxy
+
+Call `connectThroughProxy(session)` inside the client builder block. It is a `ClientOptionsBuilder` extension (in `ProxySession.kt`) that wires the SDK through the proxy:
+
+```kotlin
+val client = TestRealtimeClient {
+    key = sandboxKey
+    connectThroughProxy(session)
+    autoConnect = false
+}
+```
+
+ably-java has **no `endpoint` ClientOptions field**; `connectThroughProxy` sets the discrete host fields for you:
+
+| Proxy-def option | What `connectThroughProxy` sets |
+|---|---|
+| `endpoint: "localhost"` | `realtimeHost` **and** `restHost` = `session.proxyHost` (`"localhost"`) |
+| `port: proxy_port` | `port = session.proxyPort` |
+| `tls: false` | `tls = false` |
+| `useBinaryProtocol: false` | already the `ClientOptionsBuilder` default — left untouched |
+
+It does **not** touch `autoConnect`, so set that yourself. Setting explicit hosts disables fallback hosts automatically, so don't add `fallbackHosts`.
+
+### Auth in proxy tests
+
+A spec that needs to observe (re-)authentication uses an `authCallback`. Where the pseudocode "generates a JWT from the key parts", the idiomatic ably-java equivalent is a **locally-signed `TokenRequest`** from the same sandbox key — no JWT library required. The realtime client exchanges it for a token through the proxy:
+
+```kotlin
+val tokenSigner = AblyRest(app.defaultKey)          // local signing only; no network
+val authCallbackCount = AtomicInteger(0)
+val authCallback = Auth.TokenCallback { params ->
+    authCallbackCount.incrementAndGet()
+    tokenSigner.auth.createTokenRequest(params, null)
+}
+val client = TestRealtimeClient {
+    this.authCallback = authCallback
+    connectThroughProxy(session)
+    autoConnect = false
+}
+```
+
+`TokenParams`/`TokenRequest` are nested in `io.ably.lib.rest.Auth`; `AuthDetails` is nested in `io.ably.lib.types.ProtocolMessage`.
+
+### Rule factory helpers
+
+Build rules with the factory helpers in `ProxySession.kt` rather than raw map literals. Rules are evaluated in order, first match wins, unmatched traffic passes through, and `times` auto-removes a rule after N firings.
+
+| Match condition | Kotlin |
+|---|---|
+| `{ "type": "ws_connect", "count": 2 }` | `wsConnectRule(action = ..., count = 2)` |
+| `{ "type": "ws_connect", "queryContains": { "resume": "*" } }` | `wsConnectRule(action = ..., queryContains = mapOf("resume" to "*"))` |
+| `{ "type": "ws_frame_to_client", "action": "ATTACHED", "channel": "c" }` | `wsFrameToClientRule(action = ..., messageAction = 11, channel = "c")` |
+| `{ "type": "ws_frame_to_server", "action": "ATTACH", "channel": "c" }` | `wsFrameToServerRule(action = ..., messageAction = 10, channel = "c")` |
+| `{ "type": "http_request", "method": "POST", "pathContains": "/keys/" }` | `httpRequestRule(action = ..., method = "POST", pathContains = "/keys/")` |
+
+`messageAction` is the protocol action **number** (e.g. `4` CONNECTED, `6` DISCONNECTED, `9` ERROR, `10` ATTACH, `11` ATTACHED) — see the action-number table in `proxy.md`.
+
+Actions are passed as `mapOf(...)`, e.g.:
+
+```kotlin
+mapOf("type" to "refuse_connection")
+mapOf("type" to "disconnect")
+mapOf("type" to "suppress")
+mapOf("type" to "delay", "delayMs" to 2000)
+mapOf("type" to "inject_to_client", "message" to mapOf("action" to 6))
+mapOf("type" to "http_respond", "status" to 401, "body" to mapOf(...))
+```
+
+### Verifying the event log
+
+`getLog()` returns a typed `List<Event>`. Access fields via dot notation (`it.type`, `it.direction`, `it.queryParams`, `it.status`); numeric fields (`status`, `closeCode`) are already `Int?`. The raw protocol message is exposed as `Event.message` (a Gson `JsonObject?`) — introspect it with `it.message?.get("action")?.asInt`.
+
+```kotlin
+val log = session.getLog()
+val wsConnects = log.filter { it.type == "ws_connect" }
+assertTrue(wsConnects.size >= 2)
+val queryParams = wsConnects.first().queryParams
+assertNotNull(queryParams["resume"])
+```
+
+### Conventions
+
+1. Each test references the spec point and (where it exists) the corresponding unit test.
+2. `ProxyManager.ensureProxy()` and sandbox-app provisioning go in `@BeforeAll` / suite setup; clean up in `@AfterAll`.
+3. Each test creates its own `ProxySession` and closes it (and the client) in `finally`.
+4. Use `awaitState` / `awaitChannelState` for state assertions; verify via SDK state **and** the proxy log where useful.
+5. Use generous timeouts (10–30s) — real network is involved: `awaitState(client, ConnectionState.connected, 15.seconds)`.
+6. Don't set `fallbackHosts`; explicit hosts already disable fallbacks.
+
+Steps 5 (compile) and 6 (run) still apply. Note that proxy tests hit the live sandbox and download the proxy binary on first run, so they are slower and require network access.
