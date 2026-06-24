@@ -3,7 +3,7 @@ package io.ably.lib.realtime;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.push.PushChannel;
-import io.ably.lib.objects.LiveObjectsPlugin;
+import io.ably.lib.liveobjects.LiveObjectsPlugin;
 
 
 public class Channel extends ChannelBase {
