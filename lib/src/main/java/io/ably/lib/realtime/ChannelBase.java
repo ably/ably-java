@@ -13,8 +13,8 @@ import io.ably.lib.http.BasePaginatedQuery;
 import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
-import io.ably.lib.object.RealtimeObject;
-import io.ably.lib.object.LiveObjectsPlugin;
+import io.ably.lib.liveobjects.RealtimeObject;
+import io.ably.lib.liveobjects.LiveObjectsPlugin;
 import io.ably.lib.rest.MessageEditsMixin;
 import io.ably.lib.rest.RestAnnotations;
 import io.ably.lib.transport.ConnectionManager;
@@ -1687,10 +1687,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         this.decodingContext = new DecodingContext();
         this.liveObjectsPlugin = liveObjectsPlugin;
         if (liveObjectsPlugin != null) {
-            liveObjectsPlugin.getInstance(name);
-            // TODO(objects-migration): assign `this.object` to the real RealtimeObject once the
-            // LiveObjects plugin exposes io.ably.lib.object.RealtimeObject (getInstance currently
-            // returns the legacy io.ably.lib.objects.RealtimeObjects type).
+            this.object = liveObjectsPlugin.getInstance(name);
         } else {
             this.object = RealtimeObject.Unavailable.INSTANCE;
         }
