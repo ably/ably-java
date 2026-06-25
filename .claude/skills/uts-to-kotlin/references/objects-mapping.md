@@ -395,12 +395,14 @@ delivered to subscription listeners) map to ably-java interfaces with getters (p
 `io.ably.lib.liveobjects.message`). The `PublicAPI::` prefix is dropped — ably-java exposes them as
 `ObjectMessage` / `ObjectOperation`.
 
-> **Getter-only, no public constructor.** You obtain an `ObjectMessage` only from a subscription event
-> (`event.getMessage()`, §8) — there is no public factory. The spec's *explicit* construction-from-wire
-> (`PublicObjectMessage.fromObjectMessage(source, channel)` / `PublicObjectOperation.fromObjectOperation(op)`,
-> `PAOM3`/`PAOOP3`, in `public_object_message.md`) is internal in ably-java, so assert the getters on a
-> message received via `subscribe` rather than constructing one; treat a standalone construction-only test
-> as internal (§13).
+> **Getter-only, no *public* constructor — use the `buildPublicObjectMessage` helper.** In normal use you
+> obtain an `ObjectMessage` from a subscription event (`event.getMessage()`, §8); there is no public
+> factory. The spec's explicit construction-from-wire (`PublicObjectMessage.fromObjectMessage(source,
+> channel)` / `PublicObjectOperation.fromObjectOperation(op)`, `PAOM3`/`PAOOP3`, in
+> `public_object_message.md`) is `internal` to `:liveobjects` — but the unit helpers expose it **by
+> reflection** as `buildPublicObjectMessage(wireJson, channelName)` (§13). So `public_object_message.md` is
+> translatable: build the source with the op builders (`buildMapSet(...)`, `buildCounterInc(...)`, …) and
+> assert the public getters on the result.
 
 `ObjectMessage`: `getId()`, `getClientId()`, `getConnectionId()`, `getTimestamp(): Long?`, `getChannel():
 String`, `getOperation(): ObjectOperation`, `getSerial()`, `getSerialTimestamp(): Long?`, `getSiteCode()`,
@@ -499,28 +501,58 @@ Several **unit** specs assert on the **internal CRDT graph**, not the public API
 - `realtime_object.md` — **mixed**: `get()` (`RTO23`, incl. the `40024`/`90001`/`92008` precondition cases)
   is public and maps via §2/§12, but `publish` / `publishAndApply` (`RTO15`/`RTO20`, marked `internal` in the
   IDL) and the OBJECT/ACK wire assertions are internal.
-- `public_object_message.md` — **mixed**: the `ObjectMessage` / `ObjectOperation` *getters* are public
-  (assert them on a message received via `subscribe`, §11), but the explicit construction-from-wire it tests
-  (`fromObjectMessage` / `fromObjectOperation`, `PAOM3`/`PAOOP3`) has no public factory and is internal.
+- `public_object_message.md` — **translatable** via the `buildPublicObjectMessage` helper (below), which
+  reflectively performs the `PAOM3`/`PAOOP3` construction (`WireObjectMessage` → `DefaultObjectMessage`)
+  that is otherwise `internal`. Build the source with the op builders and assert the public getters (§11).
 
 In ably-java these are **not public**. They live in the `:liveobjects` module as `Default*` / `Wire*` /
 `ResolvedValue` / `Leaf` / `MapRef` / `CounterRef` classes (package `io.ably.lib.liveobjects.*`,
-implementation source set) — and the `uts` module currently depends only on `:java` (public API) and
-`:network-client-core`, **not** on `:liveobjects`. Consequences when translating:
+implementation source set). The `uts` module keeps them **off its compile classpath** (it compiles against
+`:java` only) but now has `testRuntimeOnly(project(":liveobjects"))`, so the helpers reach the internal
+wire/message classes **by reflection** at runtime. Consequences when translating:
 
-- **Public-API unit specs** (`path_object*.md`, `instance.md`, `live_object_subscribe.md`, and the
-  public-surface parts of `realtime_object.md`, `public_object_message.md` and `value_types.md`) translate
-  cleanly against the §1–§12 map and compile against `:java`. (Note `path_object.md` / `instance.md` also
-  contain `compact()` cases, which are deviations per §4/§5 since ably-java implements only `compactJson()`.)
-- **Internal-graph unit specs** can't be expressed through the public API. Before translating those, decide
-  with the user whether to (a) add a `testImplementation(project(":liveobjects"))` dependency to
-  `uts/build.gradle.kts` and target the `Default*`/internal classes directly, or (b) translate them inside
-  the `:liveobjects` module's own test source set instead, or (c) skip them for the uts module. Flag this
-  rather than forcing a public-API assertion that can't see internal state.
+- **Public-API unit specs** (`path_object*.md`, `instance.md`, `live_object_subscribe.md`,
+  `public_object_message.md`, and the public-surface parts of `realtime_object.md` and `value_types.md`)
+  translate cleanly against the §1–§12 map + the helpers below, and compile against `:java`. (Note
+  `path_object.md` / `instance.md` also contain `compact()` cases, which are deviations per §4/§5 since
+  ably-java implements only `compactJson()`.)
+- **Internal-graph unit specs** (`objects_pool.md`, `parent_references.md`, the internal-state assertions in
+  `live_counter.md` / `live_map.md`) assert on internal CRDT state the public API can't see. Options: (a)
+  add reflective accessors to the helpers for the `Default*`/internal classes (the technique
+  `buildPublicObjectMessage` and `infra/unit/Utils.kt` already use), (b) translate them in the
+  `:liveobjects` module's own test source where the types are directly accessible, or (c) skip them. Flag
+  rather than forcing a public-API assertion that can't reach internal state.
 - Spec name → ably-java impl (for orientation, not public use): `InternalLiveMap` → `DefaultLiveMap`,
   `InternalLiveCounter` → `DefaultLiveCounter`, the public-view impls are `DefaultPathObject` /
   `DefaultLiveMapPathObject` / `DefaultInstance` / …, wire form is `WireObjectMessage` /
   `WireObjectOperation` / `WireObjectState` etc.
+
+### Unit-test helpers — `standard_test_pool.md` → `helpers.kt`
+
+Every objects unit spec opens with `setup_synced_channel` and constructs protocol/object messages with the
+`build_*` helpers. These are implemented in
+`uts/src/test/kotlin/io/ably/lib/uts/unit/liveobjects/helpers.kt` — **call them; don't hand-roll the mock
+setup or message JSON.**
+
+| Spec helper | `helpers.kt` |
+|---|---|
+| `{ client, channel, root, mock_ws } = AWAIT setup_synced_channel("test")` | `val (client, channel, root, mockWs) = setupSyncedChannel("test")` (`suspend`, returns `SyncedChannel`) |
+| `setup_synced_channel_no_ack(...)` | `setupSyncedChannelNoAck(...)` |
+| `build_object_sync_message` / `build_object_message` / `build_ack_message` | `buildObjectSyncMessage` / `buildObjectMessage` / `buildAckMessage` → `ProtocolMessage` |
+| `build_counter_inc` / `build_map_set` / `build_map_remove` / `build_map_clear` / `build_object_delete` / `build_counter_create` / `build_map_create` | same names camelCased → wire `JsonObject` |
+| `build_object_state` / `build_object_message_with_state` | `buildObjectState` / `buildObjectMessageWithState` |
+| `build_public_object_message(msg, channel)` | `buildPublicObjectMessage(wireJson, channel)` (reflective; §11) |
+| `STANDARD_POOL_OBJECTS` | `STANDARD_POOL_OBJECTS` |
+| inline ObjectData / map-entry / state fragments | `dataString` / `dataNumber` / `dataBoolean` / `dataObjectId` / `dataBytes` / `dataJson`, `mapEntry`, `mapState`, `counterState`, `mapCreateOp`, `counterCreateOp` |
+
+`mock_ws.send_to_client(...)` is the existing `mockWs.sendToClient(...)` (§ mock API in the main skill). The
+wire `action` / `semantics` are integer enum codes — the builders emit the codes for you.
+
+> **Runtime caveat:** `setupSyncedChannel` returns only once `RealtimeObject.get()` resolves, which needs
+> the `:liveobjects` SDK's OBJECT_SYNC processing. Until that lands the helpers **compile** and the test
+> structure is correct, but the setup throws at runtime — i.e. translate-only today, runnable once the SDK
+> is implemented. (`buildPublicObjectMessage` does *not* depend on this — the message/operation layer is
+> implemented, so those tests can run now.)
 
 ---
 
