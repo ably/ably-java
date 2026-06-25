@@ -191,9 +191,10 @@
       <p>UTS divides tests into three tiers by <em>what infrastructure they need</em> and <em>what confidence they give</em>. This split is the key to understanding the whole <code>uts/</code> module — the two example tests sit in two different tiers.</p>
       <div class="cards">
         <div class="card"><h4>Unit <span class="pill">mocked</span></h4><p><strong>Transport:</strong> mocked (<code>MockWebSocket</code>, <code>MockHttpClient</code>). <strong>Backend:</strong> none.<br>Client-side logic: state machines, request formation, response parsing, timers. Fast &amp; deterministic.<br><em>→ unit/realtime/ConnectionRecoveryTest.kt</em></p></div>
-        <div class="card"><h4>Direct sandbox <span class="pill">real net</span></h4><p><strong>Transport:</strong> real. <strong>Backend:</strong> real Ably sandbox.<br>Happy-path interop: connect, publish, subscribe. No fault injection.<br><em>(not among the two example tests)</em></p></div>
+        <div class="card"><h4>Direct sandbox <span class="pill">real net</span></h4><p><strong>Transport:</strong> real. <strong>Backend:</strong> real Ably sandbox.<br>Happy-path interop: connect, publish, subscribe. No fault injection.<br><em>→ integration/standard/&lt;module&gt;/ (tier exists; no tests yet)</em></p></div>
         <div class="card"><h4>Proxy integration <span class="pill">faults</span></h4><p><strong>Transport:</strong> real, through a programmable proxy. <strong>Backend:</strong> real sandbox.<br>Fault behaviour: dropped connections, injected errors, timeouts, re-auth.<br><em>→ integration/proxy/realtime/AuthReauthTest.kt</em></p></div>
       </div>
+      <p>Each tier folder is further organised <strong>by module</strong> (<code>realtime</code>, <code>liveobjects</code>, …): <code>unit/&lt;module&gt;/</code>, <code>integration/standard/&lt;module&gt;/</code>, and <code>integration/proxy/&lt;module&gt;/</code>. So a feature's tests sit together by SDK area — the two example tests live at <code>unit/realtime/</code> and <code>integration/proxy/realtime/</code>.</p>
       <p>Key principles (from <a href="https://github.com/ably/specification/blob/main/uts/docs/integration-testing.md" target="_blank" rel="noopener"><code>integration-testing.md</code></a>):</p>
       <ul>
         <li><strong>Integration tests do not replace unit tests.</strong> A spec point covered by a proxy test should <em>also</em> have a unit test. The unit test proves client logic; the proxy test proves client &amp; real server agree.</li>
@@ -289,7 +290,7 @@ tasks.withType&lt;Test&gt;().configureEach {
       </ul>
 
       <h3>4.2 Directory layout</h3>
-      <p>Everything lives under the <code>io.ably.lib.uts</code> package, split cleanly into <strong>infrastructure</strong> (<code>infra/</code>, no <code>@Test</code>s) and the <strong>tests</strong> themselves (<code>unit/</code>, <code>integration/</code>), each mirroring the unit / integration tiers:</p>
+      <p>Everything lives under the <code>io.ably.lib.uts</code> package, split cleanly into <strong>infrastructure</strong> (<code>infra/</code>, no <code>@Test</code>s) and the <strong>tests</strong> themselves. Tests are organised <strong>by tier, then by module</strong>: <code>unit/</code> for mocked-transport tests, and <code>integration/</code> for real-backend tests — the latter splitting again into <code>standard/</code> (direct sandbox, happy-path) and <code>proxy/</code> (sandbox through the fault-injecting proxy). Under each, a per-module folder (<code>realtime</code>, <code>liveobjects</code>, …) holds the actual test classes:</p>
 <pre><code>uts/src/test/kotlin/io/ably/lib/uts/
 ├── deviations.md                        # the catalogue of SDK-vs-spec divergences
 │
@@ -316,15 +317,20 @@ tasks.withType&lt;Test&gt;().configureEach {
 │           ├── ProxyManager.kt          #       downloads/launches the uts-proxy binary
 │           └── ProxySession.kt          #       proxy session: rules, actions, log + connectThroughProxy
 │
-├── unit/                                # ── UNIT TESTS (mock transport) ──
-│   └── realtime/
-│       └── ConnectionRecoveryTest.kt    #   ← the UNIT test (RTN16*)
+├── unit/                                # ── UNIT TESTS (mock transport) ── · per module
+│   ├── realtime/
+│   │   └── ConnectionRecoveryTest.kt    #   ← the UNIT test (RTN16*)
+│   └── liveobjects/                     #   (further modules as coverage grows)
 │
-└── integration/                         # ── INTEGRATION TESTS (real backend) ──
-    └── proxy/
-        └── realtime/
-            └── AuthReauthTest.kt        #   ← the PROXY test (RTN22, RTC8a)</code></pre>
-      <div class="callout tip"><span class="tag">Mental model</span><p><code>infra/unit/</code> powers the unit tests · <code>infra/integration/</code> powers the integration tests · <code>infra/Utils.kt</code> serves both. The <code>unit/</code> ↔ <code>infra/unit/</code> and <code>integration/</code> ↔ <code>infra/integration/</code> pairing is what the <code>runUtsUnitTests</code> / <code>runUtsIntegrationTests</code> Gradle tasks key off (§12).</p></div>
+└── integration/                         # ── INTEGRATION TESTS (real backend) ── · per module
+    ├── standard/                        #   direct sandbox: happy-path, no fault injection
+    │   ├── realtime/
+    │   └── liveobjects/
+    └── proxy/                           #   sandbox through the fault-injecting uts-proxy
+        ├── realtime/
+        │   └── AuthReauthTest.kt        #   ← the PROXY test (RTN22, RTC8a)
+        └── liveobjects/</code></pre>
+      <div class="callout tip"><span class="tag">Mental model</span><p><code>infra/unit/</code> powers the unit tests · <code>infra/integration/</code> powers both integration kinds (<code>standard</code> + <code>proxy</code>) · <code>infra/Utils.kt</code> serves all of them. Every tier is sub-divided <strong>by module</strong> (<code>realtime</code>, <code>liveobjects</code>, …). The top-level <code>unit/</code> ↔ <code>infra/unit/</code> and <code>integration/</code> ↔ <code>infra/integration/</code> pairing is what the <code>runUtsUnitTests</code> / <code>runUtsIntegrationTests</code> Gradle tasks key off (§12) — <code>runUtsIntegrationTests</code> covers <strong>both</strong> <code>integration/standard/</code> and <code>integration/proxy/</code>.</p></div>
     </section>
 
     <!-- ===================== 5 ===================== -->
@@ -463,6 +469,7 @@ fakeClock.advance(2.seconds)      // jump forward; due timers fire now</code></p
         <li><code>SandboxApp.create()</code> fetches the canonical <code>test-app-setup.json</code> from <code>ably-common</code> (specifically its <code>post_apps</code> sub-object), <code>POST</code>s it to <code>https://sandbox.realtime.ably-nonprod.net/apps</code>, and exposes <code>appId</code>, <code>defaultKey</code> (full-capability <code>appId.keyId:keySecret</code>, from the <code>keyStr</code> field), and the full <code>keys</code> list.</li>
         <li><code>delete()</code> removes the app in teardown (best-effort — errors swallowed, sandbox apps auto-expire).</li>
         <li>The Ktor client retries only <strong>idempotent GETs</strong> (never re-POSTs <code>/apps</code>, to avoid duplicate apps).</li>
+        <li><code>SandboxApp</code> is the shared backbone of <em>both</em> integration kinds: <strong>proxy</strong> tests pair it with a <code>ProxySession</code>, while <strong>direct sandbox</strong> tests (<code>integration/standard/&lt;module&gt;/</code>) use it alone — connecting straight to <code>ProxyManager.sandboxRealtimeHost</code> / <code>sandboxRestHost</code> with no proxy and no fault rules, for happy-path interop.</li>
       </ul>
       <p>The app is provisioned <strong>directly</strong> (not through the proxy), so it's independent of the fault rules under test.</p>
     </section>
@@ -470,7 +477,7 @@ fakeClock.advance(2.seconds)      // jump forward; due timers fire now</code></p
     <!-- ===================== 8 ===================== -->
     <section id="s8">
       <h2 class="sec"><span class="num">8</span> Shared Async Helpers</h2>
-      <p><code>Utils.kt</code> provides the coroutine glue both tiers rely on. All three run on a <strong>single-thread real dispatcher</strong> so their timeouts measure <strong>wall-clock</strong> time (not the virtual time of <code>kotlinx.coroutines.test</code>). The two state-waiters register their listener <em>before</em> checking current state, to avoid a check-then-register race; <code>pollUntil</code> has no listener — it re-evaluates the predicate every <code>interval</code>.</p>
+      <p><code>Utils.kt</code> provides the coroutine glue every tier relies on (unit, direct sandbox, and proxy). All three run on a <strong>single-thread real dispatcher</strong> so their timeouts measure <strong>wall-clock</strong> time (not the virtual time of <code>kotlinx.coroutines.test</code>). The two state-waiters register their listener <em>before</em> checking current state, to avoid a check-then-register race; <code>pollUntil</code> has no listener — it re-evaluates the predicate every <code>interval</code>.</p>
       <table>
         <tr><th>Helper</th><th>Signature</th><th>Purpose</th></tr>
         <tr><td><code>awaitState</code></td><td><code>(client, target, timeout=5s)</code></td><td>suspend until <code>connection.state == target</code> (or already there)</td></tr>
@@ -585,7 +592,8 @@ awaitState(client, ConnectionState.connected, 15.seconds)</code></pre></li>
 <pre><code># Unit tests only — io.ably.lib.uts.unit.*  (fast, no network). This is the PR gate.
 ./gradlew :uts:runUtsUnitTests
 
-# Integration tests only — io.ably.lib.uts.integration.*  (real sandbox; downloads/launches the proxy).
+# Integration tests only — io.ably.lib.uts.integration.*  (real sandbox; covers both
+# integration/standard/ and integration/proxy/ — proxy tests also download/launch the uts-proxy).
 ./gradlew :uts:runUtsIntegrationTests
 
 # Everything (the default Test task still runs both):

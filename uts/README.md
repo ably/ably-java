@@ -81,8 +81,12 @@ tests you asked about sit in two different tiers.
 | Tier | Transport | Backend | Purpose | Example in this repo |
 |------|-----------|---------|---------|----------------------|
 | **Unit** | **Mocked** (`MockWebSocket`, `MockHttpClient`) | none | Client-side logic: state machines, request formation, response parsing, timer behaviour. Fast & deterministic. | `unit/realtime/ConnectionRecoveryTest.kt` |
-| **Direct sandbox integration** | Real network | Real Ably sandbox | Happy-path interop: connect, publish, subscribe. No fault injection. | *(not in the two you asked about)* |
+| **Direct sandbox integration** | Real network | Real Ably sandbox | Happy-path interop: connect, publish, subscribe. No fault injection. | `integration/standard/<module>/` *(tier exists; no tests yet)* |
 | **Proxy integration** | Real network **through a programmable proxy** | Real Ably sandbox | Fault behaviour: dropped connections, injected errors, timeouts, re-auth. | `integration/proxy/realtime/AuthReauthTest.kt` |
+
+Each tier folder is further organised **by module** (`realtime`, `liveobjects`, …): `unit/<module>/`,
+`integration/standard/<module>/`, and `integration/proxy/<module>/`. So a feature's tests sit together
+by SDK area — the two example tests live at `unit/realtime/` and `integration/proxy/realtime/`.
 
 Key principles (from [`integration-testing.md`](https://github.com/ably/specification/blob/main/uts/docs/integration-testing.md)):
 
@@ -203,8 +207,10 @@ Takeaways:
 ### 4.2 Directory layout
 
 Everything lives under the `io.ably.lib.uts` package, split cleanly into **infrastructure** (`infra/`,
-no `@Test`s) and the **tests** themselves (`unit/`, `integration/`), each mirroring the unit /
-integration tiers:
+no `@Test`s) and the **tests** themselves. Tests are organised **by tier, then by module**: `unit/` for
+mocked-transport tests, and `integration/` for real-backend tests — the latter splitting again into
+`standard/` (direct sandbox, happy-path) and `proxy/` (sandbox through the fault-injecting proxy). Under
+each, a per-module folder (`realtime`, `liveobjects`, …) holds the actual test classes:
 
 ```
 uts/src/test/kotlin/io/ably/lib/uts/
@@ -233,20 +239,27 @@ uts/src/test/kotlin/io/ably/lib/uts/
 │           ├── ProxyManager.kt          #       downloads/launches the uts-proxy binary
 │           └── ProxySession.kt          #       proxy session: rules, actions, log + connectThroughProxy
 │
-├── unit/                                # ── UNIT TESTS (mock transport) ──
-│   └── realtime/
-│       └── ConnectionRecoveryTest.kt    #   ← the UNIT test (RTN16*)
+├── unit/                                # ── UNIT TESTS (mock transport) ── · per module
+│   ├── realtime/
+│   │   └── ConnectionRecoveryTest.kt    #   ← the UNIT test (RTN16*)
+│   └── liveobjects/                     #   (further modules as coverage grows)
 │
-└── integration/                         # ── INTEGRATION TESTS (real backend) ──
-    └── proxy/
-        └── realtime/
-            └── AuthReauthTest.kt        #   ← the PROXY test (RTN22, RTC8a)
+└── integration/                         # ── INTEGRATION TESTS (real backend) ── · per module
+    ├── standard/                        #   direct sandbox: happy-path, no fault injection
+    │   ├── realtime/
+    │   └── liveobjects/
+    └── proxy/                           #   sandbox through the fault-injecting uts-proxy
+        ├── realtime/
+        │   └── AuthReauthTest.kt        #   ← the PROXY test (RTN22, RTC8a)
+        └── liveobjects/
 ```
 
-The mental model: **`infra/unit/` powers the unit tests, `infra/integration/` powers the integration
-tests, and `infra/Utils.kt` serves both.** The `unit/` ↔ `infra/unit/` and `integration/` ↔
-`infra/integration/` pairing is what the `runUtsUnitTests` / `runUtsIntegrationTests` Gradle tasks
-key off (§12).
+The mental model: **`infra/unit/` powers the unit tests, `infra/integration/` powers both integration
+kinds (`standard` + `proxy`), and `infra/Utils.kt` serves all of them.** Every tier is sub-divided **by
+module** (`realtime`, `liveobjects`, …) so a feature's tests sit together regardless of SDK area. The
+top-level `unit/` ↔ `infra/unit/` and `integration/` ↔ `infra/integration/` pairing is what the
+`runUtsUnitTests` / `runUtsIntegrationTests` Gradle tasks key off (§12) — `runUtsIntegrationTests`
+covers **both** `integration/standard/` and `integration/proxy/`.
 
 ---
 
@@ -469,12 +482,17 @@ independent of the fault rules):
 - The Ktor client retries only **idempotent GETs** (never re-POSTs `/apps`, to avoid duplicate
   apps).
 
+`SandboxApp` is the shared backbone of *both* integration kinds: **proxy** tests pair it with a
+`ProxySession`, while **direct sandbox** tests (`integration/standard/<module>/`) use it alone —
+connecting straight to `ProxyManager.sandboxRealtimeHost` / `sandboxRestHost` with no proxy and no
+fault rules, for happy-path interop.
+
 ---
 
 ## 8. Shared Async Helpers
 
-`Utils.kt` provides the coroutine glue both tiers rely on. All three run on a **single-thread real
-dispatcher** so their timeouts measure **wall-clock** time (not the virtual time of
+`Utils.kt` provides the coroutine glue every tier relies on (unit, direct sandbox, and proxy). All
+three run on a **single-thread real dispatcher** so their timeouts measure **wall-clock** time (not the virtual time of
 `kotlinx.coroutines.test`). The two state-waiters (`awaitState`/`awaitChannelState`) register their
 listener *before* checking current state, to avoid a check-then-register race; `pollUntil` has no
 listener — it re-evaluates the predicate every `interval` until it holds or the timeout fires.
@@ -663,7 +681,8 @@ mirror `runLiveObjectsUnitTests` / `runLiveObjectsIntegrationTests` in the `live
 # Unit tests only — io.ably.lib.uts.unit.*  (fast, no network). This is the PR gate.
 ./gradlew :uts:runUtsUnitTests
 
-# Integration tests only — io.ably.lib.uts.integration.*  (real sandbox; downloads/launches the proxy).
+# Integration tests only — io.ably.lib.uts.integration.*  (real sandbox; covers both
+# integration/standard/ and integration/proxy/ — proxy tests also download/launch the uts-proxy).
 ./gradlew :uts:runUtsIntegrationTests
 
 # Everything (the default Test task still runs both):

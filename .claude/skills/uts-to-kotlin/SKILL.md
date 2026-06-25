@@ -59,17 +59,26 @@ Read the file at `$ARGUMENTS`. Identify:
 
 ## Step 2 — Determine output path and package
 
-Map the spec path to a test path:
+Map the spec path to a test path. **Tests are organised tier-first** (`unit/` vs `integration/standard/`
+vs `integration/proxy/`), then **by module** (`realtime`, `rest`, `liveobjects`, …), all under the
+`io.ably.lib.uts` package. (`…/uts/` below is shorthand for `uts/src/test/kotlin/io/ably/lib/uts/`.)
 
-| Spec location | Test location |
-|---|---|
-| `.../uts/test/rest/unit/<name>.md` | `uts/src/test/kotlin/io/ably/lib/rest/unit/<Name>Test.kt` |
-| `.../uts/test/realtime/unit/<sub>/<name>.md` | `uts/src/test/kotlin/io/ably/lib/realtime/unit/<sub>/<Name>Test.kt` |
-| `.../uts/test/realtime/integration/<sub>/<name>.md` | `uts/src/test/kotlin/io/ably/lib/realtime/integration/<sub>/<Name>Test.kt` |
+| Spec location | Test location | Package |
+|---|---|---|
+| `.../<module>/unit/<…>/<name>.md` | `…/uts/unit/<module>/<Name>Test.kt` | `io.ably.lib.uts.unit.<module>` |
+| `.../<module>/integration/<…>/<name>.md` (direct sandbox) | `…/uts/integration/standard/<module>/<Name>Test.kt` | `io.ably.lib.uts.integration.standard.<module>` |
+| `.../<module>/integration/<…>/<name>.md` (proxy) | `…/uts/integration/proxy/<module>/<Name>Test.kt` | `io.ably.lib.uts.integration.proxy.<module>` |
+
+`<module>` is the SDK area — `realtime`, `rest`, `liveobjects`, … (existing folders: `unit/realtime/`,
+`unit/liveobjects/`). The spec's own `<sub>` grouping (e.g. `connection/`) is **not** carried into a
+sub-package — tests sit directly under the tier/module folder (e.g. `connection_recovery_test.md` →
+`…/uts/unit/realtime/ConnectionRecoveryTest.kt`).
 
 Class name: take the file name, strip `_test` suffix, convert `snake_case` → `PascalCase`, append `Test`.
 
-**Integration specs that drive traffic through the programmable proxy** (they reference `create_proxy_session()`, proxy rules, or `uts/test/realtime/integration/helpers/proxy.md`) follow a different translation flow — see the **Proxy integration tests** section at the end of this skill instead of the unit-test rules below.
+**Integration specs come in two kinds:**
+- Those that **inject faults** (reference `create_proxy_session()`, proxy `rules`, `trigger_action`, `get_log`, or `uts/test/realtime/integration/helpers/proxy.md`) are **proxy** tests under `integration/proxy/<module>/` — follow the **Proxy integration tests** section at the end of this skill instead of the unit-test rules below.
+- Those that exercise only **happy-path interop** against the real sandbox (no fault injection) are **direct sandbox** tests under `integration/standard/<module>/`. They use `SandboxApp` alone (no `ProxySession`), connecting straight to `ProxyManager.sandboxRealtimeHost` / `sandboxRestHost`. *(No example exists yet — model the suite setup/teardown on the proxy section but drop the `ProxySession`/`connectThroughProxy` wiring.)*
 
 Example: `connection_state_machine_test.md` → `ConnectionStateMachineTest`
 
@@ -79,7 +88,13 @@ Package: derived from the output path under `kotlin/`.
 
 ## Step 3 — Read infrastructure files
 
-Read ALL of files in `uts/src/test/kotlin/io/ably/lib/uts/infra` before generating any code (you need exact method signatures).
+Infrastructure is split by tier under `uts/src/test/kotlin/io/ably/lib/uts/infra/`:
+
+- `infra/Utils.kt` — shared async helpers (`awaitState`, `awaitChannelState`, `pollUntil`), package `io.ably.lib.uts.infra`.
+- `infra/unit/` — unit-test mocks/factories (`ClientFactories.kt`, `MockWebSocket.kt`, `MockHttpClient.kt`, `FakeClock.kt`, `MockEvent.kt`, the `PendingConnection`/`PendingRequest` pairs, and `Utils.kt` with the `ConnectionDetails { }` builder), package `io.ably.lib.uts.infra.unit`.
+- `infra/integration/` + `infra/integration/proxy/` — proxy/sandbox helpers (`SandboxApp.kt`, `ProxyManager.kt`, `ProxySession.kt`) — see the **Proxy integration tests** section.
+
+For a **unit** test, read all files under `infra/unit/` plus `infra/Utils.kt` before generating any code (you need exact method signatures).
 
 ## Step 4 — Generate the Kotlin test file
 
@@ -266,16 +281,14 @@ fun `RTN4a - description of what is being tested`() = runTest {
 ### File template
 
 ```kotlin
-package io.ably.lib.<category>.unit[.<subcategory>]
+package io.ably.lib.uts.unit.realtime          // io.ably.lib.uts.unit.<module> — realtime, rest, liveobjects, …
 
-import io.ably.lib.TestRealtimeClient          // or TestRestClient
-import io.ably.lib.awaitChannelState           // if testing channels
-import io.ably.lib.awaitState
-import io.ably.lib.realtime.ChannelState       // if testing channels
+import io.ably.lib.uts.infra.unit.*            // TestRealtimeClient/TestRestClient, MockWebSocket, MockHttpClient, FakeClock, CONNECTED_MESSAGE, ConnectionDetails { } builder
+import io.ably.lib.uts.infra.awaitState
+import io.ably.lib.uts.infra.awaitChannelState  // if testing channels
+import io.ably.lib.uts.infra.pollUntil          // if polling on a predicate
+import io.ably.lib.realtime.ChannelState        // if testing channels
 import io.ably.lib.realtime.ConnectionState
-import io.ably.lib.test.mock.FakeClock         // if using fake timers
-import io.ably.lib.test.mock.MockWebSocket     // or MockHttpClient
-import io.ably.lib.types.ConnectionDetails
 import io.ably.lib.types.ErrorInfo
 import io.ably.lib.types.ProtocolMessage
 import kotlinx.coroutines.launch
@@ -334,9 +347,17 @@ Fix any compilation errors and recompile until clean. Common issues:
 
 ## Step 6 — Run tests
 
+Use the per-tier task that matches what you generated (both are registered in `uts/build.gradle.kts`):
+
 ```bash
-./gradlew :uts:test --tests "<package>.<ClassName>"
+# Unit test  (io.ably.lib.uts.unit.*)
+./gradlew :uts:runUtsUnitTests --tests "io.ably.lib.uts.unit.realtime.<ClassName>"
+
+# Proxy integration test  (io.ably.lib.uts.integration.*)
+./gradlew :uts:runUtsIntegrationTests --tests "io.ably.lib.uts.integration.proxy.realtime.<ClassName>"
 ```
+
+(`./gradlew :uts:test` still runs all tiers — unit, standard, and proxy.)
 
 Handle test failures using this decision tree (see [reference doc](https://github.com/ably/specification/blob/main/uts/docs/writing-derived-tests.md) for full detail):
 
@@ -379,7 +400,7 @@ assertEquals(40160, error.errorInfo.code)
 
 ### Deviations file
 
-Append to `uts/src/test/kotlin/io/ably/lib/deviations.md`. Each entry needs:
+Append to `uts/src/test/kotlin/io/ably/lib/uts/deviations.md`. Each entry needs:
 1. The spec point (e.g. `RSA4c2`)
 2. What the spec says
 3. What the SDK does
@@ -417,7 +438,7 @@ For each test case, verify:
 
 For any place where the generated test diverges from the spec pseudocode (adapted assertion, env-gated skip, or omitted step):
 - [ ] A `// DEVIATION:` comment explains why
-- [ ] The deviation is recorded in `uts/src/test/kotlin/io/ably/lib/deviations.md`
+- [ ] The deviation is recorded in `uts/src/test/kotlin/io/ably/lib/uts/deviations.md`
 
 If you find gaps during this review, fix them and re-run Steps 5–6 before finishing.
 
@@ -439,11 +460,13 @@ Recognise them by: a reference to `create_proxy_session()`, proxy `rules`, `trig
 
 ### Infrastructure
 
-Three helpers live in `uts/src/test/kotlin/io/ably/lib/test/helper/`. **Read them before translating a proxy spec** — they hold the exact method signatures.
+Three helpers live under `uts/src/test/kotlin/io/ably/lib/uts/infra/integration/`. **Read them before translating a proxy spec** — they hold the exact method signatures.
 
-- **`ProxyManager`** — downloads/starts the shared `uts-proxy` process and exposes the sandbox host. Call `ProxyManager.ensureProxy()` once per suite in setup. `ProxyManager.sandboxRealtimeHost` / `sandboxRestHost` are the upstream sandbox hosts (the default target of every session).
-- **`ProxySession`** — one programmable session wrapping the proxy control API.
-- **`SandboxApp`** — provisions/deletes a sandbox test app from the shared `test-app-setup.json` in ably-common. `SandboxApp.create()` returns a `SandboxApp` with `appId`, `defaultKey`, and `keys` (`defaultKey` is a full-capability `appId.keyId:keySecret`); `app.delete()` tears it down. Provision in suite setup, delete in teardown.
+- **`ProxyManager`** (`infra/integration/proxy/ProxyManager.kt`, package `io.ably.lib.uts.infra.integration.proxy`) — downloads/starts the shared `uts-proxy` process and exposes the sandbox host. Call `ProxyManager.ensureProxy()` once per suite in setup. `ProxyManager.sandboxRealtimeHost` / `sandboxRestHost` are the upstream sandbox hosts (the default target of every session).
+- **`ProxySession`** (`infra/integration/proxy/ProxySession.kt`, same package) — one programmable session wrapping the proxy control API; also defines the `connectThroughProxy` extension and the rule-builder helpers.
+- **`SandboxApp`** (`infra/integration/SandboxApp.kt`, package `io.ably.lib.uts.infra.integration`) — provisions/deletes a sandbox test app from the shared `test-app-setup.json` in ably-common. `SandboxApp.create()` returns a `SandboxApp` with `appId`, `defaultKey`, and `keys` (`defaultKey` is a full-capability `appId.keyId:keySecret`); `app.delete()` tears it down. Provision in suite setup, delete in teardown.
+
+Import these into a proxy test from their packages, e.g. `io.ably.lib.uts.infra.integration.SandboxApp`, `io.ably.lib.uts.infra.integration.proxy.{ProxyManager, ProxySession, connectThroughProxy}`, plus `io.ably.lib.uts.infra.unit.TestRealtimeClient` and `io.ably.lib.uts.infra.{awaitState, pollUntil}`.
 
 `ensureProxy()`, the `ProxySession` methods, and the `SandboxApp` methods are all **`suspend`** functions. Per-test bodies use `runTest { }`; JUnit5 `@BeforeAll`/`@AfterAll` (with `@TestInstance(Lifecycle.PER_CLASS)`) wrap their suspend calls in `runBlocking { }`.
 
