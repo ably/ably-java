@@ -120,15 +120,28 @@ def main():
                  f"--create target {target!r} must be a simple module base name "
                  f"(letters/digits/underscore, e.g. 'liveobjects') so it forms a "
                  f"valid path and Kotlin package.")
-        packages[source_module] = {
+        new_entry = {
             "unit": f"unit/{target}",
             "integration": f"integration/standard/{target}",
             "proxy": f"integration/proxy/{target}",
         }
+        # preserve a hand-maintained "notes" pointer when re-creating an existing entry
+        notes = packages.get(source_module, {}).get("notes")
+        if notes:
+            new_entry["notes"] = notes
+        packages[source_module] = new_entry
         MAPPING.write_text(json.dumps(data, indent=2) + "\n")
 
     mapped = source_module in packages
     entry = packages.get(source_module, {})
+
+    # Per-module translation notes (ably-js -> ably-java type map etc.), declared by
+    # the module's "notes" field in the mapping (a path relative to this skill dir).
+    # Read it before translating when present. None when the module declares no notes,
+    # or the declared file is missing.
+    notes_rel = entry.get("notes")
+    notes_path = SKILL_DIR / notes_rel if notes_rel else None
+    translation_notes = str(notes_path) if (notes_path and notes_path.is_file()) else None
 
     src = {
         "unit": module_dir / "unit",
@@ -157,6 +170,7 @@ def main():
         "sourceModule": source_module,
         "mapped": mapped,
         "testRoot": test_root,
+        "translationNotes": translation_notes,
         "tiers": tiers_out,
     }, indent=2))
 

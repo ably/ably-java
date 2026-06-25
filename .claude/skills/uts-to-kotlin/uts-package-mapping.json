@@ -1,5 +1,5 @@
 {
-  "_comment": "Maps each UTS spec module (a dir under specification/uts/) to its target test packages. Output dir = testRoot + '/' + tier entry; Kotlin package = that path after 'src/test/kotlin/' with '/' -> '.'. Used by the uts-to-kotlin skill.",
+  "_comment": "Maps each UTS spec module (a dir under specification/uts/) to its target test packages. Output dir = testRoot + '/' + tier entry; Kotlin package = that path after 'src/test/kotlin/' with '/' -> '.'. An optional 'notes' field points (relative to this skill dir) to a per-module ably-js -> ably-java translation reference, read before translating that module. Used by the uts-to-kotlin skill.",
   "testRoot": "uts/src/test/kotlin/io/ably/lib/uts",
   "packages": {
     "realtime": {
@@ -10,7 +10,8 @@
     "objects": {
       "unit": "unit/liveobjects",
       "integration": "integration/standard/liveobjects",
-      "proxy": "integration/proxy/liveobjects"
+      "proxy": "integration/proxy/liveobjects",
+      "notes": "references/objects-mapping.md"
     },
     "rest": {
       "unit": "unit/rest",

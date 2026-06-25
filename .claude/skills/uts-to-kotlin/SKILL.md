@@ -44,10 +44,15 @@ python3 .claude/skills/uts-to-kotlin/scripts/resolve_uts.py "<module-dir>"
 
 It prints one JSON object. **If `ok` is `false`, relay `message` to the user and stop** — error codes:
 `NOT_A_UTS_MODULE_PATH` (not a `.../uts/<module>` directory), `DIR_NOT_FOUND`, `NO_TIER_DIRS` (no `unit/`
-or `integration/`). On success it gives `sourceModule`, `mapped`, `testRoot`, and a `tiers` object with one
-entry per tier (`unit` / `integration` / `proxy`), each carrying `present`, `sourceDir`, `targetDir`,
-`package`, and `specs` (a list of `{file, className}`). Everything downstream reads from this output — treat
-it as the single source of truth and don't recompute paths or names by hand.
+or `integration/`). On success it gives `sourceModule`, `mapped`, `testRoot`, `translationNotes`, and a
+`tiers` object with one entry per tier (`unit` / `integration` / `proxy`), each carrying `present`,
+`sourceDir`, `targetDir`, `package`, and `specs` (a list of `{file, className}`). Everything downstream
+reads from this output — treat it as the single source of truth and don't recompute paths or names by hand.
+
+`translationNotes` is the path to a per-module ably-js → ably-java type/interface map when the module
+declares one (its `notes` field in `uts-package-mapping.json`, e.g. `objects` →
+`references/objects-mapping.md`), else `null`. When it's non-null, it is **required reading before
+Phase 2** — see Step 1.
 
 ## Step B — Confirm or create the target mapping
 
@@ -113,9 +118,15 @@ When translating several specs, do Steps 1–4 (generate the file) for every spe
 compiling once is faster than per-file and surfaces cross-file issues together. For a single spec, just go
 through the steps in order.
 
-## Step 1 — Read the spec
+## Step 1 — Read the spec (and any module translation notes)
 
-Read the current spec file (the one being translated from the Step D selection). Identify:
+**If Step A reported a non-null `translationNotes`, read that file first (once per run).** UTS specs are
+written in a language-agnostic pseudocode that mirrors the *ably-js* API; for modules whose ably-java types
+diverge (e.g. `objects` → `liveobjects`, where ably-java is a typed SDK with a partitioned `PathObject` /
+`Instance` hierarchy and a `LiveMapValue` write union), the notes map each spec symbol to its ably-java
+equivalent. Skipping them yields tests that read like ably-js and won't compile.
+
+Then read the current spec file (the one being translated from the Step D selection). Identify:
 - All test cases — each has a structured ID like `realtime/unit/RSA4c2/callback-error-connecting-disconnected-0` and a description
 - The protocol used (WebSocket for Realtime, HTTP for REST)
 - Any timer usage (`enable_fake_timers`, `ADVANCE_TIME`)
