@@ -49,3 +49,204 @@ Deviations from the Ably spec identified during UTS test translation. Each entry
 **Workaround in tests:** The spec-correct assertion (`assertEquals(42L, msgSerial)`) is gated behind `RUN_DEVIATIONS`. A regression guard assertion (`assertEquals(0L, msgSerial)`) runs by default to catch any unintentional change to the SDK's actual behaviour.  
 **Tests affected:**
 - `RTN16f - recover option initializes msgSerial from recoveryKey` (RTN16f/recover-initializes-msgserial-0) — `assertEquals(42L, ...)` gated; `assertEquals(0L, ...)` added as regression guard.
+
+---
+
+## RTINS12d / RTINS14d / RTINS16c — wrong-type Instance operation throws IllegalStateException, not ErrorInfo 92007
+
+**Spec points:** RTINS12d, RTINS14d, RTINS16c
+**What the spec requires:** Calling a type-specific operation on an `Instance` wrapping the wrong type fails with `ErrorInfo` code `92007` — `set`/`remove` on a non-LiveMap, `increment`/`decrement` on a non-LiveCounter, `subscribe` on a primitive.
+**What the SDK does:** ably-java implements the typed-SDK variant (RTTS): those operations do not exist on the base `Instance` or on the mismatched typed view, so the wrong operation cannot be called at all. The type check happens at the `as*` cast, which fails fast with a plain `IllegalStateException` ("Not a LiveMap/LiveCounter instance") carrying no Ably error code (`DefaultInstance`, RTTS9d). There is no `92007` `AblyException` / `ErrorInfo`.
+**Workaround in tests:** Assert `assertFailsWith<IllegalStateException> { … }` on the relevant `asLiveMap()` / `asLiveCounter()` cast instead of an `ErrorInfo` code `92007`.
+**Tests affected (InstanceTest.kt):**
+- `RTINS12d - set on non-LiveMap throws` (RTINS12d/set-non-map-throws-0)
+- `RTINS14d - increment on non-LiveCounter throws` (RTINS14d/increment-non-counter-throws-0)
+- `RTINS16c - subscribe on primitive throws` (RTINS16c/subscribe-primitive-throws-0)
+
+---
+
+## RTINS4d / RTINS9c — `value()` on a LiveMap / `size()` on a LiveCounter are not expressible
+
+**Spec points:** RTINS4d, RTINS9c
+**What the spec requires:** The polymorphic `Instance#value()` returns `null` for a LiveMap, and `Instance#size()` returns `null` for a non-LiveMap.
+**What the SDK does:** Under the typed-SDK variant (RTTS10) these accessors are partitioned: `value()` exists only on `LiveCounterInstance` / primitive instances, and `size()` only on `LiveMapInstance`. A `LiveMapInstance` has no `value()` and a `LiveCounterInstance` has no `size()`, so the "wrong-type returns null" assertions cannot be written (and the cast to the other view would throw — see above).
+**Workaround in tests:** The expressible half of each test is translated (counter `value()`, map `size()`); the not-expressible sub-assertion is dropped with an inline note.
+**Tests affected (InstanceTest.kt):**
+- `RTINS4 - value returns counter number or primitive` (RTINS4/value-counter-0) — map `value() == null` omitted.
+- `RTINS9 - size returns non-tombstoned count` (RTINS9/size-0) — counter `size() == null` omitted.
+
+---
+
+## RTINS10 — `compact()` not implemented; `compactJson()` used instead
+
+**Spec point:** RTINS10
+**What the spec requires:** `Instance#compact()` returns a recursively-compacted native snapshot (plain map/number/string), e.g. `result["score"] == 100`.
+**What the SDK does:** ably-java does not implement `compact()` (RTTS7d — typed SDKs need not). Only `compactJson()` is provided, returning a Gson `JsonObject`/`JsonElement` tree.
+**Workaround in tests:** The test calls `compactJson()` and navigates the resulting `JsonObject` (`snapshot.get("score").asInt`, etc.).
+**Tests affected (InstanceTest.kt):**
+- `RTINS10 - compact recursively compacts` (RTINS10/compact-0)
+
+---
+
+## RTLO4b4c1 — `LiveObjectUpdate.noop` flag not exposed on the public subscription event
+
+**Spec point:** RTLO4b4c1
+**What the spec requires:** When an applied operation produces a no-op `LiveObjectUpdate` (e.g. a `COUNTER_INC` of 0 that still passes the RTLO4a6 newness check), registered listeners must not be invoked — the spec frames this in terms of the internal `LiveObjectUpdate.noop` flag.
+**What the SDK does:** ably-java subscribes through the public `instance.subscribe(...)` and delivers an `InstanceSubscriptionEvent`, which exposes only `getObject()` / `getMessage()` (mapping §8). There is no public `noop` accessor on the event, and the internal `LiveObjectUpdate` diff is not surfaced. The noop is therefore observable only as *suppressed delivery*: the listener is simply not fired for the no-op operation.
+**Workaround in tests:** Send the real update first (listener fires once), then the no-op `COUNTER_INC(0)`, and assert the listener count stays at 1 — i.e. the noop is asserted via the absence of a second event rather than via a `noop` boolean.
+**Tests affected (LiveObjectSubscribeTest.kt):**
+- `RTLO4b4c1 - noop update does not trigger listener` (RTLO4b4c1/noop-no-trigger-0)
+
+## RTPO5b / RTPO6b — `get(non-string)` / `at(non-string)` failing with 40003 is not expressible
+
+**Spec points:** RTPO5b, RTPO6b
+**What the spec requires:** Calling `PathObject.get(key)` / `LiveMap.at(path)` with a non-String argument fails at runtime with `ErrorInfo` code `40003`.
+**What the SDK does:** ably-java is statically typed — `LiveMapPathObject.get(@NotNull String)` and `LiveMapPathObject.at(@NotNull String)` only accept a `String`. A non-string argument is a compile error, never a runtime failure, so there is no code path that returns a `40003` `AblyException` for this input.
+**Workaround in tests:** The case is not expressible; the test body documents the omission with an inline note and contains no executable assertion.
+**Tests affected (PathObjectTest.kt):**
+- `RTPO5b - get throws on non-string key` (RTPO5b/get-non-string-throws-0)
+- `RTPO6b - at throws for non-string input` (RTPO6b/at-non-string-throws-0)
+
+---
+
+## RTPO13 / RTPO13b5 / RTPO13c / RTPO3c1 — `compact()` not implemented; `compactJson()` used instead
+
+**Spec points:** RTPO13, RTPO13b5, RTPO13c, RTPO3c1
+**What the spec requires:** `PathObject#compact()` returns a recursively-compacted native snapshot — plain map/number/string/boolean/bytes values, nested LiveMaps recursed, nested LiveCounters resolved to numbers, raw binary preserved as bytes, and cyclic references reused as the same in-memory object (`result["prefs"]["back_ref"] IS result`). `compact()` returns `null` on resolution failure.
+**What the SDK does:** ably-java does not implement `compact()` (RTTS3f — typed SDKs need not). Only `compactJson(): JsonElement?` is provided, returning a Gson tree: binary values are base64-encoded strings (not raw bytes) and cyclic references are emitted as `{ "objectId": ... }` markers (not shared object identity). It returns `null` on resolution failure.
+**Workaround in tests:** Each test calls `compactJson()` and navigates the resulting `JsonElement`/`JsonObject`. The binary entry is asserted as its base64 string (`"AQID"`); the cycle is asserted as the `{ "objectId": "map:profile@1000" }` marker instead of object identity; the LiveCounter compacts to its numeric JSON value; the resolution-failure case asserts `compactJson() == null`.
+**Tests affected (PathObjectTest.kt):**
+- `RTPO13 - compact recursively compacts LiveMap tree` (RTPO13/compact-recursive-0) — base64 for binary.
+- `RTPO13b5 - compact handles cycles via shared reference` (RTPO13b5/compact-cycle-detection-0) — objectId marker instead of identity.
+- `RTPO13c - compact returns number for LiveCounter` (RTPO13c/compact-counter-0).
+- `RTPO3c1 - read operation returns null on resolution failure` (RTPO3c1/read-null-on-failure-0) — `compact()` sub-assertion uses `compactJson()`.
+
+---
+
+## RTLM20 / RTLM21 — set/remove wire-message-shape assertions are internal; assert observable local effect
+
+**Spec points:** RTLM20e2, RTLM20e3, RTLM20e6, RTLM20e7b, RTLM20e7c, RTLM20e7d, RTLM20e7e, RTLM20e7f, RTLM20h2, RTLM21e2, RTLM21e5
+**What the spec requires:** `set` / `remove` send an OBJECT ProtocolMessage whose captured wire form is asserted directly — `captured_messages[0].state[0].operation.action == "MAP_SET" / "MAP_REMOVE"`, `operation.objectId == "root"`, `mapSet.key`, `mapSet.value.string / .number / .boolean / .json / .bytes` (base64), `mapRemove.key`.
+**What the SDK does:** ably-java's public `LiveMapPathObject.set` / `remove` return a `CompletableFuture<Void>`; the bytes that go on the wire are internal `WireObjectMessage` objects in `ProtocolMessage.state` (`Object[]`), inaccessible through the public API (mapping §13). The public-observable consequence is that, once the operation is ACKed and echoed, it applies to the local graph.
+**Workaround in tests:** Perform the public write, then assert the equivalent observable effect via a local round-trip read after the auto-ACK echo applies (`root.get(key).as<Type>().value()` for set, `getType() == null` for remove), polling for application. The exact wire-message shape is not asserted.
+**Tests affected (LiveMapApiTest.kt):**
+- `RTLM20 - set sends MAP_SET message` (RTLM20/set-sends-map-set-0)
+- `RTLM20 - set with different value types` (RTLM20/set-value-types-0)
+- `RTLM20 - set with bytes value type` (RTLM20/set-bytes-value-0)
+- `RTLM21 - remove sends MAP_REMOVE message` (RTLM21/remove-sends-map-remove-0)
+
+---
+
+## RTLM20e7g / RTLM20h1 — value-type CREATE-message generation/ordering is internal; assert resolved object
+
+**Spec points:** RTLM20e7g1, RTLM20e7g2, RTLM20h1, RTLMV4d1, RTLMV4d2 (also RTLCV4 / RTLMV4 evaluation)
+**What the spec requires:** Setting a `LiveCounter` / `LiveMap` value type produces an OBJECT whose `state` array contains the generated `*_CREATE` ObjectMessages followed by a `MAP_SET`, in depth-first order, with the `MAP_SET`'s `mapSet.value.objectId` referencing the final CREATE's `objectId` (and `objectId` prefixes `counter:` / `map:`).
+**What the SDK does:** The evaluation of a value type into an ordered list of `*_CREATE` wire messages, nonce/objectId derivation, and the cross-referencing objectIds are all internal wire-level concerns (mapping §13) — not reachable through the public typed API. The public-observable consequence is that the new nested object is created and resolvable at the key.
+**Workaround in tests:** Perform the public write, then assert the equivalent observable effect: the new value resolves to a `LIVE_COUNTER` / `LIVE_MAP` with its initial value/entries (and, for the nested case, the nested counter and primitive resolve). The CREATE-message count, ordering, and objectId cross-references are not asserted.
+**Tests affected (LiveMapApiTest.kt):**
+- `RTLM20e7g - set with LiveCounterValueType generates COUNTER_CREATE plus MAP_SET` (RTLM20e7g/set-counter-value-type-0)
+- `RTLM20e7g - set with LiveMapValueType generates nested CREATE plus MAP_SET` (RTLM20e7g/set-map-value-type-0)
+- `RTLM20h1 - set with nested LiveMapValueType containing LiveCounterValueType` (RTLM20h1/set-nested-value-types-0)
+
+---
+
+## RTLM20 / RTLMV4c — invalid set value types (function / undefined / symbol) not expressible
+
+**Spec points:** RTLM20e1, RTLMV4c
+**What the spec requires:** A table-driven test feeds unsupported runtime values (a function, `undefined`, a symbol) into `set` and expects each to fail with `ErrorInfo` code `40013`.
+**What the SDK does:** ably-java's `LiveMapPathObject.set(String, LiveMapValue)` accepts only a `LiveMapValue`, and `LiveMapValue.of(...)` is overloaded solely for the supported types (Boolean, Binary/byte[], Number, String, JsonArray, JsonObject, LiveCounter, LiveMap). There is no overload that accepts a function / undefined / symbol, so these inputs are rejected at compile time (mapping §6) — the runtime `40013` assertion cannot be expressed.
+**Workaround in tests:** The test body is a documented no-op explaining the compile-time rejection; no runtime assertion is made.
+**Tests affected (LiveMapApiTest.kt):**
+- `RTLM20 - invalid set value types` (RTLM20/set-invalid-values-table-0)
+
+---
+
+## RTLC12e2 / RTLC12e3 / RTLC12e5 / RTLC13b — outbound COUNTER_INC wire message is internal
+
+**Spec points:** RTLC12e2, RTLC12e3, RTLC12e5, RTLC13b
+**What the spec requires:** After `increment(n)` / `decrement(n)`, inspect the published OBJECT message's wire form — `captured.state[0].operation.action == "COUNTER_INC"`, `.operation.objectId == "counter:score@1000"`, `.operation.counterInc.number == n` (and `== -15` for decrement, proving decrement negates the amount).
+**What the SDK does:** The outbound wire types (`WireObjectMessage` / `WireObjectOperation` / `WireCounterInc`) are `internal` to `:liveobjects` and not part of the public API; there is no public accessor for the message a `LiveCounterPathObject.increment` / `.decrement` publishes.
+**Workaround in tests:** The captured outbound `ProtocolMessage` is found in `mockWs.events` (`MessageFromClient` with `action == object`), and its `state[0]` wire object's `operation` / `action` / `objectId` / `counterInc.number` are read by reflection (the same reflection technique `helpers.kt` and `PublicObjectMessageTest.kt` use for internal `:liveobjects` types). Where the spec also provides an observable value outcome (decrement → `value() == 85`), that is asserted directly via the public API.
+**Tests affected (LiveCounterApiTest.kt):**
+- `RTLC12 - increment sends v6 COUNTER_INC message` (RTLC12/increment-sends-counter-inc-0)
+- `RTLC13 - decrement delegates to increment with negated amount` (RTLC13/decrement-negates-0)
+
+---
+
+## RTLC11b1 — LiveCounterUpdate diff (`update.amount`) not exposed on public event
+
+**Spec point:** RTLC11b1
+**What the spec requires:** Subscribing to a counter `instance` and incrementing it emits an event whose `message.operation.counterInc.number` (the increment amount) equals the applied value (`updates[0].message.operation.counterInc.number == 7`).
+**What the SDK does:** ably-java's public `InstanceSubscriptionEvent` carries no internal `LiveCounterUpdate` diff (no `update.amount` accessor — that is the internal RTLO4b update). It does expose the originating public `ObjectMessage` via `getMessage()`, whose `operation.counterInc.number` carries the amount.
+**Workaround in tests:** Assert `event.getMessage().operation.counterInc.number == 7.0` (and `operation.action == COUNTER_INC`) instead of an `update.amount` diff field.
+**Tests affected (LiveCounterApiTest.kt):**
+- `RTLC11 - LiveCounterUpdate emitted on increment` (RTLC11/counter-update-on-inc-0)
+
+---
+
+## RTLC12e1 — non-Number increment amounts are compile errors, not 40003 runtime failures
+
+**Spec point:** RTLC12e1
+**What the spec requires:** `increment(amount)` throws `ErrorInfo` code `40003` when `amount` is `null`, not a Number, not finite, or NaN — exercised both singly (`increment("not_a_number")`) and as a table (`null`, `NaN`, `±Infinity`, `"10"`, `true`, `[1,2]`, `{n:1}`).
+**What the SDK does:** ably-java's `LiveCounterPathObject.increment(@NotNull Number)` accepts only a non-null `Number`. The non-Number rows (`null`, String, Boolean, array, object) are rejected by the type system at compile time, so they cannot be written as runtime assertions. The numeric-but-invalid rows (`NaN`, `+Infinity`, `-Infinity`) are valid `Double` values and remain expressible runtime `40003` assertions.
+**Workaround in tests:** The non-Number cases are dropped with an inline note; the non-finite `Double` cases (`NaN`, `±Infinity`) are exercised and asserted to fail with `40003`. The dedicated single-case `increment-non-number-0` test is reduced to a documented placeholder for the same reason.
+**Tests affected (LiveCounterApiTest.kt):**
+- `RTLC12e1 - increment with non-number throws` (RTLC12e1/increment-non-number-0) — not expressible; placeholder.
+- `RTLC12e1 - Table-driven invalid increment amounts` (RTLC12e1/increment-invalid-amounts-table-0) — non-Number rows dropped; non-finite rows exercised.
+
+---
+
+## RTO15 — `RealtimeObject.publish` and its OBJECT/ACK wire-message assertions are internal, not public
+
+**Spec point:** RTO15 (RTO15e1, RTO15e2, RTO15e3, RTO15h)
+**What the spec requires:** `channel.object.publish([objectMessages])` sends an OBJECT `ProtocolMessage` whose captured wire form is asserted directly — `captured_messages[0].action == OBJECT`, `.channel == "test"`, `.state.length == 1` — and returns a `PublishResult` from the ACK whose `serials == ["serial-0"]`.
+**What the SDK does:** ably-java's `RealtimeObject` exposes no public `publish` method — `publish` / `publishAndApply` (RTO15 / RTO20) are marked `internal` in the IDL (mapping §13). The only public mutators are the typed `set` / `remove` / `increment` / `decrement` on the path/instance views, which return `CompletableFuture<Void>` (no `PublishResult`). The OBJECT `ProtocolMessage.state` entries are internal `WireObjectMessage` objects (`Object[]`), and the ACK `PublishResult` is consumed internally to drive the local apply — neither is reachable through the public API.
+**Workaround in tests:** None expressible against the public surface. The publish-and-apply *effect* (RTO20) is covered observably elsewhere in this file (e.g. `RTO20 - publishAndApply applies locally on ACK` asserts `value() == 110` after a public `increment`). The RTO15 test body is a documented no-op.
+**Tests affected (RealtimeObjectTest.kt):**
+- `RTO15 - publish sends OBJECT ProtocolMessage` (RTO15/publish-sends-object-pm-0) — not expressible; documented no-op.
+
+---
+
+## RTLCV3 / RTLMV3 — value-type internal count / entries have no public accessor
+
+**Spec points:** RTLCV3b, RTLCV3a1, RTLMV3b, RTLMV3a1
+**What the spec requires:** A constructed value type exposes its internal blueprint state for inspection — `LiveCounter.create(42).count == 42`, `LiveCounter.create().count == 0`, `LiveMap.create({...}).entries["name"] == "Alice"`.
+**What the SDK does:** ably-java's `LiveCounter` / `LiveMap` value types are opaque immutable holders: the initial count / entries are "held internally by the implementation; [they have] no public accessor" (their Javadoc). Only the static `create(...)` factory and the abstract type identity are observable; there is no `count` / `entries` getter.
+**Workaround in tests:** Assert construction succeeds and the result `is LiveCounter` / `is LiveMap` (the value-type identity). The internal `count` / `entries` sub-assertions are dropped with an inline note.
+**Tests affected (ValueTypesTest.kt):**
+- `RTLCV3 - LiveCounter create with initial count` (RTLCV3/create-with-count-0) — `vt.count == 42` omitted.
+- `RTLCV3 - LiveCounter create defaults to 0` (RTLCV3/create-default-zero-0) — `vt.count == 0` omitted.
+- `RTLMV3 - LiveMap create with entries` (RTLMV3/create-with-entries-0) — `vt.entries[...]` omitted.
+
+---
+
+## RTLCV4 / RTLMV4 — value-type `evaluate()` ObjectMessage generation is internal/wire-level
+
+**Spec points:** RTLCV4 (RTLCV4b1, RTLCV4c, RTLCV4d, RTLCV4f, RTLCV4g1–g5), RTLMV4 (RTLMV4e1, RTLMV4f, RTLMV4g, RTLMV4i, RTLMV4j1–j5, RTLMV4d1, RTLMV4d2, RTLMV4k, RTLMV4e2)
+**What the spec requires:** Calling `evaluate(vt)` on a value type returns the list of generated `ObjectMessage`s and asserts on their internal/wire form — `operation.action == "COUNTER_CREATE"/"MAP_CREATE"`, `operation.objectId` `counter:`/`map:` prefix and `@`-suffixed RTO14 derivation, `counterCreateWithObjectId`/`mapCreateWithObjectId` with a 16+-char `nonce` and a JSON `initialValue`, the retained local `counterCreate`/`mapCreate` (`count == 42`, `semantics == "LWW"`, `entries[k].data.<field>`), depth-first ordering of nested creates with cross-referencing `entries[k].data.objectId`, and `mapCreate.entries == {}` for empty entries.
+**What the SDK does:** There is no public `evaluate` on the value types. Evaluation into an ordered list of `*_CREATE` wire messages, nonce / `initialValue` / `objectId` derivation, and the `counterCreateWithObjectId` / `mapCreateWithObjectId` wire forms are all internal/wire-level concerns (mapping §13), not reachable through the public typed API. (`PublicAPI::ObjectOperation` itself carries only the resolved `mapCreate`/`counterCreate`, never a `*WithObjectId` getter, per PAOOP1.)
+**Workaround in tests:** Only the public construction is exercised (`create(...)` returns a `LiveCounter`/`LiveMap`). The message-generation, nonce/objectId, `initialValue`, retained-create, ordering and empty-entries assertions are dropped with inline notes.
+**Tests affected (ValueTypesTest.kt):**
+- `RTLCV4 - Evaluation generates COUNTER_CREATE ObjectMessage` (RTLCV4/evaluate-generates-message-0)
+- `RTLCV4g5 - Evaluation retains local CounterCreate` (RTLCV4g5/retains-local-counter-create-0)
+- `RTLCV4 - Evaluation with count 0` (RTLCV4/evaluate-zero-count-0)
+- `RTLMV4 - Evaluation generates MAP_CREATE ObjectMessage` (RTLMV4/evaluate-generates-message-0)
+- `RTLMV4j5 - Evaluation retains local MapCreate` (RTLMV4j5/retains-local-map-create-0)
+- `RTLMV4d1, RTLMV4d2 - Nested value types produce depth-first ObjectMessages` (RTLMV4d1/nested-value-types-0)
+- `RTLMV4e2 - Empty entries produces MapCreate with empty entries` (RTLMV4e2/empty-entries-0)
+- `RTLMV4d - Entry value type mapping` (RTLMV4d/entry-value-types-0) — generated `data.<field>` adapted to public `LiveMapValue` union inspection.
+- `RTLMV4d - Table-driven MAP_SET value type mapping` (RTLMV4d/map-set-all-types-table-0) — generated `data[field]` (incl. base64 "AQID") adapted to public `LiveMapValue` union inspection.
+
+---
+
+## RTLCV4a / RTLMV4a / RTLMV4b / RTLMV4c — wrong-typed value-type `create` args are compile errors, not runtime 40003/40013
+
+**Spec points:** RTLCV4a, RTLMV4a, RTLMV4b, RTLMV4c
+**What the spec requires:** Validation deferred to evaluation: `LiveCounter.create("not_a_number")` → 40003; `LiveMap.create(null)` → 40003; a non-String key (`{ 123: "value" }`) → 40003; an unsupported value (a function) → 40013.
+**What the SDK does:** ably-java's signatures reject all of these at compile time (mapping §6): `LiveCounter.create(@NotNull Number)` rejects a String and rejects null; `LiveMap.create(@NotNull Map<String, LiveMapValue>)` rejects null, enforces String keys, and the `LiveMapValue` union constructs only from the supported types (Boolean, byte[], Number, String, JsonArray, JsonObject, LiveCounter, LiveMap) — an unsupported value cannot be wrapped. So none of these inputs can be written, and the runtime 40003/40013 failures are not expressible.
+**Workaround in tests:** Each test body is a documented no-op explaining the compile-time rejection; no runtime assertion is made.
+**Tests affected (ValueTypesTest.kt):**
+- `RTLCV4a - Evaluation validates count type` (RTLCV4a/evaluate-validates-count-0)
+- `RTLMV4a - Evaluation validates entries type` (RTLMV4a/evaluate-validates-entries-0)
+- `RTLMV4b - Evaluation validates key types` (RTLMV4b/evaluate-validates-keys-0)
+- `RTLMV4c - Evaluation validates value types` (RTLMV4c/evaluate-validates-values-0)
