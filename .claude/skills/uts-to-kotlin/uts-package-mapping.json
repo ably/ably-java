@@ -1,0 +1,21 @@
+{
+  "_comment": "Maps each UTS spec module (a dir under specification/uts/) to its target test packages. Output dir = testRoot + '/' + tier entry; Kotlin package = that path after 'src/test/kotlin/' with '/' -> '.'. Used by the uts-to-kotlin skill.",
+  "testRoot": "uts/src/test/kotlin/io/ably/lib/uts",
+  "packages": {
+    "realtime": {
+      "unit": "unit/realtime",
+      "integration": "integration/standard/realtime",
+      "proxy": "integration/proxy/realtime"
+    },
+    "objects": {
+      "unit": "unit/liveobjects",
+      "integration": "integration/standard/liveobjects",
+      "proxy": "integration/proxy/liveobjects"
+    },
+    "rest": {
+      "unit": "unit/rest",
+      "integration": "integration/standard/rest",
+      "proxy": "integration/proxy/rest"
+    }
+  }
+}

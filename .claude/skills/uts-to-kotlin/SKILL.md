@@ -1,56 +1,145 @@
 ---
-description: "Translate a UTS pseudocode test spec into Kotlin tests in the uts module. Usage: /uts-to-kotlin <path-to-spec-file>"
+description: "Translate the UTS pseudocode test specs in a whole module directory into runnable Kotlin tests in the ably-java uts module. Takes a UTS module directory (e.g. .../specification/uts/objects), validates its structure, resolves the target ably-java module, lets you pick a tier (unit/integration/proxy) and which specs, then derives a Kotlin test per spec. Usage: /uts-to-kotlin <path-to-uts-module-directory>"
 allowed-tools: Bash, Read, Edit, Write
 ---
 
-Translate the UTS pseudocode test spec at `$ARGUMENTS` into a runnable Kotlin test in the `uts` module.
+Translate the UTS pseudocode test specs under the **module directory** `$ARGUMENTS` into runnable Kotlin
+tests in the ably-java `uts` module.
+
+`$ARGUMENTS` is a UTS *module* directory — a directory sitting directly under `.../specification/uts/`,
+e.g. `/Users/sachinsh/ably-specification/specification/uts/objects`. Its name (`objects`, `realtime`,
+`rest`, …) is the **source module**. A module directory holds many spec files, organised into tiers
+(`unit/`, `integration/`, and `integration/proxy/`).
+
+The work happens in two phases:
+
+- **Phase 1 — Selection (Steps A–D below):** validate the directory, resolve the *target* ably-java
+  module via `uts-package-mapping.json`, pick a tier, and pick which spec files to translate.
+- **Phase 2 — Per-spec translation (Steps 1–7):** for each selected spec file, derive a Kotlin test.
 
 Reference: [Writing Derived Tests](https://raw.githubusercontent.com/ably/specification/refs/heads/main/uts/docs/writing-derived-tests.md)
 
 ---
 
-## Step 0 — Validate arguments
+# Phase 1 — Selection
 
-**If `$ARGUMENTS` is empty or blank**, stop immediately and tell the user:
+## Step A — Validate the module directory
+
+`$ARGUMENTS` must be a UTS **module directory** sitting directly under a `uts/` parent.
+
+**If `$ARGUMENTS` is empty or blank**, stop and tell the user:
 
 ```
-Usage: /uts-to-kotlin <path-to-spec-file>
+Usage: /uts-to-kotlin <path-to-uts-module-directory>
 
 Example:
-  /uts-to-kotlin lib/src/spec/uts/test/realtime/unit/connection/connection_state_machine_test.md
+  /uts-to-kotlin /Users/sachinsh/ably-specification/specification/uts/objects
 
-Please re-run the command with the path to a UTS pseudocode spec file.
+Pass a UTS module directory (a directory directly under .../specification/uts/), not a single spec file.
 ```
 
-Do not proceed to Step 1.
+Otherwise validate with these checks. Substitute the real path for `DIR=` (shell variables do **not**
+persist between separate `Bash` calls, and `$ARGUMENTS` is a text placeholder, not a shell variable — so
+set `DIR` literally each time you need it):
 
-**If `$ARGUMENTS` is provided but does not end in `.md`**, stop and tell the user:
-
-```
-Error: "<value>" does not look like a spec file path (expected a .md file).
-
-Usage: /uts-to-kotlin <path-to-spec-file>
-```
-
-Do not proceed to Step 1.
-
-**If `$ARGUMENTS` ends in `.md` but the file does not exist** (check with `test -f "$ARGUMENTS"`), stop and tell the user:
-
-```
-Error: file not found: "<value>"
-
-Check the path and try again.
+```bash
+DIR="/absolute/path/to/the/module"               # the path passed in, trailing slash removed
+# 1. Must be a directory directly under a `uts/` parent: .../uts/<module>
+[[ "$DIR" =~ /uts/[^/]+$ ]] || echo "NOT_A_UTS_MODULE_PATH"
+# 2. Must exist as a directory
+test -d "$DIR" || echo "DIR_NOT_FOUND"
+# 3. Standard structure: at least one recognised tier directory
+{ test -d "$DIR/unit" || test -d "$DIR/integration"; } || echo "NO_TIER_DIRS"
+echo "MODULE=$(basename "$DIR")"
 ```
 
-Do not proceed to Step 1.
+- If `NOT_A_UTS_MODULE_PATH` → the path isn't `.../uts/<module-name>`. Tell the user the path must point at a
+  module directory directly under `uts/` (e.g. `.../specification/uts/objects`) and stop.
+- If `DIR_NOT_FOUND` → tell the user the directory doesn't exist and stop.
+- If `NO_TIER_DIRS` → the directory has no `unit/` or `integration/` sub-directory, so it isn't a valid UTS
+  module. Tell the user and stop.
 
-Only continue to Step 1 once the file is confirmed to exist.
+The **source module** is the directory's base name (`MODULE=` above) — `objects`, `realtime`, `rest`, …
+
+Only continue once all three checks pass.
+
+## Step B — Resolve the target ably-java module
+
+Spec modules don't always share a name with their ably-java counterpart (e.g. `objects` → `liveobjects`),
+so the mapping is explicit. Read `uts-package-mapping.json`, which sits alongside this skill at
+`.claude/skills/uts-to-kotlin/uts-package-mapping.json`. The file has a single shared parent — `testRoot`
+(the directory, from the ably-java repo root, that every target lives under) — and a `packages` table whose
+keys are source module names. Each tier value is the output directory **relative to `testRoot`**:
+
+```json
+"testRoot": "uts/src/test/kotlin/io/ably/lib/uts",
+"packages": {
+  "objects": {
+    "unit": "unit/liveobjects",
+    "integration": "integration/standard/liveobjects",
+    "proxy": "integration/proxy/liveobjects"
+  }
+}
+```
+
+Resolve a tier to its concrete target like so:
+- **Output directory** = `testRoot` + `/` + the tier entry (e.g. `uts/src/test/kotlin/io/ably/lib/uts/unit/liveobjects`).
+- **Kotlin package** = that path's segment **after `src/test/kotlin/`** with `/` replaced by `.` (e.g. `io.ably.lib.uts.unit.liveobjects`).
+
+Then:
+- **If the source module has an entry**, show its three resolved target dirs and ask the user to confirm it,
+  or to pick a different existing module instead.
+- **If it has no entry**, tell the user there's no mapping yet and offer to create one. Ask for the target
+  module base name (default to the source name; suggest a rename only when the SDK uses different
+  terminology, e.g. `objects` → `liveobjects`). Then add a new entry to `uts-package-mapping.json` with the
+  three `testRoot`-relative paths — `unit/<target>`, `integration/standard/<target>`, and
+  `integration/proxy/<target>` — and save the file before continuing.
+
+## Step C — Choose the tier
+
+Offer the tiers that actually exist in the source module, and map each to its source spec directory and the
+target output directory from Step B:
+
+| Tier | Source spec directory | Target (mapping entry, joined onto `testRoot`) | Per-spec translation flow |
+|---|---|---|---|
+| **unit** | `<module>/unit/` | mapping `unit` (e.g. `unit/liveobjects`) | mocked transport — Steps 1–7 below |
+| **integration** (direct sandbox) | `<module>/integration/` *(excluding `proxy/` and `helpers/`)* | mapping `integration` (e.g. `integration/standard/liveobjects`) | real sandbox, no faults — see **Proxy integration tests** but drop the `ProxySession`/`connectThroughProxy` wiring |
+| **proxy** | `<module>/integration/proxy/` | mapping `proxy` (e.g. `integration/proxy/liveobjects`) | real sandbox + fault injection — see **Proxy integration tests** |
+
+The tier you pick here fixes the target directory/package and which translation flow Phase 2 uses — you do
+**not** re-detect it per spec.
+
+## Step D — Choose which specs to translate
+
+List the candidate spec files in the chosen tier's source directory (recurse, but **exclude** any
+`helpers/` directory and non-spec docs like `PLAN.md`, `README.md`, or `*_SUMMARY.md`). Substitute the
+real module path for `DIR` again:
+
+```bash
+DIR="/absolute/path/to/the/module"
+# unit
+find "$DIR/unit" -name '*.md' -not -path '*/helpers/*' | sort
+# integration (direct sandbox) — exclude the proxy subtree
+find "$DIR/integration" -name '*.md' -not -path '*/proxy/*' -not -path '*/helpers/*' | sort
+# proxy
+find "$DIR/integration/proxy" -name '*.md' -not -path '*/helpers/*' | sort
+```
+
+Present the list and ask the user whether to **translate all** of them or **select specific** files. Then,
+for each selected spec, run Phase 2 (Steps 1–7).
 
 ---
 
+# Phase 2 — Per-spec translation
+
+Run this for **each** spec file selected in Step D. When translating several specs, do Steps 1–4 (generate
+the file) for every spec first, then run Step 5 (compile) once for the whole module, then Steps 6–7 per
+file — compiling once is faster than per-file and surfaces cross-file issues together. For a single spec,
+just go through Steps 1–7 in order.
+
 ## Step 1 — Read the spec
 
-Read the file at `$ARGUMENTS`. Identify:
+Read the current spec file (the one being translated from the Step D selection). Identify:
 - All test cases — each has a structured ID like `realtime/unit/RSA4c2/callback-error-connecting-disconnected-0` and a description
 - The protocol used (WebSocket for Realtime, HTTP for REST)
 - Any timer usage (`enable_fake_timers`, `ADVANCE_TIME`)
@@ -59,30 +148,23 @@ Read the file at `$ARGUMENTS`. Identify:
 
 ## Step 2 — Determine output path and package
 
-Map the spec path to a test path. **Tests are organised tier-first** (`unit/` vs `integration/standard/`
-vs `integration/proxy/`), then **by module** (`realtime`, `rest`, `liveobjects`, …), all under the
-`io.ably.lib.uts` package. (`…/uts/` below is shorthand for `uts/src/test/kotlin/io/ably/lib/uts/`.)
+The target directory and package are already fixed by the tier chosen in Step C and the mapping resolved in
+Step B — you do not re-derive them from the spec path. `<targetDir>` is `testRoot` + the tier entry (e.g.
+`uts/src/test/kotlin/io/ably/lib/uts/unit/liveobjects`) and `<package>` is its dotted form after
+`src/test/kotlin/` (e.g. `io.ably.lib.uts.unit.liveobjects`).
 
-| Spec location | Test location | Package |
-|---|---|---|
-| `.../<module>/unit/<…>/<name>.md` | `…/uts/unit/<module>/<Name>Test.kt` | `io.ably.lib.uts.unit.<module>` |
-| `.../<module>/integration/<…>/<name>.md` (direct sandbox) | `…/uts/integration/standard/<module>/<Name>Test.kt` | `io.ably.lib.uts.integration.standard.<module>` |
-| `.../<module>/integration/<…>/<name>.md` (proxy) | `…/uts/integration/proxy/<module>/<Name>Test.kt` | `io.ably.lib.uts.integration.proxy.<module>` |
+Only the **class name** comes from the spec file: take its file name, strip a `_test` suffix if present,
+convert `snake_case` → `PascalCase`, and append `Test`. Examples: `objects_batch_test.md` →
+`ObjectsBatchTest`; `live_counter_api.md` → `LiveCounterApiTest`; `connection_recovery_test.md` →
+`ConnectionRecoveryTest`.
 
-`<module>` is the SDK area — `realtime`, `rest`, `liveobjects`, … (existing folders: `unit/realtime/`,
-`unit/liveobjects/`). The spec's own `<sub>` grouping (e.g. `connection/`) is **not** carried into a
-sub-package — tests sit directly under the tier/module folder (e.g. `connection_recovery_test.md` →
-`…/uts/unit/realtime/ConnectionRecoveryTest.kt`).
+The spec's own `<sub>` grouping (e.g. `connection/`, `channels/`) is **not** carried into a sub-package —
+every test sits directly in `<targetDir>`. Output file: `<targetDir>/<ClassName>.kt`, with
+`package <package>` at the top.
 
-Class name: take the file name, strip `_test` suffix, convert `snake_case` → `PascalCase`, append `Test`.
-
-**Integration specs come in two kinds:**
-- Those that **inject faults** (reference `create_proxy_session()`, proxy `rules`, `trigger_action`, `get_log`, or `uts/test/realtime/integration/helpers/proxy.md`) are **proxy** tests under `integration/proxy/<module>/` — follow the **Proxy integration tests** section at the end of this skill instead of the unit-test rules below.
-- Those that exercise only **happy-path interop** against the real sandbox (no fault injection) are **direct sandbox** tests under `integration/standard/<module>/`. They use `SandboxApp` alone (no `ProxySession`), connecting straight to `ProxyManager.sandboxRealtimeHost` / `sandboxRestHost`. *(No example exists yet — model the suite setup/teardown on the proxy section but drop the `ProxySession`/`connectThroughProxy` wiring.)*
-
-Example: `connection_state_machine_test.md` → `ConnectionStateMachineTest`
-
-Package: derived from the output path under `kotlin/`.
+The chosen tier also fixes the translation flow: **unit** → the rules in Steps 3–4 below; **integration**
+(direct sandbox) and **proxy** → the **Proxy integration tests** section (direct sandbox drops the
+`ProxySession`/`connectThroughProxy` wiring; see Step C).
 
 ---
 
