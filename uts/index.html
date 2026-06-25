@@ -182,7 +182,7 @@
         <tr><td><strong>Deviation</strong></td><td>A documented case where the SDK's actual behaviour diverges from the spec. Recorded in <code>deviations.md</code>.</td></tr>
       </table>
       <div class="callout tip"><span class="tag">Golden rule</span>
-        <p>From <code>writing-derived-tests.md</code>: <strong>translate the UTS spec faithfully</strong> — same structure, same assertions, same naming — don't optimise or skip steps. Every derived test carries a <code>// UTS: &lt;id&gt;</code> (here <code>@UTS …</code>) comment linking it back to its spec.</p></div>
+        <p>From <a href="https://github.com/ably/specification/blob/main/uts/docs/writing-derived-tests.md" target="_blank" rel="noopener"><code>writing-derived-tests.md</code></a>: <strong>translate the UTS spec faithfully</strong> — same structure, same assertions, same naming — don't optimise or skip steps. Every derived test carries a <code>// UTS: &lt;id&gt;</code> (here <code>@UTS …</code>) comment linking it back to its spec.</p></div>
     </section>
 
     <!-- ===================== 2 ===================== -->
@@ -194,20 +194,20 @@
         <div class="card"><h4>Direct sandbox <span class="pill">real net</span></h4><p><strong>Transport:</strong> real. <strong>Backend:</strong> real Ably sandbox.<br>Happy-path interop: connect, publish, subscribe. No fault injection.<br><em>(not among the two example tests)</em></p></div>
         <div class="card"><h4>Proxy integration <span class="pill">faults</span></h4><p><strong>Transport:</strong> real, through a programmable proxy. <strong>Backend:</strong> real sandbox.<br>Fault behaviour: dropped connections, injected errors, timeouts, re-auth.<br><em>→ AuthReauthTest.kt</em></p></div>
       </div>
-      <p>Key principles (from <code>integration-testing.md</code>):</p>
+      <p>Key principles (from <a href="https://github.com/ably/specification/blob/main/uts/docs/integration-testing.md" target="_blank" rel="noopener"><code>integration-testing.md</code></a>):</p>
       <ul>
         <li><strong>Integration tests do not replace unit tests.</strong> A spec point covered by a proxy test should <em>also</em> have a unit test. The unit test proves client logic; the proxy test proves client &amp; real server agree.</li>
         <li><strong>Proxy tests prefer "late fault injection".</strong> Let the real handshake complete against the real server, <em>then</em> inject the fault as the final interaction — maximising how much of the test exercises genuine client-server behaviour.</li>
-        <li><strong>Proxy tests always use JSON</strong> (<code>useBinaryProtocol = false</code>). Two reasons in the spec corpus: the proxy only supports <strong>text</strong> WebSocket frames so it can't inspect/modify msgpack (<code>integration-testing.md</code>), and the SDK under test doesn't implement msgpack (<code>helpers/proxy.md</code>).</li>
+        <li><strong>Proxy tests always use JSON</strong> (<code>useBinaryProtocol = false</code>). Two reasons in the spec corpus: the proxy only supports <strong>text</strong> WebSocket frames so it can't inspect/modify msgpack (<a href="https://github.com/ably/specification/blob/main/uts/docs/integration-testing.md" target="_blank" rel="noopener"><code>integration-testing.md</code></a>), and the SDK under test doesn't implement msgpack (<a href="https://github.com/ably/specification/blob/main/uts/realtime/integration/helpers/proxy.md" target="_blank" rel="noopener"><code>helpers/proxy.md</code></a>).</li>
       </ul>
     </section>
 
     <!-- ===================== 3 ===================== -->
     <section id="s3">
       <h2 class="sec"><span class="num">3</span> The UTS Documents (the source of truth)</h2>
-      <p>These four documents live in the <strong>specification repo</strong> at <code>specification/uts/docs/</code>. They are the policy/authoring guides; the Kotlin code in this repo is their <em>implementation</em>.</p>
+      <p>These four documents live in the <strong>specification repo</strong> at <a href="https://github.com/ably/specification/blob/main/uts/docs/" target="_blank" rel="noopener"><code>uts/docs/</code></a>. They are the policy/authoring guides; the Kotlin code in this repo is their <em>implementation</em>. Each title below links to the file on GitHub. ↗</p>
 
-      <h3>3.1 <code>writing-test-specs.md</code> — how to author a portable UTS spec</h3>
+      <h3>3.1 <a href="https://github.com/ably/specification/blob/main/uts/docs/writing-test-specs.md" target="_blank" rel="noopener"><code>writing-test-specs.md</code></a> — how to author a portable UTS spec</h3>
       <ul>
         <li><strong>Test types</strong> (unit / integration / proxy) and when each applies.</li>
         <li><strong>Test IDs</strong> — format <code>&lt;category&gt;/&lt;spec-point&gt;/&lt;descriptive-name&gt;-&lt;n&gt;</code>, e.g. <code>realtime/proxy/RTN22/server-initiated-reauth-0</code>. These IDs are the <code>@UTS</code> comments in the Kotlin tests.</li>
@@ -217,7 +217,7 @@
         <li><strong>Anti-flake conventions</strong> — no fixed <code>WAIT</code>s; use polling, <code>AWAIT_STATE</code>, fake timers, and the <strong>record-and-verify</strong> pattern (<code>CONTAINS_IN_ORDER</code>) for transient states.</li>
       </ul>
 
-      <h3>3.2 <code>writing-derived-tests.md</code> — how to translate a spec into a real SDK test</h3>
+      <h3>3.2 <a href="https://github.com/ably/specification/blob/main/uts/docs/writing-derived-tests.md" target="_blank" rel="noopener"><code>writing-derived-tests.md</code></a> — how to translate a spec into a real SDK test</h3>
       <p>Two phases: <strong>Translation</strong> (always) — faithfully render the spec into the target language, map pseudocode to the SDK's API &amp; test framework, flag ambiguities, ensure it compiles. <strong>Evaluation</strong> (when an implementation exists) — run the test and, if it fails, work the decision tree:</p>
       <figure class="fig">
         <svg viewBox="0 0 760 250" role="img" aria-label="Decision tree">
@@ -237,27 +237,27 @@
           <defs><marker id="ar2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0L9 4.5L0 9z" fill="var(--fg-muted)"/></marker>
           <marker id="ar3" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0L9 4.5L0 9z" fill="var(--accent)"/></marker></defs>
         </svg>
-        <figcaption>The three-branch decision tree from <code>writing-derived-tests.md</code>.</figcaption>
+        <figcaption>The three-branch decision tree from <a href="https://github.com/ably/specification/blob/main/uts/docs/writing-derived-tests.md" target="_blank" rel="noopener"><code>writing-derived-tests.md</code></a>.</figcaption>
       </figure>
       <p>It also defines the <strong>env-gated skip</strong> pattern (<code>RUN_DEVIATIONS</code>) — the test holds the <em>spec-correct</em> assertion but only runs it when the env var is set, so normal runs stay green while each deviation stays individually reproducible. This is exactly what <code>ConnectionRecoveryTest</code> uses for RTN16f.</p>
 
-      <h3>3.3 <code>integration-testing.md</code> — the policy for integration &amp; proxy tests</h3>
+      <h3>3.3 <a href="https://github.com/ably/specification/blob/main/uts/docs/integration-testing.md" target="_blank" rel="noopener"><code>integration-testing.md</code></a> — the policy for integration &amp; proxy tests</h3>
       <p>Defines what <em>deserves</em> an integration test (request/response interop, error interop, data round-trips, stateful protocol sequences), the directory layout, sandbox provisioning, proxy session lifecycle, timeout strategy, and the <strong>late-fault-injection</strong> philosophy. The <code>integration/proxy/</code> segregation exists because proxy tests have different infra needs, CI cadence, and failure modes.</p>
 
-      <h3>3.4 <code>completion-status.md</code> — the coverage matrix</h3>
+      <h3>3.4 <a href="https://github.com/ably/specification/blob/main/uts/docs/completion-status.md" target="_blank" rel="noopener"><code>completion-status.md</code></a> — the coverage matrix</h3>
       <p>A big table mapping every features-spec group (<code>RSC</code>, <code>RTN</code>, <code>RTL</code>, <code>RTP</code>…) to the UTS specs that cover it, with a per-tier summary (<code>unit:✓ proxy:✓</code>). The two example tests correspond to these rows:</p>
       <ul>
         <li><code>RTN16</code> (connection recovery) → unit spec <code>connection_recovery_test.md</code> → <strong>ConnectionRecoveryTest.kt</strong>.</li>
         <li><code>RTN22</code> / <code>RTC8a</code> (server-initiated re-auth) → proxy spec <code>realtime/integration/proxy/auth_reauth.md</code> → <strong>AuthReauthTest.kt</strong>.</li>
       </ul>
       <div class="callout note"><span class="tag">Fifth, referenced doc</span>
-        <p>There is also <code>realtime/integration/helpers/proxy.md</code>. It defines the proxy's control API, rule format, action types, and the <strong>protocol message action-number table</strong> (CONNECTED=4, ATTACH=10, AUTH=17…). The Kotlin <code>ProxySession</code> is the client for exactly that API.</p></div>
+        <p>There is also <a href="https://github.com/ably/specification/blob/main/uts/realtime/integration/helpers/proxy.md" target="_blank" rel="noopener"><code>realtime/integration/helpers/proxy.md</code></a>. It defines the proxy's control API, rule format, action types, and the <strong>protocol message action-number table</strong> (CONNECTED=4, ATTACH=10, AUTH=17…). The Kotlin <code>ProxySession</code> is the client for exactly that API.</p></div>
     </section>
 
     <!-- ===================== 4 ===================== -->
     <section id="s4">
       <h2 class="sec"><span class="num">4</span> The Java Setup: the <code>uts/</code> module</h2>
-      <p>The <code>uts/</code> directory is a <strong>standalone Gradle module</strong> (<code>include("uts")</code> in <code>settings.gradle.kts</code>) whose only job is to host UTS-derived tests. It contains <em>no production code</em> — everything lives under <code>src/test/</code>.</p>
+      <p>The <code>uts/</code> directory is a <strong>standalone Gradle module</strong> (<code>include("uts")</code> in <code>settings.gradle.kts</code>) whose only job is to host UTS-derived tests. It contains <em>no production code</em> — everything lives under <code>uts/src/test/</code>.</p>
 
       <h3>4.1 <code>uts/build.gradle.kts</code></h3>
 <pre><code>plugins { alias(libs.plugins.kotlin.jvm) }
@@ -417,7 +417,7 @@ fakeClock.advance(2.seconds)      // jump forward; due timers fire now</code></p
 
     <!-- ===================== 7 ===================== -->
     <section id="s7">
-      <h2 class="sec"><span class="num">7</span> Proxy-Integration Infrastructure (real backend + faults)</h2>
+      <h2 class="sec"><span class="num">7</span> Proxy-Integration Infrastructure (real backend + fault injection)</h2>
       <p>Proxy tests connect the <strong>real SDK</strong> to the <strong>real Ably sandbox</strong>, but route traffic through a small Go program — <a href="https://github.com/ably/uts-proxy">ably/uts-proxy</a> — that can be told to inject faults. Three Kotlin helpers make this work.</p>
 
       <h3>7.1 <code>ProxyManager</code> — gets the proxy binary running</h3>
@@ -487,7 +487,7 @@ fakeClock.advance(2.seconds)      // jump forward; due timers fire now</code></p
         <li><strong>INITIALIZED</strong> (before connect) → null.</li>
         <li><strong>CONNECTED</strong> → non-null (sanity).</li>
         <li><strong>CLOSING / CLOSED</strong> → null (close nulls the key immediately).</li>
-        <li><strong>FAILED</strong> → null. <em>(Documented deviation — see §11.)</em></li>
+        <li><strong>FAILED</strong> → null. <em>(Contains a documented <strong>deviation</strong> — see §11: the spec's fatal error code 50000/500 isn't treated as fatal by the SDK, and <code>send_to_client_and_close</code> races the FAILED transition; the test uses code 40000/400 and plain <code>sendToClient</code>.)</em></li>
         <li><strong>SUSPENDED</strong> → null. Built with a <code>FakeClock</code>: connect succeeds, then <code>simulateDisconnect()</code>, then a coroutine <strong>refuses every reconnection attempt</strong> while <code>fakeClock.advance(2.seconds)</code> loops until the short <code>connectionStateTtl</code> (800 ms) expires and the client gives up to SUSPENDED.</li>
       </ul>
       <p><em>Technique: the textbook <strong>await-style</strong> example — the first connection succeeds via <code>awaitConnectionAttempt()</code>, but reconnections need the <em>refused</em> response, so a separate <code>refuseJob</code> coroutine drives them; combined with fake timers this gives a deterministic SUSPENDED.</em></p>
@@ -666,7 +666,7 @@ val client = TestRealtimeClient { authCallback = …; connectThroughProxy(sessio
         <figcaption>Everything is in-process and deterministic. The HTTP path is identical in shape: <code>MockHttpClient</code> → <code>DebugOptions.httpEngine</code> → <code>MockHttpEngine</code> → <code>PendingConnection</code> then <code>PendingRequest</code>.</figcaption>
       </figure>
 
-      <h3>A.2 Proxy test — real backend through the fault-injecting proxy</h3>
+      <h3>A.2 Proxy integration test — real backend through the fault-injecting proxy</h3>
       <p>A proxy test uses the <strong>real</strong> SDK transport but points its host/port at the local <code>uts-proxy</code> process, which forwards to the Ably sandbox and can inject faults on command.</p>
       <figure class="fig">
         <svg viewBox="0 0 740 300" role="img" aria-label="Proxy test flow">
@@ -746,18 +746,18 @@ val client = TestRealtimeClient { authCallback = …; connectThroughProxy(sessio
         <tr><td><code>realtime/integration/proxy/AuthReauthTest.kt</code></td><td>1 <code>@Test</code> (two <code>@UTS</code>: RTN22, RTC8a)</td><td>Proxy tier — server-initiated re-authentication.</td></tr>
         <tr><td><code>deviations.md</code></td><td>RTN16f, RTN16g2, RTL13b, RTL13c</td><td>Catalogue of SDK-vs-spec divergences.</td></tr>
       </table>
-      <div class="callout note"><span class="tag">Coverage note</span><p>At the time of writing, the <code>uts/</code> module contains exactly <strong>two test classes</strong> (<strong>7</strong> <code>@Test</code> methods total: 6 in <code>ConnectionRecoveryTest</code> + 1 in <code>AuthReauthTest</code>). The infrastructure under <code>uts/infra/</code> and <code>test/helper/</code> is built out far beyond what these two tests exercise (full HTTP mock, all four rule builders, REST proxy wiring), anticipating the broader UTS coverage catalogued in <code>completion-status.md</code>.</p></div>
+      <div class="callout note"><span class="tag">Coverage note</span><p>At the time of writing, the <code>uts/</code> module contains exactly <strong>two test classes</strong> (<strong>7</strong> <code>@Test</code> methods total: 6 in <code>ConnectionRecoveryTest</code> + 1 in <code>AuthReauthTest</code>). The infrastructure under <code>uts/infra/</code> and <code>test/helper/</code> is built out far beyond what these two tests exercise (full HTTP mock, all four rule builders, REST proxy wiring), anticipating the broader UTS coverage catalogued in <a href="https://github.com/ably/specification/blob/main/uts/docs/completion-status.md" target="_blank" rel="noopener"><code>completion-status.md</code></a>.</p></div>
     </section>
 
     <footer class="src" id="src">
       <h3 style="color:var(--fg)">Source map — where each fact comes from</h3>
       <table>
         <tr><th>Topic</th><th>File</th></tr>
-        <tr><td>Authoring portable specs, test IDs, mock pseudocode</td><td><code>uts/docs/writing-test-specs.md</code></td></tr>
-        <tr><td>Translating specs, deviation patterns, decision tree</td><td><code>uts/docs/writing-derived-tests.md</code></td></tr>
-        <tr><td>Integration/proxy policy, late fault injection, tiers</td><td><code>uts/docs/integration-testing.md</code></td></tr>
-        <tr><td>Coverage matrix</td><td><code>uts/docs/completion-status.md</code></td></tr>
-        <tr><td>Proxy control API, rule format, action numbers</td><td><code>uts/realtime/integration/helpers/proxy.md</code></td></tr>
+        <tr><td>Authoring portable specs, test IDs, mock pseudocode</td><td><a href="https://github.com/ably/specification/blob/main/uts/docs/writing-test-specs.md" target="_blank" rel="noopener"><code>uts/docs/writing-test-specs.md</code></a></td></tr>
+        <tr><td>Translating specs, deviation patterns, decision tree</td><td><a href="https://github.com/ably/specification/blob/main/uts/docs/writing-derived-tests.md" target="_blank" rel="noopener"><code>uts/docs/writing-derived-tests.md</code></a></td></tr>
+        <tr><td>Integration/proxy policy, late fault injection, tiers</td><td><a href="https://github.com/ably/specification/blob/main/uts/docs/integration-testing.md" target="_blank" rel="noopener"><code>uts/docs/integration-testing.md</code></a></td></tr>
+        <tr><td>Coverage matrix</td><td><a href="https://github.com/ably/specification/blob/main/uts/docs/completion-status.md" target="_blank" rel="noopener"><code>uts/docs/completion-status.md</code></a></td></tr>
+        <tr><td>Proxy control API, rule format, action numbers</td><td><a href="https://github.com/ably/specification/blob/main/uts/realtime/integration/helpers/proxy.md" target="_blank" rel="noopener"><code>uts/realtime/integration/helpers/proxy.md</code></a></td></tr>
         <tr><td>SDK seams</td><td><code>lib/.../debug/DebugOptions.java</code>, <code>lib/.../util/Clock.java</code></td></tr>
         <tr><td>Module wiring</td><td><code>uts/build.gradle.kts</code>, <code>settings.gradle.kts</code></td></tr>
         <tr><td>Unit mocks</td><td><code>uts/.../uts/infra/*</code></td></tr>
@@ -766,7 +766,7 @@ val client = TestRealtimeClient { authCallback = …; connectThroughProxy(sessio
         <tr><td>The two example tests</td><td><code>…/unit/connection/ConnectionRecoveryTest.kt</code>, <code>…/integration/proxy/AuthReauthTest.kt</code></td></tr>
         <tr><td>Deviations</td><td><code>uts/.../io/ably/lib/deviations.md</code></td></tr>
       </table>
-      <p>Generated from <code>UTS_HUMAN_READABLE_DOC.md</code>. Single self-contained HTML file — no external assets.</p>
+      <p>Generated from <code>README.md</code> (in this <code>uts/</code> directory). Single self-contained HTML file — no external assets.</p>
     </footer>
   </main>
 </div>

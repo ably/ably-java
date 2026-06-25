@@ -66,7 +66,7 @@ Three concepts you will see constantly:
 | **Derived test** | A faithful translation of a UTS spec into a real test in a specific SDK/language. This is what lives in `ably-java/uts/`. |
 | **Deviation** | A documented case where the SDK's actual behaviour diverges from the spec. Recorded in `deviations.md`. |
 
-The golden rule (from `writing-derived-tests.md`): **translate the UTS spec faithfully** — same
+The golden rule (from [`writing-derived-tests.md`](https://github.com/ably/specification/blob/main/uts/docs/writing-derived-tests.md)): **translate the UTS spec faithfully** — same
 structure, same assertions, same naming — don't optimise or skip steps. Every derived test carries a
 `// UTS: <id>` (here `@UTS …`) comment linking it back to its spec.
 
@@ -84,7 +84,7 @@ tests you asked about sit in two different tiers.
 | **Direct sandbox integration** | Real network | Real Ably sandbox | Happy-path interop: connect, publish, subscribe. No fault injection. | *(not in the two you asked about)* |
 | **Proxy integration** | Real network **through a programmable proxy** | Real Ably sandbox | Fault behaviour: dropped connections, injected errors, timeouts, re-auth. | `integration/proxy/AuthReauthTest.kt` |
 
-Key principles (from `integration-testing.md`):
+Key principles (from [`integration-testing.md`](https://github.com/ably/specification/blob/main/uts/docs/integration-testing.md)):
 
 - **Integration tests do not replace unit tests.** A spec point covered by a proxy test should
   *also* have a unit test. The unit test proves the client logic; the proxy test proves the client
@@ -94,18 +94,20 @@ Key principles (from `integration-testing.md`):
   exercises genuine client-server behaviour (otherwise you've just written a slow unit test).
 - **Proxy tests always use JSON** (`useBinaryProtocol = false`). The spec corpus gives two reasons:
   the proxy only supports **text** WebSocket frames so it can't inspect/modify msgpack
-  (`integration-testing.md` §Protocol Variants), and the SDK under test doesn't implement msgpack
-  (`helpers/proxy.md`).
+  ([`integration-testing.md`](https://github.com/ably/specification/blob/main/uts/docs/integration-testing.md) §Protocol Variants), and the SDK under test doesn't implement msgpack
+  ([`helpers/proxy.md`](https://github.com/ably/specification/blob/main/uts/realtime/integration/helpers/proxy.md)).
 
 ---
 
 ## 3. The UTS Documents (the source of truth)
 
 These four documents live in the **specification repo** at
-`/Users/sachinsh/ably-specification/specification/uts/docs/`. They are the policy/authoring guides;
-the Kotlin code in this repo is the *implementation* of what they describe.
+[`uts/docs/`](https://github.com/ably/specification/blob/main/uts/docs/) (in a local
+`ably-specification` checkout, under `specification/uts/docs/`). They are the policy/authoring guides;
+the Kotlin code in this repo is the *implementation* of what they describe. Each title below links to
+the file on GitHub.
 
-### 3.1 `writing-test-specs.md` — how to author a portable UTS spec
+### 3.1 [`writing-test-specs.md`](https://github.com/ably/specification/blob/main/uts/docs/writing-test-specs.md) — how to author a portable UTS spec
 The authoring manual. Defines:
 - **Test types** (unit / integration / proxy) and when each applies.
 - **Test IDs** — the format `<category>/<spec-point>/<descriptive-name>-<n>`, e.g.
@@ -122,7 +124,7 @@ The authoring manual. Defines:
 - **Anti-flake conventions** — no fixed `WAIT`s; use polling, `AWAIT_STATE`, fake timers, and the
   **record-and-verify** pattern (`CONTAINS_IN_ORDER`) for transient states.
 
-### 3.2 `writing-derived-tests.md` — how to translate a spec into a real SDK test
+### 3.2 [`writing-derived-tests.md`](https://github.com/ably/specification/blob/main/uts/docs/writing-derived-tests.md) — how to translate a spec into a real SDK test
 The translation manual. Two phases:
 1. **Translation** (always): faithfully render the spec into the target language; map pseudocode to
    the SDK's API and test framework; flag ambiguities in comments; make sure it compiles.
@@ -136,13 +138,13 @@ The translation manual. Two phases:
   assertion but only runs it when the env var is set, so normal runs stay green while each deviation
   stays individually reproducible. This is exactly what `ConnectionRecoveryTest` uses for RTN16f.
 
-### 3.3 `integration-testing.md` — the policy for integration & proxy tests
+### 3.3 [`integration-testing.md`](https://github.com/ably/specification/blob/main/uts/docs/integration-testing.md) — the policy for integration & proxy tests
 Defines what *deserves* an integration test (request/response interop, error interop, data
 round-trips, stateful protocol sequences), the directory layout, sandbox provisioning, proxy session
 lifecycle, timeout strategy, and the **late-fault-injection** philosophy. The `integration/proxy/`
 segregation exists because proxy tests have different infra needs, CI cadence, and failure modes.
 
-### 3.4 `completion-status.md` — the coverage matrix
+### 3.4 [`completion-status.md`](https://github.com/ably/specification/blob/main/uts/docs/completion-status.md) — the coverage matrix
 A big table mapping every features-spec group (`RSC`, `RTN`, `RTL`, `RTP`, …) to the UTS specs that
 cover it, with a per-tier summary (`unit:✓ proxy:✓`). This is the tracker for "what's done and
 what's missing". The two tests you asked about correspond to these rows:
@@ -150,8 +152,9 @@ what's missing". The two tests you asked about correspond to these rows:
 - `RTN22` / `RTC8a` (server-initiated re-auth) → proxy spec
   `realtime/integration/proxy/auth_reauth.md` → **`AuthReauthTest.kt`**.
 
-> There is also a fifth, *referenced* spec: `realtime/integration/helpers/proxy.md` (in the spec repo
-> under `uts/realtime/integration/helpers/`). It defines the proxy's control API, rule format,
+> There is also a fifth, *referenced* spec:
+> [`realtime/integration/helpers/proxy.md`](https://github.com/ably/specification/blob/main/uts/realtime/integration/helpers/proxy.md)
+> (in the spec repo under `uts/realtime/integration/helpers/`). It defines the proxy's control API, rule format,
 > action types, and the **protocol message action-number table** (CONNECTED=4, ATTACH=10, AUTH=17,
 > …). The Kotlin `ProxySession` is the client for exactly that API.
 
@@ -161,7 +164,7 @@ what's missing". The two tests you asked about correspond to these rows:
 
 The `uts/` directory is a **standalone Gradle module** (`include("uts")` in
 `settings.gradle.kts`) whose only job is to host UTS-derived tests. It contains *no production code* —
-everything lives under `src/test/`.
+everything lives under `uts/src/test/`.
 
 ### 4.1 `uts/build.gradle.kts`
 ```kotlin
@@ -616,7 +619,7 @@ differently from the features spec, discovered during translation. Each entry re
 point**, **what the spec requires**, **what the SDK does**, the **root cause** (file/function, where
 known), the **workaround in tests**, and the **affected tests**.
 
-The mechanism (from `writing-derived-tests.md`): the test keeps the **spec-correct** assertion but
+The mechanism (from [`writing-derived-tests.md`](https://github.com/ably/specification/blob/main/uts/docs/writing-derived-tests.md)): the test keeps the **spec-correct** assertion but
 gates it behind the `RUN_DEVIATIONS` env var, with a regression-guard assertion for the SDK's actual
 behaviour running by default. Normal runs stay green; `RUN_DEVIATIONS=1` turns the failing assertions
 on so the gap is reproducible and the test flips automatically once the SDK is fixed.
@@ -823,7 +826,7 @@ nothing is left implicit.
 > (**7** `@Test` methods total: 6 in `ConnectionRecoveryTest` + 1 in `AuthReauthTest`). The infrastructure under
 > `uts/infra/` and `test/helper/` is built out far beyond what these two tests exercise (full HTTP
 > mock, all four rule builders, REST proxy wiring, etc.), anticipating the broader UTS coverage
-> catalogued in `completion-status.md`.
+> catalogued in [`completion-status.md`](https://github.com/ably/specification/blob/main/uts/docs/completion-status.md).
 
 ---
 
@@ -831,11 +834,11 @@ nothing is left implicit.
 
 | Topic | File |
 |-------|------|
-| Authoring portable specs, test IDs, mock pseudocode | `ably-specification/.../uts/docs/writing-test-specs.md` |
-| Translating specs, deviation patterns, decision tree | `…/uts/docs/writing-derived-tests.md` |
-| Integration/proxy policy, late fault injection, tiers | `…/uts/docs/integration-testing.md` |
-| Coverage matrix | `…/uts/docs/completion-status.md` |
-| Proxy control API, rule format, action numbers | `…/uts/realtime/integration/helpers/proxy.md` |
+| Authoring portable specs, test IDs, mock pseudocode | [`uts/docs/writing-test-specs.md`](https://github.com/ably/specification/blob/main/uts/docs/writing-test-specs.md) |
+| Translating specs, deviation patterns, decision tree | [`uts/docs/writing-derived-tests.md`](https://github.com/ably/specification/blob/main/uts/docs/writing-derived-tests.md) |
+| Integration/proxy policy, late fault injection, tiers | [`uts/docs/integration-testing.md`](https://github.com/ably/specification/blob/main/uts/docs/integration-testing.md) |
+| Coverage matrix | [`uts/docs/completion-status.md`](https://github.com/ably/specification/blob/main/uts/docs/completion-status.md) |
+| Proxy control API, rule format, action numbers | [`uts/realtime/integration/helpers/proxy.md`](https://github.com/ably/specification/blob/main/uts/realtime/integration/helpers/proxy.md) |
 | SDK seams | `lib/.../debug/DebugOptions.java`, `lib/.../util/Clock.java` |
 | Module wiring | `uts/build.gradle.kts`, `settings.gradle.kts` |
 | Unit mocks | `uts/.../uts/infra/*` |
