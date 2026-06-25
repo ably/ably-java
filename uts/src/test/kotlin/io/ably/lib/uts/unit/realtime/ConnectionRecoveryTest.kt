@@ -1,18 +1,14 @@
-package io.ably.lib.realtime.unit.connection
+package io.ably.lib.uts.unit.realtime
 
-import io.ably.lib.uts.infra.TestRealtimeClient
-import io.ably.lib.awaitChannelState
-import io.ably.lib.awaitState
+import io.ably.lib.uts.infra.unit.*
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.realtime.ConnectionState
-import io.ably.lib.uts.infra.CONNECTED_MESSAGE
-import io.ably.lib.uts.infra.FakeClock
-import io.ably.lib.uts.infra.MockEvent
-import io.ably.lib.uts.infra.MockWebSocket
-import io.ably.lib.types.ConnectionDetails
 import io.ably.lib.types.ErrorInfo
 import io.ably.lib.types.ProtocolMessage
 import io.ably.lib.types.RecoveryKeyContext
+import io.ably.lib.uts.infra.awaitChannelState
+import io.ably.lib.uts.infra.awaitState
+import io.ably.lib.uts.infra.pollUntil
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
@@ -246,6 +242,11 @@ class ConnectionRecoveryTest {
     awaitState(client, ConnectionState.connected)
 
     mock.simulateDisconnect()
+    // Wait for the reconnect's connection attempt to be captured, not just for the CONNECTED state:
+    // right after simulateDisconnect() the state is still `connected`, so awaitState(connected) would
+    // short-circuit before the second attempt is recorded (the transient-state race called out in
+    // writing-test-specs.md). Gate on the second attempt actually arriving.
+    pollUntil { capturedQueryParams.size >= 2 }
     awaitState(client, ConnectionState.connected)
 
     assertEquals("recovered-key-xyz", capturedQueryParams[0]["recover"])

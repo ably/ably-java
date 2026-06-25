@@ -1,4 +1,4 @@
-package io.ably.lib
+package io.ably.lib.uts.infra
 
 import io.ably.lib.realtime.AblyRealtime
 import io.ably.lib.realtime.Channel

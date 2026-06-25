@@ -1,4 +1,4 @@
-package io.ably.lib.uts.infra
+package io.ably.lib.uts.infra.unit
 
 import io.ably.lib.network.FailedConnectionException
 import io.ably.lib.network.HttpBody

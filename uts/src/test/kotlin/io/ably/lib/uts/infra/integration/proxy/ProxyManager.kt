@@ -1,4 +1,4 @@
-package io.ably.lib.test.helper
+package io.ably.lib.uts.infra.integration.proxy
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body

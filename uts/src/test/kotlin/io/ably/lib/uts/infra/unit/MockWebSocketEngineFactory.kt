@@ -1,4 +1,4 @@
-package io.ably.lib.uts.infra
+package io.ably.lib.uts.infra.unit
 
 import io.ably.lib.network.EngineType
 import io.ably.lib.network.WebSocketClient

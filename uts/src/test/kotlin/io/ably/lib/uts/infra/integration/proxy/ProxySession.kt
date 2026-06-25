@@ -1,9 +1,9 @@
-package io.ably.lib.test.helper
+package io.ably.lib.uts.infra.integration.proxy
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
-import io.ably.lib.uts.infra.ClientOptionsBuilder
+import io.ably.lib.uts.infra.unit.ClientOptionsBuilder
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpTimeout

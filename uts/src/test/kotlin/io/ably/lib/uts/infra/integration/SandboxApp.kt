@@ -1,7 +1,8 @@
-package io.ably.lib.test.helper
+package io.ably.lib.uts.infra.integration
 
 import com.google.gson.JsonElement
 import com.google.gson.JsonParser
+import io.ably.lib.uts.infra.integration.proxy.ProxyManager
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.network.sockets.*

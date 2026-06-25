@@ -1,15 +1,15 @@
-package io.ably.lib.realtime.integration.proxy
+package io.ably.lib.uts.integration.proxy.realtime
 
-import io.ably.lib.awaitState
-import io.ably.lib.pollUntil
 import io.ably.lib.realtime.ConnectionState
 import io.ably.lib.rest.AblyRest
 import io.ably.lib.rest.Auth
-import io.ably.lib.test.helper.ProxyManager
-import io.ably.lib.test.helper.ProxySession
-import io.ably.lib.test.helper.SandboxApp
-import io.ably.lib.test.helper.connectThroughProxy
-import io.ably.lib.uts.infra.TestRealtimeClient
+import io.ably.lib.uts.infra.awaitState
+import io.ably.lib.uts.infra.integration.SandboxApp
+import io.ably.lib.uts.infra.integration.proxy.ProxyManager
+import io.ably.lib.uts.infra.integration.proxy.ProxySession
+import io.ably.lib.uts.infra.integration.proxy.connectThroughProxy
+import io.ably.lib.uts.infra.pollUntil
+import io.ably.lib.uts.infra.unit.TestRealtimeClient
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterAll

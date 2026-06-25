@@ -1,4 +1,4 @@
-package io.ably.lib.uts.infra
+package io.ably.lib.uts.infra.unit
 
 import io.ably.lib.network.FailedConnectionException
 import io.ably.lib.network.HttpCall
@@ -40,7 +40,7 @@ internal class MockHttpCall(
 
         // Phase 2 — request
         val rd = CompletableDeferred<HttpResponse>().also { respDeferred = it }
-        onRequest(DefaultPendingRequest(request, rd))
+        onRequest(io.ably.lib.uts.infra.unit.DefaultPendingRequest(request, rd))
         rd.await()
     }
 

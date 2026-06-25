@@ -1,4 +1,4 @@
-package io.ably.lib.uts.infra
+package io.ably.lib.uts.infra.unit
 
 import io.ably.lib.network.WebSocketListener
 import io.ably.lib.types.ProtocolMessage

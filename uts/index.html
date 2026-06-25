@@ -190,9 +190,9 @@
       <h2 class="sec"><span class="num">2</span> The Three Test Tiers</h2>
       <p>UTS divides tests into three tiers by <em>what infrastructure they need</em> and <em>what confidence they give</em>. This split is the key to understanding the whole <code>uts/</code> module — the two example tests sit in two different tiers.</p>
       <div class="cards">
-        <div class="card"><h4>Unit <span class="pill">mocked</span></h4><p><strong>Transport:</strong> mocked (<code>MockWebSocket</code>, <code>MockHttpClient</code>). <strong>Backend:</strong> none.<br>Client-side logic: state machines, request formation, response parsing, timers. Fast &amp; deterministic.<br><em>→ ConnectionRecoveryTest.kt</em></p></div>
+        <div class="card"><h4>Unit <span class="pill">mocked</span></h4><p><strong>Transport:</strong> mocked (<code>MockWebSocket</code>, <code>MockHttpClient</code>). <strong>Backend:</strong> none.<br>Client-side logic: state machines, request formation, response parsing, timers. Fast &amp; deterministic.<br><em>→ unit/realtime/ConnectionRecoveryTest.kt</em></p></div>
         <div class="card"><h4>Direct sandbox <span class="pill">real net</span></h4><p><strong>Transport:</strong> real. <strong>Backend:</strong> real Ably sandbox.<br>Happy-path interop: connect, publish, subscribe. No fault injection.<br><em>(not among the two example tests)</em></p></div>
-        <div class="card"><h4>Proxy integration <span class="pill">faults</span></h4><p><strong>Transport:</strong> real, through a programmable proxy. <strong>Backend:</strong> real sandbox.<br>Fault behaviour: dropped connections, injected errors, timeouts, re-auth.<br><em>→ AuthReauthTest.kt</em></p></div>
+        <div class="card"><h4>Proxy integration <span class="pill">faults</span></h4><p><strong>Transport:</strong> real, through a programmable proxy. <strong>Backend:</strong> real sandbox.<br>Fault behaviour: dropped connections, injected errors, timeouts, re-auth.<br><em>→ integration/proxy/realtime/AuthReauthTest.kt</em></p></div>
       </div>
       <p>Key principles (from <a href="https://github.com/ably/specification/blob/main/uts/docs/integration-testing.md" target="_blank" rel="noopener"><code>integration-testing.md</code></a>):</p>
       <ul>
@@ -211,7 +211,7 @@
       <ul>
         <li><strong>Test types</strong> (unit / integration / proxy) and when each applies.</li>
         <li><strong>Test IDs</strong> — format <code>&lt;category&gt;/&lt;spec-point&gt;/&lt;descriptive-name&gt;-&lt;n&gt;</code>, e.g. <code>realtime/proxy/RTN22/server-initiated-reauth-0</code>. These IDs are the <code>@UTS</code> comments in the Kotlin tests.</li>
-        <li><strong>Mock infrastructure pseudocode interfaces</strong> — <code>MockHttpClient</code>, <code>MockWebSocket</code>, <code>PendingConnection</code>, <code>PendingRequest</code> with <code>respond_with_success()</code>, <code>send_to_client()</code>, <code>simulate_disconnect()</code>. The Kotlin classes in <code>uts/infra/</code> realise these.</li>
+        <li><strong>Mock infrastructure pseudocode interfaces</strong> — <code>MockHttpClient</code>, <code>MockWebSocket</code>, <code>PendingConnection</code>, <code>PendingRequest</code> with <code>respond_with_success()</code>, <code>send_to_client()</code>, <code>simulate_disconnect()</code>. The Kotlin classes in <code>uts/infra/unit/</code> realise these.</li>
         <li><strong>Handler vs await patterns</strong> for mocks (see §6).</li>
         <li><strong>WebSocket closing semantics</strong> — the crucial rule: <code>send_to_client_and_close()</code> for DISCONNECTED / connection-level ERROR (server closes the socket); <code>send_to_client()</code> for a channel-level ERROR (connection stays open).</li>
         <li><strong>Anti-flake conventions</strong> — no fixed <code>WAIT</code>s; use polling, <code>AWAIT_STATE</code>, fake timers, and the <strong>record-and-verify</strong> pattern (<code>CONTAINS_IN_ORDER</code>) for transient states.</li>
@@ -289,35 +289,42 @@ tasks.withType&lt;Test&gt;().configureEach {
       </ul>
 
       <h3>4.2 Directory layout</h3>
-<pre><code>uts/src/test/kotlin/io/ably/lib/
-├── Utils.kt                         # awaitState / awaitChannelState / pollUntil
-├── types/Utils.kt                   # ConnectionDetails { … } builder DSL
-├── deviations.md                    # the catalogue of SDK-vs-spec divergences
+      <p>Everything lives under the <code>io.ably.lib.uts</code> package, split cleanly into <strong>infrastructure</strong> (<code>infra/</code>, no <code>@Test</code>s) and the <strong>tests</strong> themselves (<code>unit/</code>, <code>integration/</code>), each mirroring the unit / integration tiers:</p>
+<pre><code>uts/src/test/kotlin/io/ably/lib/uts/
+├── deviations.md                        # the catalogue of SDK-vs-spec divergences
 │
-├── uts/infra/                       # ── UNIT-TEST INFRASTRUCTURE (mocked transports) ──
-│   ├── ClientFactories.kt           #   TestRealtimeClient / TestRestClient / ClientOptionsBuilder
-│   ├── MockWebSocket.kt             #   fake WS transport + WebSocketMockConfig + CONNECTED_MESSAGE
-│   ├── MockWebSocketEngineFactory.kt#   plugs the mock into the SDK's WebSocketEngine SPI
-│   ├── MockHttpClient.kt            #   fake HTTP engine + HttpMockConfig
-│   ├── MockHttpEngine.kt            #   plugs the mock into the SDK's HttpEngine SPI
-│   ├── MockEvent.kt                 #   sealed log of everything on a mock transport
-│   ├── PendingConnection.kt         #   interface: a connection attempt awaiting a response
-│   ├── DefaultPendingConnection.kt  #   WS implementation of PendingConnection
-│   ├── PendingRequest.kt            #   interface: an in-flight HTTP request awaiting a response
-│   ├── DefaultPendingRequest.kt     #   HTTP implementation of PendingRequest
-│   └── FakeClock.kt                 #   virtual clock + virtual timers (deterministic time)
+├── infra/                               # ── TEST INFRASTRUCTURE (no @Test methods) ──
+│   ├── Utils.kt                         #   awaitState / awaitChannelState / pollUntil (shared)
+│   │
+│   ├── unit/                            #   UNIT infra (mocked transports)
+│   │   ├── ClientFactories.kt           #     TestRealtimeClient / TestRestClient / ClientOptionsBuilder
+│   │   ├── MockWebSocket.kt             #     fake WS transport + WebSocketMockConfig + CONNECTED_MESSAGE
+│   │   ├── MockWebSocketEngineFactory.kt#     plugs the mock into the SDK's WebSocketEngine SPI
+│   │   ├── MockHttpClient.kt            #     fake HTTP engine + HttpMockConfig
+│   │   ├── MockHttpEngine.kt            #     plugs the mock into the SDK's HttpEngine SPI
+│   │   ├── MockEvent.kt                 #     sealed log of everything on a mock transport
+│   │   ├── PendingConnection.kt         #     interface: a connection attempt awaiting a response
+│   │   ├── DefaultPendingConnection.kt  #     WS implementation of PendingConnection
+│   │   ├── PendingRequest.kt            #     interface: an in-flight HTTP request awaiting a response
+│   │   ├── DefaultPendingRequest.kt     #     HTTP implementation of PendingRequest
+│   │   ├── FakeClock.kt                 #     virtual clock + virtual timers (deterministic time)
+│   │   └── Utils.kt                     #     ConnectionDetails { } builder (reflective constructor)
+│   │
+│   └── integration/                     #   INTEGRATION infra (real backend)
+│       ├── SandboxApp.kt                #     provisions/deletes a sandbox app
+│       └── proxy/
+│           ├── ProxyManager.kt          #       downloads/launches the uts-proxy binary
+│           └── ProxySession.kt          #       proxy session: rules, actions, log + connectThroughProxy
 │
-├── test/helper/                     # ── PROXY-INTEGRATION INFRASTRUCTURE (real backend) ──
-│   ├── ProxyManager.kt              #   downloads/launches the uts-proxy binary
-│   ├── ProxySession.kt              #   one proxy session + connectThroughProxy
-│   └── SandboxApp.kt                #   provisions/deletes a sandbox app
+├── unit/                                # ── UNIT TESTS (mock transport) ──
+│   └── realtime/
+│       └── ConnectionRecoveryTest.kt    #   ← the UNIT test (RTN16*)
 │
-└── realtime/
-    ├── unit/connection/
-    │   └── ConnectionRecoveryTest.kt        # ← the UNIT test (RTN16*)
-    └── integration/proxy/
-        └── AuthReauthTest.kt                # ← the PROXY test (RTN22, RTC8a)</code></pre>
-      <div class="callout tip"><span class="tag">Mental model</span><p><code>uts/infra/</code> powers unit tests · <code>test/helper/</code> powers proxy tests · <code>Utils.kt</code> serves both.</p></div>
+└── integration/                         # ── INTEGRATION TESTS (real backend) ──
+    └── proxy/
+        └── realtime/
+            └── AuthReauthTest.kt        #   ← the PROXY test (RTN22, RTC8a)</code></pre>
+      <div class="callout tip"><span class="tag">Mental model</span><p><code>infra/unit/</code> powers the unit tests · <code>infra/integration/</code> powers the integration tests · <code>infra/Utils.kt</code> serves both. The <code>unit/</code> ↔ <code>infra/unit/</code> and <code>integration/</code> ↔ <code>infra/integration/</code> pairing is what the <code>runUtsUnitTests</code> / <code>runUtsIntegrationTests</code> Gradle tasks key off (§12).</p></div>
     </section>
 
     <!-- ===================== 5 ===================== -->
@@ -470,7 +477,7 @@ fakeClock.advance(2.seconds)      // jump forward; due timers fire now</code></p
         <tr><td><code>awaitChannelState</code></td><td><code>(channel, target, timeout=5s)</code></td><td>same, for a channel's state</td></tr>
         <tr><td><code>pollUntil</code></td><td><code>(timeout=15s, interval=100ms) { cond }</code></td><td>suspend until a boolean predicate holds — used in proxy tests to wait on real network/proxy state</td></tr>
       </table>
-      <p><code>types/Utils.kt</code> adds a <code>ConnectionDetails { … }</code> builder DSL so tests can write <code>ConnectionDetails { connectionKey = "key-1"; connectionStateTtl = 120000L }</code>.</p>
+      <p>A second <code>Utils.kt</code> under <code>infra/unit/</code> adds the <code>ConnectionDetails { … }</code> builder DSL so tests can write <code>ConnectionDetails { connectionKey = "key-1"; connectionStateTtl = 120000L }</code>. Since this file no longer sits in the <code>io.ably.lib.types</code> package, it can't call <code>ConnectionDetails</code>'s package-private constructor directly — it obtains an instance <strong>reflectively</strong> (the same package-private-access technique used by <code>liveobjects/.../TestUtils.kt</code>). See Appendix B.1.</p>
     </section>
 
     <!-- ===================== 9 ===================== -->
@@ -574,26 +581,32 @@ awaitState(client, ConnectionState.connected, 15.seconds)</code></pre></li>
     <!-- ===================== 12 ===================== -->
     <section id="s12">
       <h2 class="sec"><span class="num">12</span> How to Run the Tests</h2>
-<pre><code># All UTS tests (unit + proxy). Proxy suites download/launch the proxy automatically.
+<p>Two custom Gradle tasks (registered in <code>uts/build.gradle.kts</code>), filtered by package — they mirror <code>runLiveObjectsUnitTests</code> / <code>runLiveObjectsIntegrationTests</code> in the <code>liveobjects</code> module:</p>
+<pre><code># Unit tests only — io.ably.lib.uts.unit.*  (fast, no network). This is the PR gate.
+./gradlew :uts:runUtsUnitTests
+
+# Integration tests only — io.ably.lib.uts.integration.*  (real sandbox; downloads/launches the proxy).
+./gradlew :uts:runUtsIntegrationTests
+
+# Everything (the default Test task still runs both):
 ./gradlew :uts:test
 
-# Just the unit test class:
-./gradlew :uts:test --tests "io.ably.lib.realtime.unit.connection.ConnectionRecoveryTest"
-
-# Just the proxy test class (needs network: sandbox + GitHub for the proxy binary):
-./gradlew :uts:test --tests "io.ably.lib.realtime.integration.proxy.AuthReauthTest"
+# Just one test class (works with any of the tasks above):
+./gradlew :uts:runUtsUnitTests --tests "io.ably.lib.uts.unit.realtime.ConnectionRecoveryTest"
+./gradlew :uts:runUtsIntegrationTests --tests "io.ably.lib.uts.integration.proxy.realtime.AuthReauthTest"
 
 # Turn on the spec-correct (currently failing) deviation assertions:
-RUN_DEVIATIONS=1 ./gradlew :uts:test --tests "*ConnectionRecoveryTest*"
+RUN_DEVIATIONS=1 ./gradlew :uts:runUtsUnitTests --tests "*ConnectionRecoveryTest*"
 
 # Run proxy tests against a locally built proxy instead of a GitHub release:
-./gradlew :uts:test -Duts.proxy.localPath=/path/to/uts-proxy            # or .tar.gz
+./gradlew :uts:runUtsIntegrationTests -Duts.proxy.localPath=/path/to/uts-proxy   # or .tar.gz
 #   (equivalently: export UTS_PROXY_LOCAL_PATH=/path/to/uts-proxy)</code></pre>
+      <p><strong>Where CI runs them:</strong> <code>runUtsUnitTests</code> is part of the <code>check.yml</code> gate (alongside <code>runLiveObjectsUnitTests</code>); <code>runUtsIntegrationTests</code> runs in the <code>check-uts</code> job of <code>integration-test.yml</code> (alongside <code>check-liveobjects</code>).</p>
       <p><strong>Notes:</strong></p>
       <ul>
         <li><code>ProxyManager</code> <strong>advises</strong> running proxy suites single-fork (<code>maxParallelForks = 1</code>) because they share the control port (10100). Not currently set in <code>uts/build.gradle.kts</code>; not yet exercised because there is only one proxy test class.</li>
         <li>Proxy/sandbox tests need outbound network (sandbox + GitHub releases on first run; the binary is then cached under <code>~/.cache/uts-proxy/</code>).</li>
-        <li>Before pushing, run the static-analysis gate (from <code>CLAUDE.md</code>): <code>./gradlew checkWithCodenarc checkstyleMain checkstyleTest</code> — Checkstyle is Java-only and easy to miss; remember <strong>no star imports</strong>. (CI's full line additionally runs <code>runUnitTests runLiveObjectsUnitTests :uts:test</code>.)</li>
+        <li>Before pushing, run the static-analysis gate (from <code>CLAUDE.md</code>): <code>./gradlew checkWithCodenarc checkstyleMain checkstyleTest</code> — Checkstyle is Java-only and easy to miss; remember <strong>no star imports</strong>. (CI's full line additionally runs <code>runUnitTests runLiveObjectsUnitTests :uts:runUtsUnitTests</code>.)</li>
       </ul>
     </section>
 
@@ -713,7 +726,7 @@ val client = TestRealtimeClient { authCallback = …; connectThroughProxy(sessio
     <section id="s15">
       <h2 class="sec"><span class="num">B</span> Appendix B: Per-File API Reference</h2>
 
-      <h3>B.1 Unit-test infrastructure — <code>io.ably.lib.uts.infra</code></h3>
+      <h3>B.1 Unit-test infrastructure — <code>io.ably.lib.uts.infra.unit</code></h3>
       <table>
         <tr><th>File</th><th>Key public surface</th><th>Role</th></tr>
         <tr><td><code>ClientFactories.kt</code></td><td><code>ClientOptionsBuilder</code> (extends <code>DebugOptions</code>), <code>TestRealtimeClient { }</code>, <code>TestRestClient { }</code>, <code>install(mock)</code>, <code>enableFakeTimers(clock)</code></td><td>Entry point for building a mocked SDK client; seeds dummy key, forces JSON.</td></tr>
@@ -727,26 +740,26 @@ val client = TestRealtimeClient { authCallback = …; connectThroughProxy(sessio
         <tr><td><code>DefaultPendingRequest.kt</code></td><td><code>DefaultPendingRequest : PendingRequest</code></td><td>HTTP impl backed by a <code>CompletableDeferred&lt;HttpResponse&gt;</code>.</td></tr>
         <tr><td><code>MockEvent.kt</code></td><td><code>sealed class MockEvent</code>: <code>ConnectionAttempt</code>, <code>ConnectionEstablished</code>, <code>ConnectionRefused</code>, <code>ConnectionTimeout</code>, <code>DnsError</code>, <code>HttpRequest</code>, <code>SentToClient</code>, <code>Disconnected</code>, <code>ClientClose</code>, <code>MessageFromClient</code></td><td>Ordered, typed log of everything on a mock transport.</td></tr>
         <tr><td><code>FakeClock.kt</code></td><td><code>FakeClock : Clock</code> (<code>advance(ms|Duration)</code>, <code>pendingTaskCount(name)</code>, <code>currentTimeMillis</code>, <code>nanoTime</code>, <code>newTimer</code>, <code>waitOn</code>)</td><td>Virtual clock + virtual timers; deterministic time.</td></tr>
+        <tr><td><code>Utils.kt</code></td><td><code>ConnectionDetails { }</code> builder</td><td>Test-only <code>ConnectionDetails</code> DSL; instantiates the type via its <strong>package-private constructor reflectively</strong> (see §8).</td></tr>
       </table>
 
-      <h3>B.2 Proxy/sandbox infrastructure — <code>io.ably.lib.test.helper</code></h3>
+      <h3>B.2 Integration infrastructure — <code>io.ably.lib.uts.infra.integration</code> (and <code>…integration.proxy</code>)</h3>
       <table>
         <tr><th>File</th><th>Key public surface</th><th>Role</th></tr>
-        <tr><td><code>ProxyManager.kt</code></td><td><code>object ProxyManager</code>: <code>ensureProxy(timeoutMs)</code>, <code>stopProxy()</code>, <code>CONTROL_PORT=10100</code>, <code>sandboxRealtimeHost</code>, <code>sandboxRestHost</code>; pinned <code>PROXY_VERSION=v0.3.0</code> + per-arch checksums; <code>uts.proxy.localPath</code> override</td><td>Downloads/verifies/launches the <code>uts-proxy</code> binary; one shared process per run.</td></tr>
-        <tr><td><code>ProxySession.kt</code></td><td><code>class ProxySession</code> (<code>create(rules,port,timeoutMs,realtimeHost,restHost)</code>, <code>addRules</code>, <code>triggerAction</code>, <code>getLog(): List&lt;Event&gt;</code>, <code>close</code>, <code>sessionId</code>, <code>proxyPort</code>, <code>proxyHost</code>); <code>data class Event</code>; <code>typealias ProxyRule</code>; rule builders <code>wsConnectRule</code>/<code>wsFrameToClientRule</code>/<code>wsFrameToServerRule</code>/<code>httpRequestRule</code>; <code>ClientOptionsBuilder.connectThroughProxy(session)</code></td><td>Typed client for the proxy control REST API + client wiring.</td></tr>
-        <tr><td><code>SandboxApp.kt</code></td><td><code>class SandboxApp</code> (<code>create()</code>, <code>delete()</code>, <code>appId</code>, <code>defaultKey</code>, <code>keys</code>)</td><td>Provisions/tears down a throwaway sandbox app from <code>ably-common</code>'s <code>test-app-setup.json</code>.</td></tr>
+        <tr><td><code>proxy/ProxyManager.kt</code></td><td><code>object ProxyManager</code>: <code>ensureProxy(timeoutMs)</code>, <code>stopProxy()</code>, <code>CONTROL_PORT=10100</code>, <code>sandboxRealtimeHost</code>, <code>sandboxRestHost</code>; pinned <code>PROXY_VERSION=v0.3.0</code> + per-arch checksums; <code>uts.proxy.localPath</code> override</td><td>Downloads/verifies/launches the <code>uts-proxy</code> binary; one shared process per run. <em>(package <code>…integration.proxy</code>)</em></td></tr>
+        <tr><td><code>proxy/ProxySession.kt</code></td><td><code>class ProxySession</code> (<code>create(rules,port,timeoutMs,realtimeHost,restHost)</code>, <code>addRules</code>, <code>triggerAction</code>, <code>getLog(): List&lt;Event&gt;</code>, <code>close</code>, <code>sessionId</code>, <code>proxyPort</code>, <code>proxyHost</code>); <code>data class Event</code>; <code>typealias ProxyRule</code>; rule builders <code>wsConnectRule</code>/<code>wsFrameToClientRule</code>/<code>wsFrameToServerRule</code>/<code>httpRequestRule</code>; <code>ClientOptionsBuilder.connectThroughProxy(session)</code></td><td>Typed client for the proxy control REST API + client wiring. <em>(package <code>…integration.proxy</code>)</em></td></tr>
+        <tr><td><code>SandboxApp.kt</code></td><td><code>class SandboxApp</code> (<code>create()</code>, <code>delete()</code>, <code>appId</code>, <code>defaultKey</code>, <code>keys</code>)</td><td>Provisions/tears down a throwaway sandbox app from <code>ably-common</code>'s <code>test-app-setup.json</code>. <em>(package <code>…integration</code>)</em></td></tr>
       </table>
 
       <h3>B.3 Shared helpers &amp; tests</h3>
       <table>
         <tr><th>File</th><th>Key public surface</th><th>Role</th></tr>
-        <tr><td><code>io/ably/lib/Utils.kt</code></td><td><code>awaitState(client,target,timeout=5s)</code>, <code>awaitChannelState(channel,target,timeout=5s)</code>, <code>pollUntil(timeout=15s,interval=100ms){ }</code></td><td>Wall-clock coroutine waits; listener registered before state check.</td></tr>
-        <tr><td><code>io/ably/lib/types/Utils.kt</code></td><td><code>ConnectionDetails { }</code> builder</td><td>DSL sugar for building <code>ConnectionDetails</code> in tests.</td></tr>
-        <tr><td><code>realtime/unit/connection/ConnectionRecoveryTest.kt</code></td><td>6 <code>@Test</code>s: RTN16g/g1, RTN16g2, RTN16k, RTN16f, RTN16f1, RTN16j</td><td>Unit tier — connection recovery (mocked WS, FakeClock, env-gated deviations).</td></tr>
-        <tr><td><code>realtime/integration/proxy/AuthReauthTest.kt</code></td><td>1 <code>@Test</code> (two <code>@UTS</code>: RTN22, RTC8a)</td><td>Proxy tier — server-initiated re-authentication.</td></tr>
+        <tr><td><code>infra/Utils.kt</code></td><td><code>awaitState(client,target,timeout=5s)</code>, <code>awaitChannelState(channel,target,timeout=5s)</code>, <code>pollUntil(timeout=15s,interval=100ms){ }</code></td><td>Shared wall-clock coroutine waits (package <code>io.ably.lib.uts.infra</code>); listener registered before state check.</td></tr>
+        <tr><td><code>unit/realtime/ConnectionRecoveryTest.kt</code></td><td>6 <code>@Test</code>s: RTN16g/g1, RTN16g2, RTN16k, RTN16f, RTN16f1, RTN16j</td><td>Unit tier (<code>io.ably.lib.uts.unit.realtime</code>) — connection recovery (mocked WS, FakeClock, env-gated deviations).</td></tr>
+        <tr><td><code>integration/proxy/realtime/AuthReauthTest.kt</code></td><td>1 <code>@Test</code> (two <code>@UTS</code>: RTN22, RTC8a)</td><td>Integration tier (<code>io.ably.lib.uts.integration.proxy.realtime</code>) — server-initiated re-authentication.</td></tr>
         <tr><td><code>deviations.md</code></td><td>RTN16f, RTN16g2, RTL13b, RTL13c</td><td>Catalogue of SDK-vs-spec divergences.</td></tr>
       </table>
-      <div class="callout note"><span class="tag">Coverage note</span><p>At the time of writing, the <code>uts/</code> module contains exactly <strong>two test classes</strong> (<strong>7</strong> <code>@Test</code> methods total: 6 in <code>ConnectionRecoveryTest</code> + 1 in <code>AuthReauthTest</code>). The infrastructure under <code>uts/infra/</code> and <code>test/helper/</code> is built out far beyond what these two tests exercise (full HTTP mock, all four rule builders, REST proxy wiring), anticipating the broader UTS coverage catalogued in <a href="https://github.com/ably/specification/blob/main/uts/docs/completion-status.md" target="_blank" rel="noopener"><code>completion-status.md</code></a>.</p></div>
+      <div class="callout note"><span class="tag">Coverage note</span><p>At the time of writing, the <code>uts/</code> module contains exactly <strong>two test classes</strong> (<strong>7</strong> <code>@Test</code> methods total: 6 in <code>ConnectionRecoveryTest</code> + 1 in <code>AuthReauthTest</code>). The infrastructure under <code>infra/unit/</code> and <code>infra/integration/</code> is built out far beyond what these two tests exercise (full HTTP mock, all four rule builders, REST proxy wiring), anticipating the broader UTS coverage catalogued in <a href="https://github.com/ably/specification/blob/main/uts/docs/completion-status.md" target="_blank" rel="noopener"><code>completion-status.md</code></a>.</p></div>
     </section>
 
     <footer class="src" id="src">
@@ -760,11 +773,11 @@ val client = TestRealtimeClient { authCallback = …; connectThroughProxy(sessio
         <tr><td>Proxy control API, rule format, action numbers</td><td><a href="https://github.com/ably/specification/blob/main/uts/realtime/integration/helpers/proxy.md" target="_blank" rel="noopener"><code>uts/realtime/integration/helpers/proxy.md</code></a></td></tr>
         <tr><td>SDK seams</td><td><code>lib/.../debug/DebugOptions.java</code>, <code>lib/.../util/Clock.java</code></td></tr>
         <tr><td>Module wiring</td><td><code>uts/build.gradle.kts</code>, <code>settings.gradle.kts</code></td></tr>
-        <tr><td>Unit mocks</td><td><code>uts/.../uts/infra/*</code></td></tr>
-        <tr><td>Proxy/sandbox helpers</td><td><code>uts/.../test/helper/*</code></td></tr>
-        <tr><td>Async helpers</td><td><code>uts/.../io/ably/lib/Utils.kt</code>, <code>…/types/Utils.kt</code></td></tr>
-        <tr><td>The two example tests</td><td><code>…/unit/connection/ConnectionRecoveryTest.kt</code>, <code>…/integration/proxy/AuthReauthTest.kt</code></td></tr>
-        <tr><td>Deviations</td><td><code>uts/.../io/ably/lib/deviations.md</code></td></tr>
+        <tr><td>Unit mocks</td><td><code>uts/.../uts/infra/unit/*</code></td></tr>
+        <tr><td>Integration helpers</td><td><code>uts/.../uts/infra/integration/*</code> (+ <code>…/integration/proxy/*</code>)</td></tr>
+        <tr><td>Async helpers</td><td><code>uts/.../uts/infra/Utils.kt</code> (awaits), <code>…/uts/infra/unit/Utils.kt</code> (ConnectionDetails builder)</td></tr>
+        <tr><td>The two example tests</td><td><code>…/uts/unit/realtime/ConnectionRecoveryTest.kt</code>, <code>…/uts/integration/proxy/realtime/AuthReauthTest.kt</code></td></tr>
+        <tr><td>Deviations</td><td><code>uts/.../io/ably/lib/uts/deviations.md</code></td></tr>
       </table>
       <p>Generated from <code>README.md</code> (in this <code>uts/</code> directory). Single self-contained HTML file — no external assets.</p>
     </footer>

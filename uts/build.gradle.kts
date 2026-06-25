@@ -35,3 +35,15 @@ tasks.withType<Test>().configureEach {
             .getOrElse(""),
     )
 }
+
+tasks.register<Test>("runUtsUnitTests") {
+    filter {
+        includeTestsMatching("io.ably.lib.uts.unit.*")
+    }
+}
+
+tasks.register<Test>("runUtsIntegrationTests") {
+    filter {
+        includeTestsMatching("io.ably.lib.uts.integration.*")
+    }
+}

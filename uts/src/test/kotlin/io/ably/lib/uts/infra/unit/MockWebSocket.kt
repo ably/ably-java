@@ -1,9 +1,8 @@
-package io.ably.lib.uts.infra
+package io.ably.lib.uts.infra.unit
 
 import io.ably.lib.debug.DebugOptions
 import io.ably.lib.network.WebSocketEngineFactory
 import io.ably.lib.network.WebSocketListener
-import io.ably.lib.types.ConnectionDetails
 import io.ably.lib.types.ProtocolMessage
 import io.ably.lib.types.ProtocolSerializer
 import io.ably.lib.util.Serialisation
