@@ -121,13 +121,14 @@
       <a href="#s7">7 · Proxy Infrastructure</a>
       <a href="#s8">8 · Shared Async Helpers</a>
       <a href="#s9">9 · Walkthrough: Unit Test</a>
-      <a href="#s10">10 · Walkthrough: Proxy Test</a>
-      <a href="#s11">11 · Deviations</a>
-      <a href="#s12">12 · How to Run</a>
-      <a href="#s13">13 · Cheat-Sheet</a>
+      <a href="#s10">10 · Walkthrough: Direct-Sandbox Test</a>
+      <a href="#s11">11 · Walkthrough: Proxy Test</a>
+      <a href="#s12">12 · Deviations</a>
+      <a href="#s13">13 · How to Run</a>
+      <a href="#s14">14 · Cheat-Sheet</a>
       <h2>Appendices</h2>
-      <a href="#s14">A · Flow Diagrams</a>
-      <a href="#s15">B · Per-File Reference</a>
+      <a href="#s15">A · Flow Diagrams</a>
+      <a href="#s16">B · Per-File Reference</a>
       <a href="#src">Source Map</a>
     </nav>
   </aside>
@@ -136,7 +137,7 @@
     <header class="hero">
       <div class="eyebrow">Ably SDK Testing</div>
       <h1>UTS in <code style="font-size:.78em">ably-java</code><br>A Human-Readable Guide</h1>
-      <p class="lead">A practical, end-to-end explanation of the <strong>Universal Test Specification (UTS)</strong> and exactly how the Java/Kotlin code under <code>uts/</code> makes the unit and proxy-integration tests work — written for a developer who has never touched UTS before.</p>
+      <p class="lead">A practical, end-to-end explanation of the <strong>Universal Test Specification (UTS)</strong> and exactly how the Java/Kotlin code under <code>uts/</code> makes the unit, direct-sandbox, and proxy-integration tests work — written for a developer who has never touched UTS before.</p>
 
       <!-- HERO PIPELINE SVG -->
       <figure class="fig" style="margin-top:26px">
@@ -188,13 +189,13 @@
     <!-- ===================== 2 ===================== -->
     <section id="s2">
       <h2 class="sec"><span class="num">2</span> The Three Test Tiers</h2>
-      <p>UTS divides tests into three tiers by <em>what infrastructure they need</em> and <em>what confidence they give</em>. This split is the key to understanding the whole <code>uts/</code> module — the two example tests sit in two different tiers.</p>
+      <p>UTS divides tests into three tiers by <em>what infrastructure they need</em> and <em>what confidence they give</em>. This split is the key to understanding the whole <code>uts/</code> module — the three example tests span all three tiers.</p>
       <div class="cards">
         <div class="card"><h4>Unit <span class="pill">mocked</span></h4><p><strong>Transport:</strong> mocked (<code>MockWebSocket</code>, <code>MockHttpClient</code>). <strong>Backend:</strong> none.<br>Client-side logic: state machines, request formation, response parsing, timers. Fast &amp; deterministic.<br><em>→ unit/realtime/ConnectionRecoveryTest.kt</em></p></div>
-        <div class="card"><h4>Direct sandbox <span class="pill">real net</span></h4><p><strong>Transport:</strong> real. <strong>Backend:</strong> real Ably sandbox.<br>Happy-path interop: connect, publish, subscribe. No fault injection.<br><em>→ integration/standard/&lt;module&gt;/ (tier exists; no tests yet)</em></p></div>
+        <div class="card"><h4>Direct sandbox <span class="pill">real net</span></h4><p><strong>Transport:</strong> real. <strong>Backend:</strong> real Ably sandbox.<br>Happy-path interop: connect, publish, subscribe. No fault injection.<br><em>→ integration/standard/realtime/ChannelHistoryTest.kt</em></p></div>
         <div class="card"><h4>Proxy integration <span class="pill">faults</span></h4><p><strong>Transport:</strong> real, through a programmable proxy. <strong>Backend:</strong> real sandbox.<br>Fault behaviour: dropped connections, injected errors, timeouts, re-auth.<br><em>→ integration/proxy/realtime/AuthReauthTest.kt</em></p></div>
       </div>
-      <p>Each tier folder is further organised <strong>by module</strong> (<code>realtime</code>, <code>liveobjects</code>, …): <code>unit/&lt;module&gt;/</code>, <code>integration/standard/&lt;module&gt;/</code>, and <code>integration/proxy/&lt;module&gt;/</code>. So a feature's tests sit together by SDK area — the two example tests live at <code>unit/realtime/</code> and <code>integration/proxy/realtime/</code>.</p>
+      <p>Each tier folder is further organised <strong>by module</strong> (<code>realtime</code>, <code>liveobjects</code>, …): <code>unit/&lt;module&gt;/</code>, <code>integration/standard/&lt;module&gt;/</code>, and <code>integration/proxy/&lt;module&gt;/</code>. So a feature's tests sit together by SDK area — the three example tests live at <code>unit/realtime/</code>, <code>integration/standard/realtime/</code>, and <code>integration/proxy/realtime/</code>.</p>
       <p>Key principles (from <a href="https://github.com/ably/specification/blob/main/uts/docs/integration-testing.md" target="_blank" rel="noopener"><code>integration-testing.md</code></a>):</p>
       <ul>
         <li><strong>Integration tests do not replace unit tests.</strong> A spec point covered by a proxy test should <em>also</em> have a unit test. The unit test proves client logic; the proxy test proves client &amp; real server agree.</li>
@@ -246,9 +247,10 @@
       <p>Defines what <em>deserves</em> an integration test (request/response interop, error interop, data round-trips, stateful protocol sequences), the directory layout, sandbox provisioning, proxy session lifecycle, timeout strategy, and the <strong>late-fault-injection</strong> philosophy. The <code>integration/proxy/</code> segregation exists because proxy tests have different infra needs, CI cadence, and failure modes.</p>
 
       <h3>3.4 <a href="https://github.com/ably/specification/blob/main/uts/docs/completion-status.md" target="_blank" rel="noopener"><code>completion-status.md</code></a> — the coverage matrix</h3>
-      <p>A big table mapping every features-spec group (<code>RSC</code>, <code>RTN</code>, <code>RTL</code>, <code>RTP</code>…) to the UTS specs that cover it, with a per-tier summary (<code>unit:✓ proxy:✓</code>). The two example tests correspond to these rows:</p>
+      <p>A big table mapping every features-spec group (<code>RSC</code>, <code>RTN</code>, <code>RTL</code>, <code>RTP</code>…) to the UTS specs that cover it, with a per-tier summary (<code>unit:✓ proxy:✓</code>). The reference tests this guide walks through correspond to these rows:</p>
       <ul>
         <li><code>RTN16</code> (connection recovery) → unit spec <code>connection_recovery_test.md</code> → <strong>ConnectionRecoveryTest.kt</strong>.</li>
+        <li><code>RTL10d</code> (channel history) → direct-sandbox spec <code>realtime/integration/channel_history_test.md</code> → <strong>ChannelHistoryTest.kt</strong>.</li>
         <li><code>RTN22</code> / <code>RTC8a</code> (server-initiated re-auth) → proxy spec <code>realtime/integration/proxy/auth_reauth.md</code> → <strong>AuthReauthTest.kt</strong>.</li>
       </ul>
       <div class="callout note"><span class="tag">Fifth, referenced doc</span>
@@ -267,6 +269,7 @@ dependencies {
     testImplementation(project(":java"))                 // the SDK under test
     testImplementation(project(":network-client-core"))  // HttpEngine / WebSocketEngine interfaces
     testImplementation(kotlin("test"))
+    testImplementation("org.junit.jupiter:junit-jupiter-params")  // @ParameterizedTest / @ValueSource (version from the JUnit BOM)
     testImplementation(libs.mockk)
     testImplementation(libs.coroutine.core)              // kotlinx.coroutines
     testImplementation(libs.coroutine.test)              // runTest, virtual time
@@ -325,12 +328,13 @@ tasks.withType&lt;Test&gt;().configureEach {
 └── integration/                         # ── INTEGRATION TESTS (real backend) ── · per module
     ├── standard/                        #   direct sandbox: happy-path, no fault injection
     │   ├── realtime/
+    │   │   └── ChannelHistoryTest.kt    #   ← the DIRECT-SANDBOX test (RTL10d)
     │   └── liveobjects/
     └── proxy/                           #   sandbox through the fault-injecting uts-proxy
         ├── realtime/
         │   └── AuthReauthTest.kt        #   ← the PROXY test (RTN22, RTC8a)
         └── liveobjects/</code></pre>
-      <div class="callout tip"><span class="tag">Mental model</span><p><code>infra/unit/</code> powers the unit tests · <code>infra/integration/</code> powers both integration kinds (<code>standard</code> + <code>proxy</code>) · <code>infra/Utils.kt</code> serves all of them. Every tier is sub-divided <strong>by module</strong> (<code>realtime</code>, <code>liveobjects</code>, …). The top-level <code>unit/</code> ↔ <code>infra/unit/</code> and <code>integration/</code> ↔ <code>infra/integration/</code> pairing is what the <code>runUtsUnitTests</code> / <code>runUtsIntegrationTests</code> Gradle tasks key off (§12) — <code>runUtsIntegrationTests</code> covers <strong>both</strong> <code>integration/standard/</code> and <code>integration/proxy/</code>.</p></div>
+      <div class="callout tip"><span class="tag">Mental model</span><p><code>infra/unit/</code> powers the unit tests · <code>infra/integration/</code> powers both integration kinds (<code>standard</code> + <code>proxy</code>) · <code>infra/Utils.kt</code> serves all of them. Every tier is sub-divided <strong>by module</strong> (<code>realtime</code>, <code>liveobjects</code>, …). The top-level <code>unit/</code> ↔ <code>infra/unit/</code> and <code>integration/</code> ↔ <code>infra/integration/</code> pairing is what the <code>runUtsUnitTests</code> / <code>runUtsIntegrationTests</code> Gradle tasks key off (§13) — <code>runUtsIntegrationTests</code> covers <strong>both</strong> <code>integration/standard/</code> and <code>integration/proxy/</code>.</p></div>
     </section>
 
     <!-- ===================== 5 ===================== -->
@@ -469,7 +473,7 @@ fakeClock.advance(2.seconds)      // jump forward; due timers fire now</code></p
         <li><code>SandboxApp.create()</code> fetches the canonical <code>test-app-setup.json</code> from <code>ably-common</code> (specifically its <code>post_apps</code> sub-object), <code>POST</code>s it to <code>https://sandbox.realtime.ably-nonprod.net/apps</code>, and exposes <code>appId</code>, <code>defaultKey</code> (full-capability <code>appId.keyId:keySecret</code>, from the <code>keyStr</code> field), and the full <code>keys</code> list.</li>
         <li><code>delete()</code> removes the app in teardown (best-effort — errors swallowed, sandbox apps auto-expire).</li>
         <li>The Ktor client retries only <strong>idempotent GETs</strong> (never re-POSTs <code>/apps</code>, to avoid duplicate apps).</li>
-        <li><code>SandboxApp</code> is the shared backbone of <em>both</em> integration kinds: <strong>proxy</strong> tests pair it with a <code>ProxySession</code>, while <strong>direct sandbox</strong> tests (<code>integration/standard/&lt;module&gt;/</code>) use it alone — connecting straight to <code>ProxyManager.sandboxRealtimeHost</code> / <code>sandboxRestHost</code> with no proxy and no fault rules, for happy-path interop.</li>
+        <li><code>SandboxApp</code> is the shared backbone of <em>both</em> integration kinds: <strong>proxy</strong> tests pair it with a <code>ProxySession</code>, while <strong>direct sandbox</strong> tests (<code>integration/standard/&lt;module&gt;/</code>) use it alone — connecting straight to <code>SandboxApp.sandboxHost</code> with no proxy and no fault rules, for happy-path interop.</li>
       </ul>
       <p>The app is provisioned <strong>directly</strong> (not through the proxy), so it's independent of the fault rules under test.</p>
     </section>
@@ -501,7 +505,7 @@ fakeClock.advance(2.seconds)      // jump forward; due timers fire now</code></p
         <li><strong>INITIALIZED</strong> (before connect) → null.</li>
         <li><strong>CONNECTED</strong> → non-null (sanity).</li>
         <li><strong>CLOSING / CLOSED</strong> → null (close nulls the key immediately).</li>
-        <li><strong>FAILED</strong> → null. <em>(Contains a documented <strong>deviation</strong> — see §11: the spec's fatal error code 50000/500 isn't treated as fatal by the SDK, and <code>send_to_client_and_close</code> races the FAILED transition; the test uses code 40000/400 and plain <code>sendToClient</code>.)</em></li>
+        <li><strong>FAILED</strong> → null. <em>(Contains a documented <strong>deviation</strong> — see §12: the spec's fatal error code 50000/500 isn't treated as fatal by the SDK, and <code>send_to_client_and_close</code> races the FAILED transition; the test uses code 40000/400 and plain <code>sendToClient</code>.)</em></li>
         <li><strong>SUSPENDED</strong> → null. Built with a <code>FakeClock</code>: connect succeeds, then <code>simulateDisconnect()</code>, then a coroutine <strong>refuses every reconnection attempt</strong> while <code>fakeClock.advance(2.seconds)</code> loops until the short <code>connectionStateTtl</code> (800 ms) expires and the client gives up to SUSPENDED.</li>
       </ul>
       <p><em>Technique: the textbook <strong>await-style</strong> example — the first connection succeeds via <code>awaitConnectionAttempt()</code>, but reconnections need the <em>refused</em> response, so a separate <code>refuseJob</code> coroutine drives them; combined with fake timers this gives a deterministic SUSPENDED.</em></p>
@@ -510,7 +514,7 @@ fakeClock.advance(2.seconds)      // jump forward; due timers fire now</code></p
       <p>Constructs the client with <code>recover = &lt;recoveryKey&gt;</code>, captures <code>conn.queryParams</code> on each attempt, then <code>simulateDisconnect()</code> + reconnect. Asserts the <strong>first</strong> attempt carries <code>recover=&lt;key&gt;</code> (no <code>resume</code>), the <strong>second</strong> carries <code>resume=&lt;new key&gt;</code> (no <code>recover</code>) — recover is a one-shot bootstrap; subsequent reconnections use resume.</p>
 
       <h3>9.4 <code>RTN16f</code> — <code>recover</code> initialises <code>msgSerial</code> <span class="badge">env-gated deviation</span></h3>
-      <p>Asserts the recovered <code>msgSerial</code> (42) is preserved. The SDK resets it to 0, so the spec-correct assertion <code>assertEquals(42L, …)</code> runs only under <code>RUN_DEVIATIONS</code>; otherwise a regression-guard <code>assertEquals(0L, …)</code> runs. (See §11.)</p>
+      <p>Asserts the recovered <code>msgSerial</code> (42) is preserved. The SDK resets it to 0, so the spec-correct assertion <code>assertEquals(42L, …)</code> runs only under <code>RUN_DEVIATIONS</code>; otherwise a regression-guard <code>assertEquals(0L, …)</code> runs. (See §12.)</p>
 
       <h3>9.5 <code>RTN16f1</code> — malformed <code>recover</code> key degrades gracefully</h3>
       <p><code>recover = "this-is-not-valid-json!!!"</code>. Asserts the client still connects normally with a fresh identity, <strong>no</strong> <code>recover</code>/<code>resume</code> params, and exactly one connection attempt — a bad key is logged and ignored, not fatal.</p>
@@ -522,10 +526,52 @@ fakeClock.advance(2.seconds)      // jump forward; due timers fire now</code></p
 
     <!-- ===================== 10 ===================== -->
     <section id="s10">
-      <h2 class="sec"><span class="num">10</span> Walkthrough: the Proxy Test (<code>AuthReauthTest</code>)</h2>
-      <p><strong>Tier:</strong> Proxy integration (real sandbox + uts-proxy). <strong>Spec points:</strong> RTN22 (server-initiated re-authentication) and RTC8a (client sends an AUTH frame with renewed auth details). Unit counterparts: <code>server_initiated_reauth_test.md</code>, <code>realtime_authorize.md</code>.</p>
+      <h2 class="sec"><span class="num">10</span> Walkthrough: the Direct-Sandbox Integration Test (<code>ChannelHistoryTest</code>)</h2>
+      <p><strong>File:</strong> <code>uts/.../integration/standard/realtime/ChannelHistoryTest.kt</code> · <strong>Tier:</strong> Direct-sandbox integration (real network, real Ably sandbox, <strong>no</strong> proxy, <strong>no</strong> fault injection). <strong>Spec point:</strong> RTL10d — messages published by one realtime client are retrievable from a <em>separate</em> client's <code>history()</code>.</p>
+      <p>The reference for the <strong>middle tier</strong>. Like a proxy test it talks to the real backend, but it connects <em>straight</em> to <code>SandboxApp.sandboxHost</code> — no <code>ProxyManager</code>, no <code>ProxySession</code>, no <code>connectThroughProxy</code>. It's the shape every happy-path interop spec (connect/publish/subscribe/presence) follows.</p>
 
       <h3>10.1 Suite setup/teardown</h3>
+      <p>Same <code>@TestInstance(PER_CLASS)</code> + <code>runBlocking</code> pattern as the proxy test, but provisioning <code>SandboxApp</code> <strong>only</strong> — no <code>ProxyManager.ensureProxy()</code>:</p>
+<pre><code>@BeforeAll fun setUpAll()    = runBlocking { app = SandboxApp.create() }
+@AfterAll  fun tearDownAll() = runBlocking { if (::app.isInitialized) app.delete() }</code></pre>
+
+      <h3>10.2 The client — wired straight to the sandbox</h3>
+      <p>A tiny <code>newClient</code> helper points the <strong>real</strong> transport at the sandbox host (no proxy in between). Setting explicit hosts auto-disables fallback hosts (REC2c2):</p>
+<pre><code>private fun newClient(useBinaryProtocol: Boolean): AblyRealtime = TestRealtimeClient {
+    key = app.defaultKey
+    realtimeHost = SandboxApp.sandboxHost   // sandbox.realtime.ably-nonprod.net
+    restHost     = SandboxApp.sandboxHost
+    this.useBinaryProtocol = useBinaryProtocol
+    autoConnect  = false
+}</code></pre>
+      <p><code>TestRealtimeClient</code> is the same builder the unit tests use — it just isn't fed any mocks here, so it drives the SDK's real network transport instead of a <code>MockWebSocket</code>.</p>
+
+      <h3>10.3 Protocol variants — the <code>@ParameterizedTest</code> pattern</h3>
+      <p>The spec declares a <code>PROTOCOL</code> dimension (<code>json</code> / <code>msgpack</code>) and says <em>each test runs once per variant</em>. ably-java realises that with a JUnit 5 parameterised test over <code>useBinaryProtocol</code> — which is why the module depends on <code>junit-jupiter-params</code> (§4):</p>
+<pre><code>@ParameterizedTest(name = "useBinaryProtocol={0}")
+@ValueSource(booleans = [false, true])   // false = JSON, true = msgpack
+fun `RTL10d - history contains messages published by another client`(useBinaryProtocol: Boolean) = runTest {
+    …
+}</code></pre>
+      <p>A plain <code>@Test</code> test (no protocol dimension) stays a <code>@Test</code> — reach for <code>@ParameterizedTest</code> only when the spec actually declares variants.</p>
+
+      <h3>10.4 The scenario — real publish, real history</h3>
+      <p>Two independent clients on the same app: the publisher's <em>confirmed</em> messages must appear in the subscriber's history. The integration-specific techniques on show:</p>
+      <ul>
+        <li><strong>Awaiting a publish ack.</strong> Realtime publish is fire-and-forget, so to honour the spec's <code>AWAIT publish</code> the test wraps the (non-deprecated) <code>publish(name, data, Callback&lt;PublishResult&gt;)</code> overload in <code>suspendCancellableCoroutine</code> (<code>awaitPublish</code>), resuming on <code>onSuccess</code> and failing on <code>onError</code> — the integration analogue of the unit test's <code>awaitNextMessageFromClient()</code>.</li>
+        <li><strong><code>AWAIT attach()</code></strong> → <code>attach()</code> then <code>awaitChannelState(channel, ChannelState.attached)</code>.</li>
+        <li><strong>Polling real REST state.</strong> <code>history()</code> is a blocking REST call and the message store is eventually-consistent, so <code>pollUntil(10.seconds, 500.milliseconds) { subChannel.history(null).items().size == 3 }</code> — never a fixed sleep.</li>
+        <li><strong>Order assertion.</strong> History defaults to newest-first, so <code>items[0]</code> is <code>event3</code> … <code>items[2]</code> is <code>event1</code>.</li>
+      </ul>
+      <div class="callout tip"><span class="tag">What this teaches</span><p><code>SandboxApp</code>-only provisioning, the direct-sandbox client wiring (<code>realtimeHost</code>/<code>restHost</code> from <code>SandboxApp.sandboxHost</code>, no proxy), the protocol-variant <code>@ParameterizedTest</code>, awaiting a publish ack via <code>Callback&lt;PublishResult&gt;</code>, and <code>pollUntil</code> over a real REST <code>history()</code> call.</p></div>
+    </section>
+
+    <!-- ===================== 11 ===================== -->
+    <section id="s11">
+      <h2 class="sec"><span class="num">11</span> Walkthrough: the Proxy Test (<code>AuthReauthTest</code>)</h2>
+      <p><strong>Tier:</strong> Proxy integration (real sandbox + uts-proxy). <strong>Spec points:</strong> RTN22 (server-initiated re-authentication) and RTC8a (client sends an AUTH frame with renewed auth details). Unit counterparts: <code>server_initiated_reauth_test.md</code>, <code>realtime_authorize.md</code>.</p>
+
+      <h3>11.1 Suite setup/teardown</h3>
 <pre><code>@TestInstance(TestInstance.Lifecycle.PER_CLASS)   // one instance, so @BeforeAll can be non-static
 class AuthReauthTest {
     @BeforeAll fun setUpAll() = runBlocking {
@@ -535,7 +581,7 @@ class AuthReauthTest {
     @AfterAll fun tearDownAll() = runBlocking { if (::app.isInitialized) app.delete() }
 }</code></pre>
 
-      <h3>10.2 The test, step by step</h3>
+      <h3>11.2 The test, step by step</h3>
       <ol>
         <li><strong>Create a session with no rules</strong> — the fault is injected <em>imperatively</em> later (late injection — the handshake runs against the real server unmodified): <code>val session = ProxySession.create(rules = emptyList())</code></li>
         <li><strong>Auth via <code>authCallback</code></strong> — a locally-signed <code>TokenRequest</code> from the same sandbox key (no external JWT library). A counter records how many times the callback runs:
@@ -570,24 +616,24 @@ awaitState(client, ConnectionState.connected, 15.seconds)</code></pre></li>
       <div class="callout tip"><span class="tag">What this teaches</span><p><code>ProxyManager.ensureProxy</code> + <code>SandboxApp</code> setup, <code>connectThroughProxy</code>, <strong>late imperative fault injection</strong> via <code>triggerAction</code>, real-network waiting with <code>pollUntil</code>, and <strong>proxy-log assertions</strong> as the primary verification.</p></div>
     </section>
 
-    <!-- ===================== 11 ===================== -->
-    <section id="s11">
-      <h2 class="sec"><span class="num">11</span> Deviations: when the SDK disagrees with the spec</h2>
+    <!-- ===================== 12 ===================== -->
+    <section id="s12">
+      <h2 class="sec"><span class="num">12</span> Deviations: when the SDK disagrees with the spec</h2>
       <p><code>uts/.../deviations.md</code> is the single catalogue of every place the ably-java SDK behaves differently from the features spec, discovered during translation. Each entry records: the <strong>spec point</strong>, <strong>what the spec requires</strong>, <strong>what the SDK does</strong>, the <strong>root cause</strong> (file/function, where known), the <strong>workaround in tests</strong>, and the <strong>affected tests</strong>.</p>
       <p>The mechanism: the test keeps the <strong>spec-correct</strong> assertion but gates it behind the <code>RUN_DEVIATIONS</code> env var, with a regression-guard assertion for the SDK's actual behaviour running by default. Normal runs stay green; <code>RUN_DEVIATIONS=1</code> turns the failing assertions on, and the test flips automatically once the SDK is fixed.</p>
       <table>
         <tr><th>Spec point</th><th>Gist</th><th>Touches</th></tr>
         <tr><td><strong>RTN16f</strong></td><td>SDK resets <code>msgSerial</code> to 0 on connect even with <code>recover</code>; spec says preserve it (42).</td><td><code>ConnectionRecoveryTest</code> (§9.4) — <code>assertEquals(42L,…)</code> gated, <code>assertEquals(0L,…)</code> default guard.</td></tr>
         <tr><td><strong>RTN16g2</strong></td><td>Spec's fatal error 50000/500 isn't fatal to the SDK (<code>isFatalError()</code> needs code 40000–49999 or status &lt; 500); also <code>send_to_client_and_close</code> races the FAILED transition.</td><td><code>ConnectionRecoveryTest</code> (§9.2) — uses 40000/400 + plain <code>sendToClient</code>.</td></tr>
-        <tr><td><strong>RTL13b</strong></td><td><code>ATTACHING → SUSPENDED</code> via <code>realtimeRequestTimeout</code> not implemented for channel attach.</td><td>various channel tests (not the two here).</td></tr>
+        <tr><td><strong>RTL13b</strong></td><td><code>ATTACHING → SUSPENDED</code> via <code>realtimeRequestTimeout</code> not implemented for channel attach.</td><td>various channel tests (not the walkthroughs here).</td></tr>
         <tr><td><strong>RTL13c</strong></td><td><code>channelRetryTimeout</code> not cancelled when the connection leaves CONNECTED.</td><td>various channel tests; assertions gated behind <code>RUN_DEVIATIONS</code>.</td></tr>
       </table>
       <div class="callout dev"><span class="tag">Why this matters</span><p>These deviations are <strong>valuable output</strong>, not failures — each one is a precise, reproducible bug report the SDK team can act on, and the gated test becomes the acceptance test for the fix.</p></div>
     </section>
 
-    <!-- ===================== 12 ===================== -->
-    <section id="s12">
-      <h2 class="sec"><span class="num">12</span> How to Run the Tests</h2>
+    <!-- ===================== 13 ===================== -->
+    <section id="s13">
+      <h2 class="sec"><span class="num">13</span> How to Run the Tests</h2>
 <p>Two custom Gradle tasks (registered in <code>uts/build.gradle.kts</code>), filtered by package — they mirror <code>runLiveObjectsUnitTests</code> / <code>runLiveObjectsIntegrationTests</code> in the <code>liveobjects</code> module:</p>
 <pre><code># Unit tests only — io.ably.lib.uts.unit.*  (fast, no network). This is the PR gate.
 ./gradlew :uts:runUtsUnitTests
@@ -618,9 +664,9 @@ RUN_DEVIATIONS=1 ./gradlew :uts:runUtsUnitTests --tests "*ConnectionRecoveryTest
       </ul>
     </section>
 
-    <!-- ===================== 13 ===================== -->
-    <section id="s13">
-      <h2 class="sec"><span class="num">13</span> Quick Reference / Cheat-Sheet</h2>
+    <!-- ===================== 14 ===================== -->
+    <section id="s14">
+      <h2 class="sec"><span class="num">14</span> Quick Reference / Cheat-Sheet</h2>
       <p><strong>The three seams that make unit tests possible</strong> (<code>DebugOptions</code>): <span class="badge">webSocketEngineFactory</span> <span class="badge">httpEngine</span> <span class="badge">clock</span></p>
       <h4>Build a unit-test client</h4>
 <pre><code>val mock = MockWebSocket { onConnectionAttempt = { it.respondWithSuccess(CONNECTED_MESSAGE) } }
@@ -638,8 +684,8 @@ val client = TestRealtimeClient { authCallback = …; connectThroughProxy(sessio
       <p><strong>Decision tree on failure:</strong> spec wrong → fix test + record UTS spec error · translation wrong → fix test · SDK non-compliant → gate spec-correct assertion behind <code>RUN_DEVIATIONS</code> + record in <code>deviations.md</code>.</p>
     </section>
 
-    <!-- ===================== 14 ===================== -->
-    <section id="s14">
+    <!-- ===================== 15 ===================== -->
+    <section id="s15">
       <h2 class="sec"><span class="num">A</span> Appendix A: Request-Flow Diagrams</h2>
 
       <h3>A.1 Unit test — mocked WebSocket (no network)</h3>
@@ -730,8 +776,8 @@ val client = TestRealtimeClient { authCallback = …; connectThroughProxy(sessio
       </figure>
     </section>
 
-    <!-- ===================== 15 ===================== -->
-    <section id="s15">
+    <!-- ===================== 16 ===================== -->
+    <section id="s16">
       <h2 class="sec"><span class="num">B</span> Appendix B: Per-File API Reference</h2>
 
       <h3>B.1 Unit-test infrastructure — <code>io.ably.lib.uts.infra.unit</code></h3>
@@ -754,9 +800,9 @@ val client = TestRealtimeClient { authCallback = …; connectThroughProxy(sessio
       <h3>B.2 Integration infrastructure — <code>io.ably.lib.uts.infra.integration</code> (and <code>…integration.proxy</code>)</h3>
       <table>
         <tr><th>File</th><th>Key public surface</th><th>Role</th></tr>
-        <tr><td><code>proxy/ProxyManager.kt</code></td><td><code>object ProxyManager</code>: <code>ensureProxy(timeoutMs)</code>, <code>stopProxy()</code>, <code>CONTROL_PORT=10100</code>, <code>sandboxRealtimeHost</code>, <code>sandboxRestHost</code>; pinned <code>PROXY_VERSION=v0.3.0</code> + per-arch checksums; <code>uts.proxy.localPath</code> override</td><td>Downloads/verifies/launches the <code>uts-proxy</code> binary; one shared process per run. <em>(package <code>…integration.proxy</code>)</em></td></tr>
+        <tr><td><code>proxy/ProxyManager.kt</code></td><td><code>object ProxyManager</code>: <code>ensureProxy(timeoutMs)</code>, <code>stopProxy()</code>, <code>CONTROL_PORT=10100</code>; pinned <code>PROXY_VERSION=v0.3.0</code> + per-arch checksums; <code>uts.proxy.localPath</code> override</td><td>Downloads/verifies/launches the <code>uts-proxy</code> binary; one shared process per run. <em>(package <code>…integration.proxy</code>)</em></td></tr>
         <tr><td><code>proxy/ProxySession.kt</code></td><td><code>class ProxySession</code> (<code>create(rules,port,timeoutMs,realtimeHost,restHost)</code>, <code>addRules</code>, <code>triggerAction</code>, <code>getLog(): List&lt;Event&gt;</code>, <code>close</code>, <code>sessionId</code>, <code>proxyPort</code>, <code>proxyHost</code>); <code>data class Event</code>; <code>typealias ProxyRule</code>; rule builders <code>wsConnectRule</code>/<code>wsFrameToClientRule</code>/<code>wsFrameToServerRule</code>/<code>httpRequestRule</code>; <code>ClientOptionsBuilder.connectThroughProxy(session)</code></td><td>Typed client for the proxy control REST API + client wiring. <em>(package <code>…integration.proxy</code>)</em></td></tr>
-        <tr><td><code>SandboxApp.kt</code></td><td><code>class SandboxApp</code> (<code>create()</code>, <code>delete()</code>, <code>appId</code>, <code>defaultKey</code>, <code>keys</code>)</td><td>Provisions/tears down a throwaway sandbox app from <code>ably-common</code>'s <code>test-app-setup.json</code>. <em>(package <code>…integration</code>)</em></td></tr>
+        <tr><td><code>SandboxApp.kt</code></td><td><code>class SandboxApp</code> (<code>create()</code>, <code>delete()</code>, <code>appId</code>, <code>defaultKey</code>, <code>keys</code>); <code>SandboxApp.sandboxHost</code> (<code>sandbox.realtime.ably-nonprod.net</code>)</td><td>Provisions/tears down a throwaway sandbox app from <code>ably-common</code>'s <code>test-app-setup.json</code>; owns the single upstream sandbox host constant. <em>(package <code>…integration</code>)</em></td></tr>
       </table>
 
       <h3>B.3 Shared helpers &amp; tests</h3>
@@ -764,10 +810,11 @@ val client = TestRealtimeClient { authCallback = …; connectThroughProxy(sessio
         <tr><th>File</th><th>Key public surface</th><th>Role</th></tr>
         <tr><td><code>infra/Utils.kt</code></td><td><code>awaitState(client,target,timeout=5s)</code>, <code>awaitChannelState(channel,target,timeout=5s)</code>, <code>pollUntil(timeout=15s,interval=100ms){ }</code></td><td>Shared wall-clock coroutine waits (package <code>io.ably.lib.uts.infra</code>); listener registered before state check.</td></tr>
         <tr><td><code>unit/realtime/ConnectionRecoveryTest.kt</code></td><td>6 <code>@Test</code>s: RTN16g/g1, RTN16g2, RTN16k, RTN16f, RTN16f1, RTN16j</td><td>Unit tier (<code>io.ably.lib.uts.unit.realtime</code>) — connection recovery (mocked WS, FakeClock, env-gated deviations).</td></tr>
+        <tr><td><code>integration/standard/realtime/ChannelHistoryTest.kt</code></td><td>1 <code>@ParameterizedTest</code> (RTL10d) × {JSON, msgpack}</td><td>Direct-sandbox tier (<code>io.ably.lib.uts.integration.standard.realtime</code>) — cross-client history durability (<code>SandboxApp</code>, no proxy; awaited publish + <code>pollUntil</code> on <code>history()</code>).</td></tr>
         <tr><td><code>integration/proxy/realtime/AuthReauthTest.kt</code></td><td>1 <code>@Test</code> (two <code>@UTS</code>: RTN22, RTC8a)</td><td>Integration tier (<code>io.ably.lib.uts.integration.proxy.realtime</code>) — server-initiated re-authentication.</td></tr>
         <tr><td><code>deviations.md</code></td><td>RTN16f, RTN16g2, RTL13b, RTL13c</td><td>Catalogue of SDK-vs-spec divergences.</td></tr>
       </table>
-      <div class="callout note"><span class="tag">Coverage note</span><p>At the time of writing, the <code>uts/</code> module contains exactly <strong>two test classes</strong> (<strong>7</strong> <code>@Test</code> methods total: 6 in <code>ConnectionRecoveryTest</code> + 1 in <code>AuthReauthTest</code>). The infrastructure under <code>infra/unit/</code> and <code>infra/integration/</code> is built out far beyond what these two tests exercise (full HTTP mock, all four rule builders, REST proxy wiring), anticipating the broader UTS coverage catalogued in <a href="https://github.com/ably/specification/blob/main/uts/docs/completion-status.md" target="_blank" rel="noopener"><code>completion-status.md</code></a>.</p></div>
+      <div class="callout note"><span class="tag">Coverage note</span><p>This guide walks through <strong>one reference test per tier</strong> — <code>ConnectionRecoveryTest</code> (unit, §9), <code>ChannelHistoryTest</code> (direct-sandbox, §10), and <code>AuthReauthTest</code> (proxy, §11). The <code>uts/</code> module additionally carries LiveObjects tests across the same tiers, and the infrastructure under <code>infra/unit/</code> and <code>infra/integration/</code> is built out beyond what any single test exercises (full HTTP mock, all four rule builders, REST proxy wiring), anticipating the broader UTS coverage catalogued in <a href="https://github.com/ably/specification/blob/main/uts/docs/completion-status.md" target="_blank" rel="noopener"><code>completion-status.md</code></a>.</p></div>
     </section>
 
     <footer class="src" id="src">
@@ -784,7 +831,7 @@ val client = TestRealtimeClient { authCallback = …; connectThroughProxy(sessio
         <tr><td>Unit mocks</td><td><code>uts/.../uts/infra/unit/*</code></td></tr>
         <tr><td>Integration helpers</td><td><code>uts/.../uts/infra/integration/*</code> (+ <code>…/integration/proxy/*</code>)</td></tr>
         <tr><td>Async helpers</td><td><code>uts/.../uts/infra/Utils.kt</code> (awaits), <code>…/uts/infra/unit/Utils.kt</code> (ConnectionDetails builder)</td></tr>
-        <tr><td>The two example tests</td><td><code>…/uts/unit/realtime/ConnectionRecoveryTest.kt</code>, <code>…/uts/integration/proxy/realtime/AuthReauthTest.kt</code></td></tr>
+        <tr><td>The three example tests</td><td><code>…/uts/unit/realtime/ConnectionRecoveryTest.kt</code>, <code>…/uts/integration/standard/realtime/ChannelHistoryTest.kt</code>, <code>…/uts/integration/proxy/realtime/AuthReauthTest.kt</code></td></tr>
         <tr><td>Deviations</td><td><code>uts/.../io/ably/lib/uts/deviations.md</code></td></tr>
       </table>
       <p>Generated from <code>README.md</code> (in this <code>uts/</code> directory). Single self-contained HTML file — no external assets.</p>

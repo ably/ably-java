@@ -2,7 +2,6 @@ package io.ably.lib.uts.infra.integration
 
 import com.google.gson.JsonElement
 import com.google.gson.JsonParser
-import io.ably.lib.uts.infra.integration.proxy.ProxyManager
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.network.sockets.*
@@ -67,7 +66,14 @@ class SandboxApp private constructor(
 ) {
 
   companion object {
-    private val sandboxBaseUrl = "https://${ProxyManager.sandboxRestHost}"
+    /**
+     * The Ably **nonprod sandbox** host — the `nonprod:sandbox` endpoint (used uniformly across the
+     * realtime/objects/rest integration specs), resolved to a hostname. Realtime and REST share this
+     * single host, so point both transports at it: set `realtimeHost` and/or `restHost` from here.
+     */
+    const val sandboxHost = "sandbox.realtime.ably-nonprod.net"
+
+    private const val sandboxBaseUrl = "https://$sandboxHost"
 
     /** The canonical app spec shared across all Ably SDK test suites. */
     private const val APP_SETUP_URL =

@@ -3,6 +3,7 @@ package io.ably.lib.uts.infra.integration.proxy
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
+import io.ably.lib.uts.infra.integration.SandboxApp
 import io.ably.lib.uts.infra.unit.ClientOptionsBuilder
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
@@ -218,8 +219,8 @@ class ProxySession private constructor(
             rules: List<ProxyRule> = emptyList(),
             port: Int = 0,
             timeoutMs: Long? = null,
-            realtimeHost: String = ProxyManager.sandboxRealtimeHost,
-            restHost: String = ProxyManager.sandboxRestHost,
+            realtimeHost: String = SandboxApp.sandboxHost,
+            restHost: String = SandboxApp.sandboxHost,
         ): ProxySession {
             val body = JsonObject().apply {
                 add("target", JsonObject().apply {

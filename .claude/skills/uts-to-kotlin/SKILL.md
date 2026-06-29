@@ -82,8 +82,8 @@ Offer the tiers whose `present` is `true`. The chosen tier fixes the `targetDir`
 | Tier | Translation flow |
 |---|---|
 | **unit** | mocked transport — Steps 3–4 below |
-| **integration** (direct sandbox) | real sandbox, no faults — **Proxy integration tests** section, but drop the `ProxySession`/`connectThroughProxy` wiring |
-| **proxy** | real sandbox + fault injection — **Proxy integration tests** section |
+| **integration** (direct sandbox) | real sandbox, no faults — **Direct-sandbox integration tests** section |
+| **proxy** | real sandbox + fault injection — **Integration tests** section (proxy subsections) |
 
 ## Step D — Choose which specs to translate
 
@@ -130,6 +130,7 @@ Then read the current spec file (the one being translated from the Step D select
 - All test cases — each has a structured ID like `realtime/unit/RSA4c2/callback-error-connecting-disconnected-0` and a description
 - The protocol used (WebSocket for Realtime, HTTP for REST)
 - Any timer usage (`enable_fake_timers`, `ADVANCE_TIME`)
+- Any **protocol-variant dimension** — a `PROTOCOL` (`json` / `msgpack`) matrix the spec header says to run "once per variant". In ably-java this becomes a `useBinaryProtocol` `@ParameterizedTest` (see the **Direct-sandbox integration tests** section), not a plain `@Test`.
 
 ---
 
@@ -141,19 +142,24 @@ list. Write the test to `<targetDir>/<className>.kt` with `package <package>` at
 
 The spec's own `<sub>` grouping (e.g. `connection/`, `channels/`) is **not** reflected in the output — every
 test sits directly in `targetDir` (the resolver flattens it). The chosen tier also fixes the translation
-flow: **unit** → the rules in Steps 3–4 below; **integration** (direct sandbox) and **proxy** → the **Proxy
-integration tests** section (direct sandbox drops the `ProxySession`/`connectThroughProxy` wiring; see
-Step C).
+flow: **unit** → the rules in Steps 3–4 below; **integration** (direct sandbox) → the **Direct-sandbox
+integration tests** section; **proxy** → the proxy subsections of the **Integration tests** section.
 
 ---
 
 ## Step 3 — Read infrastructure files
 
+> **Orientation — read `uts/README.md` first.** It's the human-readable guide to this module: the
+> tier model (unit / direct-sandbox / proxy), the per-tier Gradle tasks, the test-layout convention,
+> and a file-map of every infra helper with its public surface (Appendix B). Skim it for the *why* and
+> the *what's available*; the per-file list below is the *what to open for exact signatures* before
+> writing code.
+
 Infrastructure is split by tier under `uts/src/test/kotlin/io/ably/lib/uts/infra/`:
 
 - `infra/Utils.kt` — shared async helpers (`awaitState`, `awaitChannelState`, `pollUntil`), package `io.ably.lib.uts.infra`.
 - `infra/unit/` — unit-test mocks/factories (`ClientFactories.kt`, `MockWebSocket.kt`, `MockHttpClient.kt`, `FakeClock.kt`, `MockEvent.kt`, the `PendingConnection`/`PendingRequest` pairs, and `Utils.kt` with the `ConnectionDetails { }` builder), package `io.ably.lib.uts.infra.unit`.
-- `infra/integration/` + `infra/integration/proxy/` — proxy/sandbox helpers (`SandboxApp.kt`, `ProxyManager.kt`, `ProxySession.kt`) — see the **Proxy integration tests** section.
+- `infra/integration/` + `infra/integration/proxy/` — direct-sandbox + proxy helpers (`SandboxApp.kt`, `ProxyManager.kt`, `ProxySession.kt`) — see the **Integration tests** section.
 
 For a **unit** test, read all files under `infra/unit/` plus `infra/Utils.kt` before generating any code (you need exact method signatures).
 
@@ -514,13 +520,18 @@ before finishing.
 
 ---
 
-## Proxy integration tests
+## Integration tests (direct sandbox + proxy)
 
-Some specs are **integration tests** that exercise fault-handling behaviour against the **real Ably sandbox** instead of a mocked transport. They route the SDK through the [`ably/uts-proxy`](https://github.com/ably/uts-proxy) — a programmable HTTP/WebSocket proxy that forwards traffic transparently by default but can inject faults (dropped connections, modified/injected/delayed frames, error responses) via rules.
+Some specs are **integration tests** — they run against the **real Ably sandbox** instead of a mocked transport. Two tiers share one foundation and differ only in *transport*:
 
-Recognise them by: a reference to `create_proxy_session()`, proxy `rules`, `trigger_action`, `get_log`, or a pointer to `uts/realtime/integration/helpers/proxy.md`.
+- **Direct sandbox** — the client connects straight to the sandbox. Happy-path interop (connect, publish, subscribe, presence); no faults.
+- **Proxy** — the client is routed through the [`ably/uts-proxy`](https://github.com/ably/uts-proxy), a programmable HTTP/WebSocket proxy that forwards traffic transparently but can inject faults (dropped connections, modified/injected/delayed frames, error responses) via rules.
 
-### When proxy tests are the right tool
+**Shared foundation (both tiers, covered once):** `SandboxApp` provisioning + the `@BeforeAll`/`@AfterAll` lifecycle (see **Infrastructure** below), `runTest` test bodies, suspend-function handling, and the `awaitState` / `awaitChannelState` / `pollUntil` waits — never a fixed sleep, since real network is involved (use generous 10–30s timeouts). Only the *wiring* differs per tier; that's what the two tier subsections below cover.
+
+Recognise a **proxy** spec by a reference to `create_proxy_session()`, proxy `rules`, `trigger_action`, `get_log`, or a pointer to `uts/realtime/integration/helpers/proxy.md`. A spec with none of those is **direct sandbox**.
+
+### Which integration tier?
 
 | Test type | When the spec uses it |
 |---|---|
@@ -528,19 +539,69 @@ Recognise them by: a reference to `create_proxy_session()`, proxy `rules`, `trig
 | **Direct sandbox integration** | Happy-path behaviour (connect, publish, subscribe, presence). No fault injection. |
 | **Proxy integration test** | Fault behaviour against the real backend: connection failures, resume, heartbeat starvation, token renewal under network errors, channel error injection. |
 
+### Direct-sandbox integration tests
+
+A **direct-sandbox** spec (no `create_proxy_session`, no rules — just happy-path interop against `nonprod:sandbox`) uses the same `SandboxApp` provisioning and the same `runTest` / `@BeforeAll`+`runBlocking` lifecycle as a proxy test, but **drops all proxy wiring**: no `ProxyManager.ensureProxy()`, no `ProxySession`, no `connectThroughProxy`. The client connects straight to the sandbox host. `ChannelHistoryTest` (realtime) and `ObjectsLifecycleTest` (liveobjects) are the reference examples — read one before translating a direct-sandbox spec.
+
+**Client wiring** — point both transports at the sandbox host (explicit hosts auto-disable fallback hosts, so no `fallbackHosts`):
+
+```kotlin
+private fun newClient(useBinaryProtocol: Boolean): AblyRealtime = TestRealtimeClient {
+    key = app.defaultKey
+    realtimeHost = SandboxApp.sandboxHost   // sandbox.realtime.ably-nonprod.net
+    restHost     = SandboxApp.sandboxHost
+    this.useBinaryProtocol = useBinaryProtocol
+    autoConnect  = false
+}
+```
+
+**Class docstring** — use a direct-sandbox variant (drop the proxy/fault-injection wording):
+
+```kotlin
+/**
+ * Direct-sandbox integration test against the Ably Sandbox (`sandbox.realtime.ably-nonprod.net`,
+ * via SandboxApp.sandboxHost) — no proxy, no fault injection. Provisions one throwaway SandboxApp
+ * for the suite and connects real clients straight to the sandbox.
+ */
+```
+
+**Protocol variants (`json` / `msgpack`)** — when the spec header declares a `PROTOCOL` dimension and says each test runs once per variant, translate it to a `useBinaryProtocol` `@ParameterizedTest` (this is what the module's `junit-jupiter-params` dependency is for), not a plain `@Test`. The `@UTS` tag and method name stay singular — the parameter expresses the variant:
+
+```kotlin
+/** @UTS realtime/integration/RTL10d/history-cross-client-0 */
+@ParameterizedTest(name = "useBinaryProtocol={0}")
+@ValueSource(booleans = [false, true])   // false = JSON, true = msgpack
+fun `RTL10d - history contains messages published by another client`(useBinaryProtocol: Boolean) = runTest {
+    val publisher = newClient(useBinaryProtocol)
+    // …
+}
+```
+
+Import `org.junit.jupiter.params.ParameterizedTest` and `org.junit.jupiter.params.provider.ValueSource`. A spec with **no** protocol dimension stays a plain `@Test`.
+
+**Awaiting real server outcomes** — integration specs assert on real backend state, so never sleep; await or poll:
+
+| Pseudocode | Kotlin |
+|---|---|
+| `AWAIT channel.attach()` | `channel.attach()` then `awaitChannelState(channel, ChannelState.attached, 10.seconds)` |
+| `AWAIT channel.publish(name, data)` (await the ack) | wrap the **non-deprecated** `publish(name, data, Callback<PublishResult>)` overload in `suspendCancellableCoroutine` — resume on `onSuccess`, fail on `onError` (the `CompletionListener` overload is deprecated) |
+| `poll_until(() => AWAIT channel.history().items.length == N, …)` | `pollUntil(10.seconds, 500.milliseconds) { channel.history(null).items().size == N }` (`history()` is a blocking REST call; `null` = no params) |
+
+Use generous timeouts (10–30s) — real network is involved. Everything else is the shared foundation described at the top of this section; a direct-sandbox test just skips the proxy-only subsections (`ProxySession`, rule factories, the event log).
+
 ### Infrastructure
 
-Three helpers live under `uts/src/test/kotlin/io/ably/lib/uts/infra/integration/`. **Read them before translating a proxy spec** — they hold the exact method signatures.
+Three helpers live under `uts/src/test/kotlin/io/ably/lib/uts/infra/integration/`. **Read the ones your tier uses before translating an integration spec** — they hold the exact method signatures. `SandboxApp` serves **both** tiers; `ProxyManager` and `ProxySession` are **proxy-only**.
 
-- **`ProxyManager`** (`infra/integration/proxy/ProxyManager.kt`, package `io.ably.lib.uts.infra.integration.proxy`) — downloads/starts the shared `uts-proxy` process and exposes the sandbox host. Call `ProxyManager.ensureProxy()` once per suite in setup. `ProxyManager.sandboxRealtimeHost` / `sandboxRestHost` are the upstream sandbox hosts (the default target of every session).
+- **`ProxyManager`** (`infra/integration/proxy/ProxyManager.kt`, package `io.ably.lib.uts.infra.integration.proxy`) — downloads/starts the shared `uts-proxy` process. Call `ProxyManager.ensureProxy()` once per suite in setup.
 - **`ProxySession`** (`infra/integration/proxy/ProxySession.kt`, same package) — one programmable session wrapping the proxy control API; also defines the `connectThroughProxy` extension and the rule-builder helpers.
-- **`SandboxApp`** (`infra/integration/SandboxApp.kt`, package `io.ably.lib.uts.infra.integration`) — provisions/deletes a sandbox test app from the shared `test-app-setup.json` in ably-common. `SandboxApp.create()` returns a `SandboxApp` with `appId`, `defaultKey`, and `keys` (`defaultKey` is a full-capability `appId.keyId:keySecret`); `app.delete()` tears it down. Provision in suite setup, delete in teardown.
+- **`SandboxApp`** (`infra/integration/SandboxApp.kt`, package `io.ably.lib.uts.infra.integration`) — provisions/deletes a sandbox test app from the shared `test-app-setup.json` in ably-common. `SandboxApp.create()` returns a `SandboxApp` with `appId`, `defaultKey`, and `keys` (`defaultKey` is a full-capability `appId.keyId:keySecret`); `app.delete()` tears it down. Provision in suite setup, delete in teardown. Also owns the single upstream sandbox host constant `SandboxApp.sandboxHost` (`sandbox.realtime.ably-nonprod.net`, the resolved `nonprod:sandbox` endpoint) — the default target of every `ProxySession` (both `realtimeHost` and `restHost`), and what direct-sandbox clients set `realtimeHost` / `restHost` from.
 
-Import these into a proxy test from their packages, e.g. `io.ably.lib.uts.infra.integration.SandboxApp`, `io.ably.lib.uts.infra.integration.proxy.{ProxyManager, ProxySession, connectThroughProxy}`, plus `io.ably.lib.uts.infra.unit.TestRealtimeClient` and `io.ably.lib.uts.infra.{awaitState, pollUntil}`.
+Import what the tier needs: a **direct-sandbox** test imports `io.ably.lib.uts.infra.integration.SandboxApp` plus `io.ably.lib.uts.infra.unit.TestRealtimeClient` and `io.ably.lib.uts.infra.{awaitState, pollUntil}`; a **proxy** test additionally imports `io.ably.lib.uts.infra.integration.proxy.{ProxyManager, ProxySession, connectThroughProxy}`.
 
 `ensureProxy()`, the `ProxySession` methods, and the `SandboxApp` methods are all **`suspend`** functions. Per-test bodies use `runTest { }`; JUnit5 `@BeforeAll`/`@AfterAll` (with `@TestInstance(Lifecycle.PER_CLASS)`) wrap their suspend calls in `runBlocking { }`.
 
-### Test class docstring
+### Proxy test class docstring
 
 Give every proxy integration test class this KDoc:
 
