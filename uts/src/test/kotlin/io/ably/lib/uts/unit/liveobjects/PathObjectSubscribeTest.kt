@@ -31,7 +31,7 @@ import kotlin.time.Duration.Companion.seconds
  * (RTPO19b) drives the channel to DETACHED via a server-sent DETACHED protocol message over the existing
  * mock (the shared helper's mock does not respond to DETACH), then asserts the synchronous failure.
  *
- * All tests use `setupSyncedChannel` (helpers.kt), which needs the SDK's OBJECT_SYNC processing +
+ * All tests use `setupSyncedChannel` (Helpers.kt), which needs the SDK's OBJECT_SYNC processing +
  * `RealtimeObject.get()` — still TODO — so these compile now and run once that lands (translate-only).
  */
 class PathObjectSubscribeTest {

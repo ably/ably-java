@@ -13,7 +13,6 @@ import io.ably.lib.types.ChannelMode
 import io.ably.lib.types.ChannelOptions
 import io.ably.lib.uts.infra.awaitState
 import io.ably.lib.uts.infra.integration.SandboxApp
-import io.ably.lib.uts.infra.integration.proxy.ProxyManager
 import io.ably.lib.uts.infra.pollUntil
 import io.ably.lib.uts.infra.unit.TestRealtimeClient
 import kotlinx.coroutines.future.await
@@ -33,7 +32,7 @@ import kotlin.time.Duration.Companion.seconds
 
 /**
  * Direct-sandbox integration test against the Ably Sandbox
- * (`sandbox.realtime.ably-nonprod.net`, via [ProxyManager.sandboxRealtimeHost]) — no proxy, no
+ * (`sandbox.realtime.ably-nonprod.net`, via [SandboxApp.sandboxHost]) — no proxy, no
  * fault injection. Provisions one throwaway [SandboxApp] for the suite and connects real realtime
  * clients straight to the sandbox.
  *
@@ -234,9 +233,9 @@ class ObjectsLifecycleTest {
     fun `RTPO15 - client syncs pre-existing data provisioned via REST`(useBinaryProtocol: Boolean) = runTest {
         val channelName = "objects-rest-provision-" + UUID.randomUUID()
 
-        // Provision data via REST before any realtime client connects (see helpers.kt).
+        // Provision data via REST before any realtime client connects (see Helpers.kt).
         // Both provisionObjectsViaRest and the realtime client below target the same nonprod
-        // sandbox host (ProxyManager.sandboxRealtimeHost), so the provisioned data is visible
+        // sandbox host (SandboxApp.sandboxHost), so the provisioned data is visible
         // to the client once the SDK's OBJECT_SYNC + RealtimeObject.get() land.
         provisionObjectsViaRest(
             app.defaultKey,
@@ -262,8 +261,8 @@ class ObjectsLifecycleTest {
     /** A realtime client wired straight to the nonprod sandbox (no proxy). */
     private fun newClient(useBinaryProtocol: Boolean): AblyRealtime = TestRealtimeClient {
         key = app.defaultKey
-        realtimeHost = ProxyManager.sandboxRealtimeHost
-        restHost = ProxyManager.sandboxRealtimeHost
+        realtimeHost = SandboxApp.sandboxHost
+        restHost = SandboxApp.sandboxHost
         this.useBinaryProtocol = useBinaryProtocol
         autoConnect = false
     }

@@ -25,7 +25,7 @@ import kotlin.time.Duration.Companion.seconds
  *  - The tombstone diff flag (RTLO4b4c3c / RTLO4b4e) is observed through `message.operation.action ==
  *    OBJECT_DELETE` (the spec itself prescribes this public-API proxy), not a `tombstone` boolean.
  *
- * All tests use `setupSyncedChannel` (helpers.kt), which needs the SDK's OBJECT_SYNC processing +
+ * All tests use `setupSyncedChannel` (Helpers.kt), which needs the SDK's OBJECT_SYNC processing +
  * `RealtimeObject.get()` — still TODO — so these compile now and run once that lands (translate-only).
  */
 class LiveObjectSubscribeTest {

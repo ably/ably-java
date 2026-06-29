@@ -49,7 +49,7 @@ import kotlin.time.Duration.Companion.seconds
  * IDL and its OBJECT/ACK wire-message assertions reach `ProtocolMessage.state` wire objects (§13). There is
  * no public `publish` on `RealtimeObject`, so that test is a documented deviation (see deviations.md).
  *
- * Most tests use `setupSyncedChannel` (helpers.kt), which needs the SDK's OBJECT_SYNC processing +
+ * Most tests use `setupSyncedChannel` (Helpers.kt), which needs the SDK's OBJECT_SYNC processing +
  * `RealtimeObject.get()` — still TODO — so these compile now and run once that lands (translate-only).
  */
 class RealtimeObjectTest {

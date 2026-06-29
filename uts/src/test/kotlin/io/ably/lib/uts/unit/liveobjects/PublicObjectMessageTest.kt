@@ -15,7 +15,7 @@ import kotlin.test.assertNull
  *
  * Pure data-structure construction, no mocks. The spec's `PublicObjectMessage.fromObjectMessage(source,
  * channel)` / `PublicObjectOperation.fromObjectOperation(op)` (PAOM3 / PAOOP3) are `internal` in
- * `:liveobjects`; [buildPublicObjectMessage] (in `helpers.kt`) reaches them by reflection, so the source is
+ * `:liveobjects`; [buildPublicObjectMessage] (in `Helpers.kt`) reaches them by reflection, so the source is
  * built with the wire op builders (`buildMapSet`, `buildCounterInc`, …) and the public getters are asserted
  * on the result. Spec `op.action == "MAP_SET"` (string tag) becomes the `ObjectOperationAction` enum
  * constant; `op.mapCreate == null` becomes `assertNull`; getters read as Kotlin properties.

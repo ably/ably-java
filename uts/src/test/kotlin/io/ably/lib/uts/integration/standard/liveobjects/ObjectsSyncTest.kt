@@ -11,7 +11,6 @@ import io.ably.lib.types.ChannelOptions
 import io.ably.lib.uts.infra.awaitChannelState
 import io.ably.lib.uts.infra.awaitState
 import io.ably.lib.uts.infra.integration.SandboxApp
-import io.ably.lib.uts.infra.integration.proxy.ProxyManager
 import io.ably.lib.uts.infra.pollUntil
 import io.ably.lib.uts.infra.unit.TestRealtimeClient
 import kotlinx.coroutines.future.await
@@ -29,7 +28,7 @@ import kotlin.time.Duration.Companion.seconds
 
 /**
  * Direct-sandbox integration test against the Ably Sandbox
- * (`sandbox.realtime.ably-nonprod.net`, via [ProxyManager.sandboxRealtimeHost]) — no proxy, no
+ * (`sandbox.realtime.ably-nonprod.net`, via [SandboxApp.sandboxHost]) — no proxy, no
  * fault injection. Provisions one throwaway [SandboxApp] for the suite.
  *
  * Verifies the objects sync sequence against the real server: attach with HAS_OBJECTS, receive
@@ -171,8 +170,8 @@ class ObjectsSyncTest {
     /** A realtime client wired straight to the nonprod sandbox (no proxy). */
     private fun newClient(useBinaryProtocol: Boolean): AblyRealtime = TestRealtimeClient {
         key = app.defaultKey
-        realtimeHost = ProxyManager.sandboxRealtimeHost
-        restHost = ProxyManager.sandboxRealtimeHost
+        realtimeHost = SandboxApp.sandboxHost
+        restHost = SandboxApp.sandboxHost
         this.useBinaryProtocol = useBinaryProtocol
         autoConnect = false
     }

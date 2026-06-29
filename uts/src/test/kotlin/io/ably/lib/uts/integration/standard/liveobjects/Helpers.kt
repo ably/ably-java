@@ -6,7 +6,7 @@ import com.google.gson.JsonObject
 import io.ably.lib.http.HttpUtils
 import io.ably.lib.rest.AblyRest
 import io.ably.lib.types.ClientOptions
-import io.ably.lib.uts.infra.integration.proxy.ProxyManager
+import io.ably.lib.uts.infra.integration.SandboxApp
 
 /**
  * LiveObjects **integration** test helpers — the ably-java translation of the UTS
@@ -30,7 +30,7 @@ import io.ably.lib.uts.infra.integration.proxy.ProxyManager
  *  - Values are `{ string }` / `{ number }` / `{ boolean }` / `{ bytes }`(base64) / `{ objectId }`.
  *  - `mapCreate.semantics` is the integer `0` (LWW); its `entries` wrap each value as `{ "data": <value> }`.
  *
- * Compiles against `:java` only (`AblyRest` + `HttpUtils`), like the unit `helpers.kt`.
+ * Compiles against `:java` only (`AblyRest` + `HttpUtils`), like the unit `Helpers.kt`.
  */
 
 // ---------------------------------------------------------------------------
@@ -123,11 +123,11 @@ fun provisionObjectsViaRest(apiKey: String, channelName: String, operations: Lis
     val rest = AblyRest(
         ClientOptions().apply {
             key = apiKey
-            // Target the same nonprod sandbox host that SandboxApp/ProxyManager and the realtime
-            // clients use (sandbox.realtime.ably-nonprod.net) — NOT environment="sandbox", which
-            // resolves to the legacy prod-sandbox host sandbox-rest.ably.io (Hosts.java also forbids
-            // setting both environment and restHost). Matches standard_test_pool.md (ably/specification#497).
-            restHost = ProxyManager.sandboxRealtimeHost
+            // Target the same nonprod sandbox host that SandboxApp and the realtime clients use
+            // (sandbox.realtime.ably-nonprod.net) — NOT environment="sandbox", which resolves to the
+            // legacy prod-sandbox host sandbox-rest.ably.io (Hosts.java also forbids setting both
+            // environment and restHost). Matches standard_test_pool.md (ably/specification#497).
+            restHost = SandboxApp.sandboxHost
             useBinaryProtocol = false
         },
     )

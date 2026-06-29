@@ -23,7 +23,7 @@ import kotlin.test.assertNull
  * **operation** itself throws `AblyException` with the spec's error code (92007 wrong type, 92005
  * unresolvable path). No deviations.
  *
- * All tests use `setupSyncedChannel` (helpers.kt), which needs the SDK's OBJECT_SYNC processing +
+ * All tests use `setupSyncedChannel` (Helpers.kt), which needs the SDK's OBJECT_SYNC processing +
  * `RealtimeObject.get()` — still TODO — so these compile now and run once that lands (translate-only).
  */
 class PathObjectMutationsTest {

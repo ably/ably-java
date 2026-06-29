@@ -32,7 +32,7 @@ import kotlin.time.Duration.Companion.seconds
  * sub-assertions recorded as deviations. The table-driven invalid-value case (function / undefined / symbol)
  * is rejected at compile time by the `LiveMapValue` union, so it is not expressible (deviation, §6).
  *
- * All tests use `setupSyncedChannel` (helpers.kt), which needs the SDK's OBJECT_SYNC processing +
+ * All tests use `setupSyncedChannel` (Helpers.kt), which needs the SDK's OBJECT_SYNC processing +
  * `RealtimeObject.get()` — still TODO — so these compile now and run once that lands (translate-only).
  */
 class LiveMapApiTest {

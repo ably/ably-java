@@ -26,7 +26,7 @@ import kotlin.time.Duration.Companion.seconds
  *  - `compact()` is not implemented (RTTS3f); `compactJson()` is the supported snapshot (RTPO13 / RTPO13b5 /
  *    RTPO13c, and the `compact()` sub-assertion of RTPO3c1).
  *
- * All tests use `setupSyncedChannel` (helpers.kt), which needs the SDK's OBJECT_SYNC processing +
+ * All tests use `setupSyncedChannel` (Helpers.kt), which needs the SDK's OBJECT_SYNC processing +
  * `RealtimeObject.get()` — still TODO — so these compile now and run once that lands (translate-only).
  */
 class PathObjectTest {

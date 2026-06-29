@@ -32,7 +32,7 @@ import kotlin.time.Duration.Companion.seconds
  *    partitioned off the wrong-typed view.
  *  - `compact()` is not implemented (RTTS7d); `compactJson()` is the supported snapshot (RTINS10).
  *
- * All tests use `setupSyncedChannel` (helpers.kt), which needs the SDK's OBJECT_SYNC processing +
+ * All tests use `setupSyncedChannel` (Helpers.kt), which needs the SDK's OBJECT_SYNC processing +
  * `RealtimeObject.get()` — still TODO — so these compile now and run once that lands (translate-only).
  */
 class InstanceTest {

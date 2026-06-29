@@ -30,13 +30,13 @@ import kotlin.time.Duration.Companion.seconds
  *    (RTLC12e2/e3/e5, RTLC13b) inspect the **outbound wire `ObjectMessage`** (`captured.state[0].operation`).
  *    That wire form (`WireObjectMessage` / `WireObjectOperation`) is `internal` to `:liveobjects` and not part
  *    of the public API, so it is read by reflection off the captured `ProtocolMessage.state` (the same
- *    reflection pattern `helpers.kt` / `PublicObjectMessageTest.kt` already use). The observable public-API
+ *    reflection pattern `Helpers.kt` / `PublicObjectMessageTest.kt` already use). The observable public-API
  *    outcome (counter value after the await) is asserted alongside where the spec provides it.
  *  - RTLC12e1 feeds non-`Number` increment amounts and expects `40003`. ably-java's
  *    `increment(@NotNull Number)` signature rejects every one of those at compile time, so the cases are not
  *    expressible as runtime assertions — see deviations.md.
  *
- * All tests use `setupSyncedChannel` (helpers.kt), which needs the SDK's OBJECT_SYNC processing +
+ * All tests use `setupSyncedChannel` (Helpers.kt), which needs the SDK's OBJECT_SYNC processing +
  * `RealtimeObject.get()` — still TODO — so these compile now and run once that lands (translate-only).
  */
 class LiveCounterApiTest {
@@ -170,7 +170,7 @@ class LiveCounterApiTest {
 // WireObjectMessage instances. These are decoded back by the mock and recorded in mockWs.events. Their
 // operation/action/objectId/counterInc fields are internal Kotlin data-class properties — addressable by
 // their declared field names on the JVM (Kotlin `internal` is not name-mangled here), reached with
-// isAccessible since they are package-private/internal. Mirrors the reflection pattern in helpers.kt.
+// isAccessible since they are package-private/internal. Mirrors the reflection pattern in Helpers.kt.
 // ---------------------------------------------------------------------------
 
 private fun capturedObjectMessages(mockWs: MockWebSocket): List<ProtocolMessage> =

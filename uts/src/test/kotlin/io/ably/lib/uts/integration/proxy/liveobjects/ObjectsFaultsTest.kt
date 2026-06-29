@@ -300,8 +300,8 @@ class ObjectsFaultsTest {
     /** A realtime client connected straight to the nonprod sandbox (no proxy). */
     private fun directClient(): AblyRealtime = TestRealtimeClient {
         key = app.defaultKey
-        realtimeHost = ProxyManager.sandboxRealtimeHost
-        restHost = ProxyManager.sandboxRealtimeHost
+        realtimeHost = SandboxApp.sandboxHost
+        restHost = SandboxApp.sandboxHost
         autoConnect = false
     }
 
