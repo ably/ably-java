@@ -57,12 +57,8 @@ object ProxyManager {
     private const val PROXY_VERSION = "v0.3.0"
     private const val VERSION_BARE = "0.3.0"
     const val CONTROL_PORT = 10100
-    private const val SANDBOX_HOST = "sandbox.realtime.ably-nonprod.net"
     private const val GITHUB_BASE =
         "https://github.com/ably/uts-proxy/releases/download/$PROXY_VERSION"
-
-    val sandboxRealtimeHost: String = SANDBOX_HOST
-    val sandboxRestHost: String = SANDBOX_HOST
 
     private val CHECKSUMS = mapOf(
         "uts-proxy_${VERSION_BARE}_darwin_amd64.tar.gz" to

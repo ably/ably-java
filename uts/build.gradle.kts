@@ -11,6 +11,8 @@ dependencies {
     // helpers reach the internal wire/message classes (e.g. for build_public_object_message) by reflection.
     testRuntimeOnly(project(":liveobjects"))
     testImplementation(kotlin("test"))
+    // @ParameterizedTest / @ValueSource — version managed by the junit-bom on the test classpath.
+    testImplementation("org.junit.jupiter:junit-jupiter-params")
     testImplementation(libs.mockk)
     testImplementation(libs.coroutine.core)
     testImplementation(libs.coroutine.test)
