@@ -347,7 +347,11 @@ fun `RTN4a - description of what is being tested`() = runTest {
 }
 ```
 
-### File template
+### File template (unit tier)
+
+This scaffold is for the **unit** tier — it wires the mocked transport (`infra.unit.*`, `MockWebSocket`,
+`ConnectionDetails`). For the **integration** (direct sandbox) and **proxy** tiers, start from the
+**Proxy integration tests** section instead (`SandboxApp` / `ProxySession` wiring), not from this template.
 
 ```kotlin
 package <package>                              // the resolver's package for the chosen tier (Step 2)
@@ -484,21 +488,70 @@ Append to `uts/src/test/kotlin/io/ably/lib/uts/deviations.md`. Each entry needs:
 
 ## Step 7 — Review generated output against the spec
 
-Re-read the original spec file and the generated Kotlin test file side-by-side and check every item below. Fix anything that fails a check before declaring the task done.
+The translation isn't done when it compiles — it's done when **every line of the source spec is faithfully
+represented** in the Kotlin: each test case, each setup step, each operation, and each assertion. Missing a
+single `ASSERT` produces a test that compiles, passes, and silently checks less than the spec demands. This
+review runs in **both** modes (it's static — it doesn't need the tests to have run).
+
+### Deterministic faithfulness audit — run the script first
+
+Eyeballing two files for "did I translate every line?" is exactly the kind of mechanical comparison the
+model does inconsistently, so a bundled script extracts the ledger for you — same inputs, same report every
+time. Run it for each translated spec — don't hand-build paths; use the resolver's output (Step A): the
+**source spec file** is that spec's `specs[].file` (already an absolute path) and the **generated Kotlin
+file** is the chosen tier's `targetDir` + `className` (Step 2):
+
+```bash
+python3 .claude/skills/uts-to-kotlin/scripts/audit_translation.py \
+    "<tier.specs[].file>" \
+    "<tier.targetDir>/<className>.kt"
+```
+
+It prints one JSON report and exits non-zero (2) when there are missing or orphan Test IDs. It does **no**
+semantic judgement — it only extracts, deterministically, what you must then reconcile by hand:
+
+- **`idCoverage`** — the spec's `**Test ID**` set vs the Kotlin's `@UTS` tag set.
+  - `missingInKotlin` **must be empty.** Each entry is a spec test case with no `@Test` method — implement it.
+  - `orphanInKotlin` **must be empty** (or every entry explained) — an `@UTS` tag that no longer matches any
+    spec Test ID means a stale or hand-edited tag.
+- **`perTest[]`** — for each spec test case, every non-comment code line inside the spec's `pseudo` blocks,
+  **grouped by section** (`Setup` / `Test Steps` / `Assertions` / …) in `sections[]` and each line tagged
+  `assert` (an `ASSERT*` outcome), `await` (an `AWAIT*` / `EXPECT` wait), or `step` (setup, mock/client
+  construction, an operation). `specAsserts` / `specAwaits` are flat convenience views of the first two;
+  `specCodeLineTotal` is the size of the spec test. The matching Kotlin method's assertion/await/poll calls
+  and their count come alongside.
+
+The audit is a review aid, not a gate — it never crashes, it degrades. It always prints one JSON object
+(an `error` field instead of a report if a file is unreadable). If `idCoverage.specCount` is `0` for a file
+you know is a real spec, the extractor couldn't find any `**Test ID**` markers (an unusual spec format) —
+treat that as "couldn't verify deterministically" and fall back to a manual side-by-side read for that file.
 
 ### Coverage check — every test case is present
 
-For each test case ID in the spec:
-- [ ] A `@Test` method exists with that ID in its `@UTS` KDoc tag
-- [ ] The method name contains the spec ID and a meaningful description
+From the audit's `idCoverage`:
+- [ ] `missingInKotlin` is empty (every spec Test ID has an `@Test` with that ID in its `@UTS` KDoc tag)
+- [ ] `orphanInKotlin` is empty, or each orphan is a deliberate, explained rename
+- [ ] Each method name contains the spec ID and a meaningful description
 
-Flag any spec test case that has no corresponding `@Test` method as **missing** and implement it.
+### Line-by-line completeness — every spec line is translated
 
-### Assertion completeness — every `ASSERT` / `AWAIT` is translated
+Walk the audit's `perTest[].sections` and reconcile **each** extracted spec line against the Kotlin method.
+This is the guarantee that no setup step, operation, or assertion was dropped — the whole point of this step:
+- [ ] Every `assert` line maps to a concrete Kotlin assertion (`assertEquals`, `assertNotNull`, `assertNull`,
+      `assertIs`, `assertTrue`, `assertFailsWith`, …) — not a comment, not a weaker check
+- [ ] Every `await` line (state waits **and** awaited operations like `AWAIT channel.attach()` /
+      `setup_synced_channel(...)`) is performed via `awaitState` / `awaitChannelState` / `pollUntil` or the
+      corresponding SDK call
+- [ ] Every `step` line — client/mock construction, `ClientOptions`, installed mocks, channel ops — is
+      reflected in the test setup or body. Multi-line spec constructs split across several `step` lines;
+      reconcile them as a group.
+- [ ] `assertionShortfall > 0` for a test (`summary.testsWithShortfall`) is a **tripwire** — fewer Kotlin
+      assertions than spec `ASSERT`s strongly suggests a dropped assertion; open that test and account for
+      each one. (A negative shortfall is fine — the SDK mapping often needs *more* Kotlin lines per spec
+      `ASSERT`, e.g. number-type normalisation.)
 
-For each `ASSERT`, `AWAIT`, or observable outcome stated in the spec pseudocode:
-- [ ] There is a direct Kotlin assertion (`assertEquals`, `assertNotNull`, `assertNull`, `assertIs`, `assertTrue`, `assertFailsWith`, etc.) or an `awaitState` / `awaitChannelState` call covering it
-- [ ] No spec assertion has been silently dropped or weakened (e.g. replaced with a comment)
+A spec line you intentionally don't translate is only acceptable as a documented deviation (a `// DEVIATION:`
+comment + a `deviations.md` entry), never as a silent omission.
 
 ### Setup fidelity — preconditions match the spec
 
@@ -515,8 +568,9 @@ generated test diverges from the spec pseudocode (adapted assertion, env-gated s
 - [ ] A `// DEVIATION:` comment explains why
 - [ ] The deviation is recorded in `uts/src/test/kotlin/io/ably/lib/uts/deviations.md`
 
-If you find gaps during this review, fix them and re-run Step 5 (compile) — and, in evaluate mode, Step 6 —
-before finishing.
+If you find gaps during this review, fix them, then **re-run the audit script** until `missingInKotlin` /
+`orphanInKotlin` are empty and every `perTest` entry reconciles, and re-run Step 5 (compile) — and, in
+evaluate mode, Step 6 — before finishing.
 
 ---
 

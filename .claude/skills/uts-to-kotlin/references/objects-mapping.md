@@ -135,7 +135,7 @@ returns `null` if `k` isn't a number, rather than throwing.
 `values()` return `Iterable<…>`. The spec's tuple-destructuring loops and `IN` membership map to Kotlin
 directly:
 
-```
+```text
 # spec
 FOR [key, pathObj] IN root.entries(): …
 ASSERT "name" IN root.keys()
@@ -189,7 +189,7 @@ root's is `""`. A literal dot *inside* a segment is escaped as `\.`, and `at()` 
 literal dot — so `path()` round-trips. Mind Kotlin's own backslash escaping (`"a\\.b.c"` is the string
 `a\.b.c`):
 
-```
+```text
 # spec                                    # ably-java (Kotlin)
 ASSERT root.path() == ""                   assertEquals("", root.path())
 ASSERT root.get("a").get("b").path()       assertEquals("a.b", root.get("a").asLiveMap().get("b").path())
@@ -281,7 +281,7 @@ etc. when a spec asserts on a constructed value's contents.
 
 Putting §4 + §6 together — the canonical write translations:
 
-```
+```text
 # spec
 AWAIT root.set("count", LiveCounter.create(0))
 AWAIT root.get("count").increment(5)
@@ -314,7 +314,7 @@ runtime failure the spec is testing.
 To translate these, cast to the view whose write method you need (the `PathObject` cast never throws,
 `RTTS5d`), then assert the **operation** throws — that's where the `92007` surfaces:
 
-```
+```text
 # spec: increment on a map fails
 AWAIT root.increment(5) FAILS WITH error   # code 92007
 ```
@@ -416,7 +416,7 @@ getter matching the action — `getMapCreate()`, `getMapSet()`, `getMapRemove()`
 **The spec accesses these as dotted property chains and compares `action` to a *string literal*; ably-java
 uses getters and an *enum constant*.** Translate the chain getter-by-getter and the string tag to the enum:
 
-```
+```text
 # spec
 ASSERT msg.operation.action == "MAP_SET"
 ASSERT msg.operation.mapSet.key == "name"
@@ -609,7 +609,7 @@ reflection and no `:liveobjects` dependency — it compiles and runs against `:j
 
 Spec pseudocode (public-API style):
 
-```
+```text
 test "increments a nested counter and observes it"
   root = AWAIT channel.object.get()
   AWAIT root.set("game", LiveMap.create({ score: LiveCounter.create(0) }))
