@@ -11,6 +11,7 @@ import io.ably.lib.uts.infra.awaitState
 import io.ably.lib.uts.infra.pollUntil
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.test.*
 import kotlin.time.Duration.Companion.seconds
 
@@ -215,7 +216,9 @@ class ConnectionRecoveryTest {
   fun `RTN16k - recover option adds recover query param to WebSocket URL`() = runTest {
     val recoveryKeyJson = RecoveryKeyContext("recovered-key-xyz", 5, emptyMap()).encode()
 
-    val capturedQueryParams = mutableListOf<Map<String, String>>()
+    // Written from onConnectionAttempt (SDK transport thread) and read from pollUntil/asserts
+    // (coroutine dispatcher), so use a thread-safe list to avoid a visibility race / flaky reads.
+    val capturedQueryParams = CopyOnWriteArrayList<Map<String, String>>()
     var connectAttempt = 0
     val mock = MockWebSocket {
       onConnectionAttempt = { conn ->

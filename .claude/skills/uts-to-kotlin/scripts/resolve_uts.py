@@ -92,12 +92,15 @@ def main():
     )
     args = ap.parse_args()
 
-    raw = args.module_dir.rstrip("/")
-    if not re.search(r"/uts/[^/]+$", raw):
+    # Validate via Path.parts so this works regardless of separator (Windows '\' as well as
+    # POSIX '/'); a hard-coded "/uts/<module>$" regex would reject otherwise-valid Windows paths.
+    module_dir = Path(args.module_dir)
+    raw = str(module_dir)
+    parts = module_dir.parts
+    if len(parts) < 2 or parts[-2] != "uts":
         fail("NOT_A_UTS_MODULE_PATH",
              f"{raw!r} is not a module directory directly under uts/ "
              f"(expected .../uts/<module>).")
-    module_dir = Path(raw)
     if not module_dir.is_dir():
         fail("DIR_NOT_FOUND", f"{raw!r} does not exist or is not a directory.")
     if not (module_dir / "unit").is_dir() and not (module_dir / "integration").is_dir():

@@ -347,7 +347,11 @@ fun `RTN4a - description of what is being tested`() = runTest {
 }
 ```
 
-### File template
+### File template (unit tier)
+
+This scaffold is for the **unit** tier — it wires the mocked transport (`infra.unit.*`, `MockWebSocket`,
+`ConnectionDetails`). For the **integration** (direct sandbox) and **proxy** tiers, start from the
+**Proxy integration tests** section instead (`SandboxApp` / `ProxySession` wiring), not from this template.
 
 ```kotlin
 package <package>                              // the resolver's package for the chosen tier (Step 2)

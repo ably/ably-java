@@ -39,7 +39,7 @@ leave gaps.
 
 UTS fixes this by separating **what to test** from **how to test it in a given language**:
 
-```
+```text
         ┌──────────────────────────────┐
         │   Ably features spec          │   ← the ultimate authority (RSC*, RTN*, RTL* …)
         │   (features.md)               │
@@ -98,10 +98,12 @@ Key principles (from [`integration-testing.md`](https://github.com/ably/specific
 - **Proxy tests prefer "late fault injection".** Let the real handshake complete against the real
   server, *then* inject the fault as the final interaction. This maximises how much of the test
   exercises genuine client-server behaviour (otherwise you've just written a slow unit test).
-- **Proxy tests always use JSON** (`useBinaryProtocol = false`). The spec corpus gives two reasons:
-  the proxy only supports **text** WebSocket frames so it can't inspect/modify msgpack
-  ([`integration-testing.md`](https://github.com/ably/specification/blob/main/uts/docs/integration-testing.md) §Protocol Variants), and the SDK under test doesn't implement msgpack
-  ([`helpers/proxy.md`](https://github.com/ably/specification/blob/main/uts/realtime/integration/helpers/proxy.md)).
+- **Proxy tests always use JSON** (`useBinaryProtocol = false`). ably-java *does* implement msgpack (it's
+  the default — `ClientOptions.useBinaryProtocol = true`); the real constraint is the proxy, which only
+  understands **text** WebSocket frames and so can't inspect or modify binary msgpack. The tests therefore
+  force JSON regardless of SDK support
+  ([`integration-testing.md`](https://github.com/ably/specification/blob/main/uts/docs/integration-testing.md) §Protocol Variants,
+  [`helpers/proxy.md`](https://github.com/ably/specification/blob/main/uts/realtime/integration/helpers/proxy.md)).
 
 ---
 
@@ -221,7 +223,7 @@ mocked-transport tests, and `integration/` for real-backend tests — the latter
 `standard/` (direct sandbox, happy-path) and `proxy/` (sandbox through the fault-injecting proxy). Under
 each, a per-module folder (`realtime`, `liveobjects`, …) holds the actual test classes:
 
-```
+```text
 uts/src/test/kotlin/io/ably/lib/uts/
 ├── deviations.md                        # the catalogue of SDK-vs-spec divergences
 │
@@ -847,7 +849,7 @@ and record in `deviations.md`.
 A unit test installs `MockWebSocket` into `DebugOptions.webSocketEngineFactory`. The SDK believes it
 is talking to a real socket; in fact every byte is intercepted by the mock and surfaced to the test.
 
-```
+```text
    ┌──────────────────────────────────── TEST (Kotlin coroutine) ────────────────────────────────────┐
    │                                                                                                   │
    │  TestRealtimeClient { install(mock); autoConnect = false }                                        │
@@ -885,7 +887,7 @@ is talking to a real socket; in fact every byte is intercepted by the mock and s
 A proxy test uses the **real** SDK transport but points its host/port at the local `uts-proxy`
 process, which forwards to the Ably sandbox and can inject faults on command.
 
-```
+```text
   ┌─────────────────── TEST (Kotlin) ───────────────────┐
   │ @BeforeAll: ProxyManager.ensureProxy()               │      downloads/launches binary, control :10100
   │            SandboxApp.create() ─────────────────────────────────────────────┐ POST /apps (direct, TLS)
