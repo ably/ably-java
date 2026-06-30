@@ -7,7 +7,12 @@ plugins {
 dependencies {
     testImplementation(project(":java"))
     testImplementation(project(":network-client-core"))
+    // Runtime-only so compile-time stays decoupled from the plugin internals; the LiveObjects test
+    // helpers reach the internal wire/message classes (e.g. for build_public_object_message) by reflection.
+    testRuntimeOnly(project(":liveobjects"))
     testImplementation(kotlin("test"))
+    // @ParameterizedTest / @ValueSource — version managed by the junit-bom on the test classpath.
+    testImplementation("org.junit.jupiter:junit-jupiter-params")
     testImplementation(libs.mockk)
     testImplementation(libs.coroutine.core)
     testImplementation(libs.coroutine.test)
@@ -34,4 +39,16 @@ tasks.withType<Test>().configureEach {
             .orElse(providers.environmentVariable("UTS_PROXY_LOCAL_PATH"))
             .getOrElse(""),
     )
+}
+
+tasks.register<Test>("runUtsUnitTests") {
+    filter {
+        includeTestsMatching("io.ably.lib.uts.unit.*")
+    }
+}
+
+tasks.register<Test>("runUtsIntegrationTests") {
+    filter {
+        includeTestsMatching("io.ably.lib.uts.integration.*")
+    }
 }

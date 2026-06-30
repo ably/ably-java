@@ -1,85 +1,167 @@
 ---
-description: "Translate a UTS pseudocode test spec into Kotlin tests in the uts module. Usage: /uts-to-kotlin <path-to-spec-file>"
-allowed-tools: Bash, Read, Edit, Write
+description: "Translate the UTS pseudocode test specs in a whole module directory into runnable Kotlin tests in the ably-java uts module. Takes a UTS module directory (e.g. .../specification/uts/objects), validates its structure, resolves the target ably-java module, lets you pick a tier (unit/integration/proxy) and which specs, then derives a Kotlin test per spec. Usage: /uts-to-kotlin <path-to-uts-module-directory>"
+allowed-tools: Bash, Read, Edit, Write, WebFetch
 ---
 
-Translate the UTS pseudocode test spec at `$ARGUMENTS` into a runnable Kotlin test in the `uts` module.
+Translate the UTS pseudocode test specs under the **module directory** `$ARGUMENTS` into runnable Kotlin
+tests in the ably-java `uts` module.
 
-Reference: [Writing Derived Tests](https://raw.githubusercontent.com/ably/specification/refs/heads/main/uts/docs/writing-derived-tests.md)
+`$ARGUMENTS` is a UTS *module* directory — a directory sitting directly under `.../specification/uts/`,
+e.g. `/Users/sachinsh/ably-specification/specification/uts/objects`. Its name (`objects`, `realtime`,
+`rest`, …) is the **source module**. A module directory holds many spec files, organised into tiers
+(`unit/`, `integration/`, and `integration/proxy/`).
 
----
+The work happens in two phases:
 
-## Step 0 — Validate arguments
+- **Phase 1 — Selection (Steps A–E below):** a bundled resolver script validates the directory and works
+  out the target ably-java package, the spec files, and their class names; you then pick a tier, pick which
+  specs, and choose whether to also evaluate.
+- **Phase 2 — Per-spec translation (Steps 1–7):** for each selected spec file, derive a Kotlin test.
 
-**If `$ARGUMENTS` is empty or blank**, stop immediately and tell the user:
+## Required reading — fetch first
 
-```
-Usage: /uts-to-kotlin <path-to-spec-file>
-
-Example:
-  /uts-to-kotlin lib/src/spec/uts/test/realtime/unit/connection/connection_state_machine_test.md
-
-Please re-run the command with the path to a UTS pseudocode spec file.
-```
-
-Do not proceed to Step 1.
-
-**If `$ARGUMENTS` is provided but does not end in `.md`**, stop and tell the user:
-
-```
-Error: "<value>" does not look like a spec file path (expected a .md file).
-
-Usage: /uts-to-kotlin <path-to-spec-file>
-```
-
-Do not proceed to Step 1.
-
-**If `$ARGUMENTS` ends in `.md` but the file does not exist** (check with `test -f "$ARGUMENTS"`), stop and tell the user:
-
-```
-Error: file not found: "<value>"
-
-Check the path and try again.
-```
-
-Do not proceed to Step 1.
-
-Only continue to Step 1 once the file is confirmed to exist.
+Always fetch [writing-derived-tests.md](https://raw.githubusercontent.com/ably/specification/refs/heads/main/uts/docs/writing-derived-tests.md) first (once per run) — don't rely on memory or the inlined summaries; the manual is updated over time.
 
 ---
 
-## Step 1 — Read the spec
+# Phase 1 — Selection
 
-Read the file at `$ARGUMENTS`. Identify:
+Path validation, the package mapping, spec discovery, and class-name derivation are all mechanical, so a
+bundled script does them — that keeps selection byte-for-byte deterministic instead of relying on the model
+to re-eyeball regexes, join paths, and hand-convert `snake_case` → `PascalCase` each run.
+
+> **If `$ARGUMENTS` is empty or blank**, stop and show: `Usage: /uts-to-kotlin <path-to-uts-module-directory>`
+> — with the example `/uts-to-kotlin /Users/sachinsh/ably-specification/specification/uts/objects`.
+
+## Step A — Resolve the module
+
+Run the resolver on the directory passed in (substitute the real path; the script path is relative to the
+ably-java repo root):
+
+```bash
+python3 .claude/skills/uts-to-kotlin/scripts/resolve_uts.py "<module-dir>"
+```
+
+It prints one JSON object. **If `ok` is `false`, relay `message` to the user and stop** — error codes:
+`NOT_A_UTS_MODULE_PATH` (not a `.../uts/<module>` directory), `DIR_NOT_FOUND`, `NO_TIER_DIRS` (no `unit/`
+or `integration/`). On success it gives `sourceModule`, `mapped`, `testRoot`, `translationNotes`, and a
+`tiers` object with one entry per tier (`unit` / `integration` / `proxy`), each carrying `present`,
+`sourceDir`, `targetDir`, `package`, and `specs` (a list of `{file, className}`). Everything downstream
+reads from this output — treat it as the single source of truth and don't recompute paths or names by hand.
+
+`translationNotes` is the path to a per-module ably-js → ably-java type/interface map when the module
+declares one (its `notes` field in `uts-package-mapping.json`, e.g. `objects` →
+`references/objects-mapping.md`), else `null`. When it's non-null, it is **required reading before
+Phase 2** — see Step 1.
+
+## Step B — Confirm or create the target mapping
+
+The target dirs come from `uts-package-mapping.json` (alongside this skill); spec and ably-java module names
+don't always match (e.g. `objects` → `liveobjects`), which is why it's explicit.
+
+- **If `mapped` is `true`**: show the resolved `targetDir` for each present tier and ask the user to confirm.
+  If they say the mapping is wrong, ask for the correct ably-java module base name and re-run with `--create`
+  (below) to overwrite the entry, then re-resolve.
+- **If `mapped` is `false`**: there's no mapping for `sourceModule` yet. Ask for the target ably-java module
+  base name (default to `sourceModule`; suggest a rename only when the SDK uses different terminology, e.g.
+  `objects` → `liveobjects`), then create it deterministically and re-resolve:
+
+  ```bash
+  python3 .claude/skills/uts-to-kotlin/scripts/resolve_uts.py "<module-dir>" --create <target>
+  ```
+
+  This adds `unit/<target>`, `integration/standard/<target>`, and `integration/proxy/<target>` under
+  `packages` and re-prints the resolved output. (`<target>` must be a simple module base name — letters,
+  digits, underscore; the script returns `BAD_TARGET_NAME` otherwise, so just ask again.)
+
+## Step C — Choose the tier
+
+Offer the tiers whose `present` is `true`. The chosen tier fixes the `targetDir`, `package`, and `specs`
+(from Step A) **and** the translation flow Phase 2 uses — don't re-detect any of it per spec:
+
+| Tier | Translation flow |
+|---|---|
+| **unit** | mocked transport — Steps 3–4 below |
+| **integration** (direct sandbox) | real sandbox, no faults — **Direct-sandbox integration tests** section |
+| **proxy** | real sandbox + fault injection — **Integration tests** section (proxy subsections) |
+
+## Step D — Choose which specs to translate
+
+The chosen tier's `specs` list (from Step A) is the candidate set — each entry already has its source `file`
+and derived `className`. Present it and ask whether to translate **all** of them or a **selected subset**.
+Then continue to Step E.
+
+## Step E — Translate only, or also evaluate?
+
+`writing-derived-tests.md` splits the work into **Translation** (always) and **Evaluation** (only
+meaningful once the SDK implementation for this module exists). Ask the user which they want, and carry the
+answer into Phase 2:
+
+- **Translate only** — generate each test and make it **compile** (Steps 1–5 and the Step 7 review). Don't
+  run the tests. Use this when the SDK feature isn't implemented yet, so there's nothing to run against.
+- **Translate and evaluate** — all of the above **plus** running the tests and **fixing until they pass**
+  (Step 6): work the decision tree, and where the SDK genuinely diverges, gate/adapt the assertion and
+  record a deviation. Use this when the implementation exists.
+
+If you can't tell whether the implementation exists, ask the user rather than guessing.
+
+---
+
+# Phase 2 — Per-spec translation
+
+Run this for **each** spec file selected in Step D. **Step 6 only applies in "translate and evaluate" mode
+(Step E)** — in "translate only" mode, stop after compiling (Step 5) and reviewing (Step 7), and skip
+Step 6 entirely.
+
+When translating several specs, do Steps 1–4 (generate the file) for every spec first, then run Step 5
+(compile) once for the whole module, then per file run Step 6 (only if evaluating) and the Step 7 review —
+compiling once is faster than per-file and surfaces cross-file issues together. For a single spec, just go
+through the steps in order.
+
+## Step 1 — Read the spec (and any module translation notes)
+
+**If Step A reported a non-null `translationNotes`, read that file first (once per run).** UTS specs are
+written in a language-agnostic pseudocode that mirrors the *ably-js* API; for modules whose ably-java types
+diverge (e.g. `objects` → `liveobjects`, where ably-java is a typed SDK with a partitioned `PathObject` /
+`Instance` hierarchy and a `LiveMapValue` write union), the notes map each spec symbol to its ably-java
+equivalent. Skipping them yields tests that read like ably-js and won't compile.
+
+Then read the current spec file (the one being translated from the Step D selection). Identify:
 - All test cases — each has a structured ID like `realtime/unit/RSA4c2/callback-error-connecting-disconnected-0` and a description
 - The protocol used (WebSocket for Realtime, HTTP for REST)
 - Any timer usage (`enable_fake_timers`, `ADVANCE_TIME`)
+- Any **protocol-variant dimension** — a `PROTOCOL` (`json` / `msgpack`) matrix the spec header says to run "once per variant". In ably-java this becomes a `useBinaryProtocol` `@ParameterizedTest` (see the **Direct-sandbox integration tests** section), not a plain `@Test`.
 
 ---
 
-## Step 2 — Determine output path and package
+## Step 2 — Output path and package
 
-Map the spec path to a test path:
+Don't derive anything here — the resolver (Step A) already produced it. For the chosen tier use its
+`targetDir` and `package`, and for the spec being translated use its `className` from that tier's `specs`
+list. Write the test to `<targetDir>/<className>.kt` with `package <package>` at the top.
 
-| Spec location | Test location |
-|---|---|
-| `.../uts/test/rest/unit/<name>.md` | `uts/src/test/kotlin/io/ably/lib/rest/unit/<Name>Test.kt` |
-| `.../uts/test/realtime/unit/<sub>/<name>.md` | `uts/src/test/kotlin/io/ably/lib/realtime/unit/<sub>/<Name>Test.kt` |
-| `.../uts/test/realtime/integration/<sub>/<name>.md` | `uts/src/test/kotlin/io/ably/lib/realtime/integration/<sub>/<Name>Test.kt` |
-
-Class name: take the file name, strip `_test` suffix, convert `snake_case` → `PascalCase`, append `Test`.
-
-**Integration specs that drive traffic through the programmable proxy** (they reference `create_proxy_session()`, proxy rules, or `uts/test/realtime/integration/helpers/proxy.md`) follow a different translation flow — see the **Proxy integration tests** section at the end of this skill instead of the unit-test rules below.
-
-Example: `connection_state_machine_test.md` → `ConnectionStateMachineTest`
-
-Package: derived from the output path under `kotlin/`.
+The spec's own `<sub>` grouping (e.g. `connection/`, `channels/`) is **not** reflected in the output — every
+test sits directly in `targetDir` (the resolver flattens it). The chosen tier also fixes the translation
+flow: **unit** → the rules in Steps 3–4 below; **integration** (direct sandbox) → the **Direct-sandbox
+integration tests** section; **proxy** → the proxy subsections of the **Integration tests** section.
 
 ---
 
 ## Step 3 — Read infrastructure files
 
-Read ALL of files in `uts/src/test/kotlin/io/ably/lib/uts/infra` before generating any code (you need exact method signatures).
+> **Orientation — read `uts/README.md` first.** It's the human-readable guide to this module: the
+> tier model (unit / direct-sandbox / proxy), the per-tier Gradle tasks, the test-layout convention,
+> and a file-map of every infra helper with its public surface (Appendix B). Skim it for the *why* and
+> the *what's available*; the per-file list below is the *what to open for exact signatures* before
+> writing code.
+
+Infrastructure is split by tier under `uts/src/test/kotlin/io/ably/lib/uts/infra/`:
+
+- `infra/Utils.kt` — shared async helpers (`awaitState`, `awaitChannelState`, `pollUntil`), package `io.ably.lib.uts.infra`.
+- `infra/unit/` — unit-test mocks/factories (`ClientFactories.kt`, `MockWebSocket.kt`, `MockHttpClient.kt`, `FakeClock.kt`, `MockEvent.kt`, the `PendingConnection`/`PendingRequest` pairs, and `Utils.kt` with the `ConnectionDetails { }` builder), package `io.ably.lib.uts.infra.unit`.
+- `infra/integration/` + `infra/integration/proxy/` — direct-sandbox + proxy helpers (`SandboxApp.kt`, `ProxyManager.kt`, `ProxySession.kt`) — see the **Integration tests** section.
+
+For a **unit** test, read all files under `infra/unit/` plus `infra/Utils.kt` before generating any code (you need exact method signatures).
 
 ## Step 4 — Generate the Kotlin test file
 
@@ -249,8 +331,10 @@ yield()
 
 ### Test naming and annotation
 
-- KDoc comment immediately above `@Test` using `/** @UTS <spec-id> */` format
-- Method name: backtick string `` `<spec-id> - <description>` ``
+- KDoc comment immediately above `@Test` using `/** @UTS <uts-id> */` — copy the spec's **full** structured
+  id verbatim (e.g. `realtime/unit/RTN4a/some-description-0`; for the objects module it would start
+  `objects/unit/…`). Don't hand-build the prefix — use what the spec file declares.
+- Method name: backtick string `` `<spec-point> - <description>` `` — the spec point (e.g. `RTN4a`) plus a short description.
 - Use `runTest { }` from `kotlinx.coroutines.test` for all async tests
 
 ```kotlin
@@ -263,19 +347,21 @@ fun `RTN4a - description of what is being tested`() = runTest {
 }
 ```
 
-### File template
+### File template (unit tier)
+
+This scaffold is for the **unit** tier — it wires the mocked transport (`infra.unit.*`, `MockWebSocket`,
+`ConnectionDetails`). For the **integration** (direct sandbox) and **proxy** tiers, start from the
+**Proxy integration tests** section instead (`SandboxApp` / `ProxySession` wiring), not from this template.
 
 ```kotlin
-package io.ably.lib.<category>.unit[.<subcategory>]
+package <package>                              // the resolver's package for the chosen tier (Step 2)
 
-import io.ably.lib.TestRealtimeClient          // or TestRestClient
-import io.ably.lib.awaitChannelState           // if testing channels
-import io.ably.lib.awaitState
-import io.ably.lib.realtime.ChannelState       // if testing channels
+import io.ably.lib.uts.infra.unit.*            // TestRealtimeClient/TestRestClient, MockWebSocket, MockHttpClient, FakeClock, CONNECTED_MESSAGE, ConnectionDetails { } builder
+import io.ably.lib.uts.infra.awaitState
+import io.ably.lib.uts.infra.awaitChannelState  // if testing channels
+import io.ably.lib.uts.infra.pollUntil          // if polling on a predicate
+import io.ably.lib.realtime.ChannelState        // if testing channels
 import io.ably.lib.realtime.ConnectionState
-import io.ably.lib.test.mock.FakeClock         // if using fake timers
-import io.ably.lib.test.mock.MockWebSocket     // or MockHttpClient
-import io.ably.lib.types.ConnectionDetails
 import io.ably.lib.types.ErrorInfo
 import io.ably.lib.types.ProtocolMessage
 import kotlinx.coroutines.launch
@@ -283,13 +369,13 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.*
 import kotlin.time.Duration.Companion.seconds  // if using Duration literals
 
-class <Name>Test {
+class <className> {
 
     /**
-     * @UTS realtime/unit/<spec-id>/<test-slug>
+     * @UTS <uts-id>
      */
     @Test
-    fun `<spec-id> - <description>`() = runTest {
+    fun `<spec-point> - <description>`() = runTest {
         val mock = MockWebSocket {
             onConnectionAttempt = { conn ->
                 conn.respondWithSuccess(ProtocolMessage().apply {
@@ -332,13 +418,26 @@ Fix any compilation errors and recompile until clean. Common issues:
 
 ---
 
-## Step 6 — Run tests
+## Step 6 — Run tests *(evaluate mode only)*
+
+Skip this whole step in "translate only" mode. In "translate and evaluate" mode, run the test and **keep
+fixing until it passes** — either the spec-correct assertion passes, or it's deliberately gated/adapted as a
+documented deviation (below). A red test is never an acceptable end state here.
+
+Use the per-tier task that matches the chosen tier (both are registered in `uts/build.gradle.kts`), and the
+resolver's `package` + the spec's `className` for the `--tests` filter:
 
 ```bash
-./gradlew :uts:test --tests "<package>.<ClassName>"
+# unit tier            → io.ably.lib.uts.unit.*
+./gradlew :uts:runUtsUnitTests --tests "<package>.<className>"
+
+# integration / proxy  → io.ably.lib.uts.integration.*
+./gradlew :uts:runUtsIntegrationTests --tests "<package>.<className>"
 ```
 
-Handle test failures using this decision tree (see [reference doc](https://github.com/ably/specification/blob/main/uts/docs/writing-derived-tests.md) for full detail):
+(`./gradlew :uts:test` still runs all tiers — unit, standard, and proxy.)
+
+Handle test failures using this decision tree (the **Required reading** doc you fetched up front has the full detail):
 
 ```
 Test fails
@@ -379,7 +478,7 @@ assertEquals(40160, error.errorInfo.code)
 
 ### Deviations file
 
-Append to `uts/src/test/kotlin/io/ably/lib/deviations.md`. Each entry needs:
+Append to `uts/src/test/kotlin/io/ably/lib/uts/deviations.md`. Each entry needs:
 1. The spec point (e.g. `RSA4c2`)
 2. What the spec says
 3. What the SDK does
@@ -389,21 +488,70 @@ Append to `uts/src/test/kotlin/io/ably/lib/deviations.md`. Each entry needs:
 
 ## Step 7 — Review generated output against the spec
 
-Re-read the original spec file and the generated Kotlin test file side-by-side and check every item below. Fix anything that fails a check before declaring the task done.
+The translation isn't done when it compiles — it's done when **every line of the source spec is faithfully
+represented** in the Kotlin: each test case, each setup step, each operation, and each assertion. Missing a
+single `ASSERT` produces a test that compiles, passes, and silently checks less than the spec demands. This
+review runs in **both** modes (it's static — it doesn't need the tests to have run).
+
+### Deterministic faithfulness audit — run the script first
+
+Eyeballing two files for "did I translate every line?" is exactly the kind of mechanical comparison the
+model does inconsistently, so a bundled script extracts the ledger for you — same inputs, same report every
+time. Run it for each translated spec — don't hand-build paths; use the resolver's output (Step A): the
+**source spec file** is that spec's `specs[].file` (already an absolute path) and the **generated Kotlin
+file** is the chosen tier's `targetDir` + `className` (Step 2):
+
+```bash
+python3 .claude/skills/uts-to-kotlin/scripts/audit_translation.py \
+    "<tier.specs[].file>" \
+    "<tier.targetDir>/<className>.kt"
+```
+
+It prints one JSON report and exits non-zero (2) when there are missing or orphan Test IDs. It does **no**
+semantic judgement — it only extracts, deterministically, what you must then reconcile by hand:
+
+- **`idCoverage`** — the spec's `**Test ID**` set vs the Kotlin's `@UTS` tag set.
+  - `missingInKotlin` **must be empty.** Each entry is a spec test case with no `@Test` method — implement it.
+  - `orphanInKotlin` **must be empty** (or every entry explained) — an `@UTS` tag that no longer matches any
+    spec Test ID means a stale or hand-edited tag.
+- **`perTest[]`** — for each spec test case, every non-comment code line inside the spec's `pseudo` blocks,
+  **grouped by section** (`Setup` / `Test Steps` / `Assertions` / …) in `sections[]` and each line tagged
+  `assert` (an `ASSERT*` outcome), `await` (an `AWAIT*` / `EXPECT` wait), or `step` (setup, mock/client
+  construction, an operation). `specAsserts` / `specAwaits` are flat convenience views of the first two;
+  `specCodeLineTotal` is the size of the spec test. The matching Kotlin method's assertion/await/poll calls
+  and their count come alongside.
+
+The audit is a review aid, not a gate — it never crashes, it degrades. It always prints one JSON object
+(an `error` field instead of a report if a file is unreadable). If `idCoverage.specCount` is `0` for a file
+you know is a real spec, the extractor couldn't find any `**Test ID**` markers (an unusual spec format) —
+treat that as "couldn't verify deterministically" and fall back to a manual side-by-side read for that file.
 
 ### Coverage check — every test case is present
 
-For each test case ID in the spec:
-- [ ] A `@Test` method exists with that ID in its `@UTS` KDoc tag
-- [ ] The method name contains the spec ID and a meaningful description
+From the audit's `idCoverage`:
+- [ ] `missingInKotlin` is empty (every spec Test ID has an `@Test` with that ID in its `@UTS` KDoc tag)
+- [ ] `orphanInKotlin` is empty, or each orphan is a deliberate, explained rename
+- [ ] Each method name contains the spec ID and a meaningful description
 
-Flag any spec test case that has no corresponding `@Test` method as **missing** and implement it.
+### Line-by-line completeness — every spec line is translated
 
-### Assertion completeness — every `ASSERT` / `AWAIT` is translated
+Walk the audit's `perTest[].sections` and reconcile **each** extracted spec line against the Kotlin method.
+This is the guarantee that no setup step, operation, or assertion was dropped — the whole point of this step:
+- [ ] Every `assert` line maps to a concrete Kotlin assertion (`assertEquals`, `assertNotNull`, `assertNull`,
+      `assertIs`, `assertTrue`, `assertFailsWith`, …) — not a comment, not a weaker check
+- [ ] Every `await` line (state waits **and** awaited operations like `AWAIT channel.attach()` /
+      `setup_synced_channel(...)`) is performed via `awaitState` / `awaitChannelState` / `pollUntil` or the
+      corresponding SDK call
+- [ ] Every `step` line — client/mock construction, `ClientOptions`, installed mocks, channel ops — is
+      reflected in the test setup or body. Multi-line spec constructs split across several `step` lines;
+      reconcile them as a group.
+- [ ] `assertionShortfall > 0` for a test (`summary.testsWithShortfall`) is a **tripwire** — fewer Kotlin
+      assertions than spec `ASSERT`s strongly suggests a dropped assertion; open that test and account for
+      each one. (A negative shortfall is fine — the SDK mapping often needs *more* Kotlin lines per spec
+      `ASSERT`, e.g. number-type normalisation.)
 
-For each `ASSERT`, `AWAIT`, or observable outcome stated in the spec pseudocode:
-- [ ] There is a direct Kotlin assertion (`assertEquals`, `assertNotNull`, `assertNull`, `assertIs`, `assertTrue`, `assertFailsWith`, etc.) or an `awaitState` / `awaitChannelState` call covering it
-- [ ] No spec assertion has been silently dropped or weakened (e.g. replaced with a comment)
+A spec line you intentionally don't translate is only acceptable as a documented deviation (a `// DEVIATION:`
+comment + a `deviations.md` entry), never as a silent omission.
 
 ### Setup fidelity — preconditions match the spec
 
@@ -413,23 +561,31 @@ For each test case, verify:
 - [ ] Timer setup (`enableFakeTimers`, `fakeClock.advance(...)`) matches every `enable_fake_timers` / `ADVANCE_TIME` in the spec
 - [ ] Channel operations (attach, detach, publish) are performed in the order the spec requires
 
-### Deviation honesty
+### Deviation honesty *(evaluate mode)*
 
-For any place where the generated test diverges from the spec pseudocode (adapted assertion, env-gated skip, or omitted step):
+Deviations are discovered by running, so this check applies in evaluate mode. For any place where the
+generated test diverges from the spec pseudocode (adapted assertion, env-gated skip, or omitted step):
 - [ ] A `// DEVIATION:` comment explains why
-- [ ] The deviation is recorded in `uts/src/test/kotlin/io/ably/lib/deviations.md`
+- [ ] The deviation is recorded in `uts/src/test/kotlin/io/ably/lib/uts/deviations.md`
 
-If you find gaps during this review, fix them and re-run Steps 5–6 before finishing.
+If you find gaps during this review, fix them, then **re-run the audit script** until `missingInKotlin` /
+`orphanInKotlin` are empty and every `perTest` entry reconciles, and re-run Step 5 (compile) — and, in
+evaluate mode, Step 6 — before finishing.
 
 ---
 
-## Proxy integration tests
+## Integration tests (direct sandbox + proxy)
 
-Some specs are **integration tests** that exercise fault-handling behaviour against the **real Ably sandbox** instead of a mocked transport. They route the SDK through the [`ably/uts-proxy`](https://github.com/ably/uts-proxy) — a programmable HTTP/WebSocket proxy that forwards traffic transparently by default but can inject faults (dropped connections, modified/injected/delayed frames, error responses) via rules.
+Some specs are **integration tests** — they run against the **real Ably sandbox** instead of a mocked transport. Two tiers share one foundation and differ only in *transport*:
 
-Recognise them by: a reference to `create_proxy_session()`, proxy `rules`, `trigger_action`, `get_log`, or a pointer to `uts/test/realtime/integration/helpers/proxy.md`.
+- **Direct sandbox** — the client connects straight to the sandbox. Happy-path interop (connect, publish, subscribe, presence); no faults.
+- **Proxy** — the client is routed through the [`ably/uts-proxy`](https://github.com/ably/uts-proxy), a programmable HTTP/WebSocket proxy that forwards traffic transparently but can inject faults (dropped connections, modified/injected/delayed frames, error responses) via rules.
 
-### When proxy tests are the right tool
+**Shared foundation (both tiers, covered once):** `SandboxApp` provisioning + the `@BeforeAll`/`@AfterAll` lifecycle (see **Infrastructure** below), `runTest` test bodies, suspend-function handling, and the `awaitState` / `awaitChannelState` / `pollUntil` waits — never a fixed sleep, since real network is involved (use generous 10–30s timeouts). Only the *wiring* differs per tier; that's what the two tier subsections below cover.
+
+Recognise a **proxy** spec by a reference to `create_proxy_session()`, proxy `rules`, `trigger_action`, `get_log`, or a pointer to `uts/realtime/integration/helpers/proxy.md`. A spec with none of those is **direct sandbox**.
+
+### Which integration tier?
 
 | Test type | When the spec uses it |
 |---|---|
@@ -437,17 +593,69 @@ Recognise them by: a reference to `create_proxy_session()`, proxy `rules`, `trig
 | **Direct sandbox integration** | Happy-path behaviour (connect, publish, subscribe, presence). No fault injection. |
 | **Proxy integration test** | Fault behaviour against the real backend: connection failures, resume, heartbeat starvation, token renewal under network errors, channel error injection. |
 
+### Direct-sandbox integration tests
+
+A **direct-sandbox** spec (no `create_proxy_session`, no rules — just happy-path interop against `nonprod:sandbox`) uses the same `SandboxApp` provisioning and the same `runTest` / `@BeforeAll`+`runBlocking` lifecycle as a proxy test, but **drops all proxy wiring**: no `ProxyManager.ensureProxy()`, no `ProxySession`, no `connectThroughProxy`. The client connects straight to the sandbox host. `ChannelHistoryTest` (realtime) and `ObjectsLifecycleTest` (liveobjects) are the reference examples — read one before translating a direct-sandbox spec.
+
+**Client wiring** — point both transports at the sandbox host (explicit hosts auto-disable fallback hosts, so no `fallbackHosts`):
+
+```kotlin
+private fun newClient(useBinaryProtocol: Boolean): AblyRealtime = TestRealtimeClient {
+    key = app.defaultKey
+    realtimeHost = SandboxApp.sandboxHost   // sandbox.realtime.ably-nonprod.net
+    restHost     = SandboxApp.sandboxHost
+    this.useBinaryProtocol = useBinaryProtocol
+    autoConnect  = false
+}
+```
+
+**Class docstring** — use a direct-sandbox variant (drop the proxy/fault-injection wording):
+
+```kotlin
+/**
+ * Direct-sandbox integration test against the Ably Sandbox (`sandbox.realtime.ably-nonprod.net`,
+ * via SandboxApp.sandboxHost) — no proxy, no fault injection. Provisions one throwaway SandboxApp
+ * for the suite and connects real clients straight to the sandbox.
+ */
+```
+
+**Protocol variants (`json` / `msgpack`)** — when the spec header declares a `PROTOCOL` dimension and says each test runs once per variant, translate it to a `useBinaryProtocol` `@ParameterizedTest` (this is what the module's `junit-jupiter-params` dependency is for), not a plain `@Test`. The `@UTS` tag and method name stay singular — the parameter expresses the variant:
+
+```kotlin
+/** @UTS realtime/integration/RTL10d/history-cross-client-0 */
+@ParameterizedTest(name = "useBinaryProtocol={0}")
+@ValueSource(booleans = [false, true])   // false = JSON, true = msgpack
+fun `RTL10d - history contains messages published by another client`(useBinaryProtocol: Boolean) = runTest {
+    val publisher = newClient(useBinaryProtocol)
+    // …
+}
+```
+
+Import `org.junit.jupiter.params.ParameterizedTest` and `org.junit.jupiter.params.provider.ValueSource`. A spec with **no** protocol dimension stays a plain `@Test`.
+
+**Awaiting real server outcomes** — integration specs assert on real backend state, so never sleep; await or poll:
+
+| Pseudocode | Kotlin |
+|---|---|
+| `AWAIT channel.attach()` | `channel.attach()` then `awaitChannelState(channel, ChannelState.attached, 10.seconds)` |
+| `AWAIT channel.publish(name, data)` (await the ack) | wrap the **non-deprecated** `publish(name, data, Callback<PublishResult>)` overload in `suspendCancellableCoroutine` — resume on `onSuccess`, fail on `onError` (the `CompletionListener` overload is deprecated) |
+| `poll_until(() => AWAIT channel.history().items.length == N, …)` | `pollUntil(10.seconds, 500.milliseconds) { channel.history(null).items().size == N }` (`history()` is a blocking REST call; `null` = no params) |
+
+Use generous timeouts (10–30s) — real network is involved. Everything else is the shared foundation described at the top of this section; a direct-sandbox test just skips the proxy-only subsections (`ProxySession`, rule factories, the event log).
+
 ### Infrastructure
 
-Three helpers live in `uts/src/test/kotlin/io/ably/lib/test/helper/`. **Read them before translating a proxy spec** — they hold the exact method signatures.
+Three helpers live under `uts/src/test/kotlin/io/ably/lib/uts/infra/integration/`. **Read the ones your tier uses before translating an integration spec** — they hold the exact method signatures. `SandboxApp` serves **both** tiers; `ProxyManager` and `ProxySession` are **proxy-only**.
 
-- **`ProxyManager`** — downloads/starts the shared `uts-proxy` process and exposes the sandbox host. Call `ProxyManager.ensureProxy()` once per suite in setup. `ProxyManager.sandboxRealtimeHost` / `sandboxRestHost` are the upstream sandbox hosts (the default target of every session).
-- **`ProxySession`** — one programmable session wrapping the proxy control API.
-- **`SandboxApp`** — provisions/deletes a sandbox test app from the shared `test-app-setup.json` in ably-common. `SandboxApp.create()` returns a `SandboxApp` with `appId`, `defaultKey`, and `keys` (`defaultKey` is a full-capability `appId.keyId:keySecret`); `app.delete()` tears it down. Provision in suite setup, delete in teardown.
+- **`ProxyManager`** (`infra/integration/proxy/ProxyManager.kt`, package `io.ably.lib.uts.infra.integration.proxy`) — downloads/starts the shared `uts-proxy` process. Call `ProxyManager.ensureProxy()` once per suite in setup.
+- **`ProxySession`** (`infra/integration/proxy/ProxySession.kt`, same package) — one programmable session wrapping the proxy control API; also defines the `connectThroughProxy` extension and the rule-builder helpers.
+- **`SandboxApp`** (`infra/integration/SandboxApp.kt`, package `io.ably.lib.uts.infra.integration`) — provisions/deletes a sandbox test app from the shared `test-app-setup.json` in ably-common. `SandboxApp.create()` returns a `SandboxApp` with `appId`, `defaultKey`, and `keys` (`defaultKey` is a full-capability `appId.keyId:keySecret`); `app.delete()` tears it down. Provision in suite setup, delete in teardown. Also owns the single upstream sandbox host constant `SandboxApp.sandboxHost` (`sandbox.realtime.ably-nonprod.net`, the resolved `nonprod:sandbox` endpoint) — the default target of every `ProxySession` (both `realtimeHost` and `restHost`), and what direct-sandbox clients set `realtimeHost` / `restHost` from.
+
+Import what the tier needs: a **direct-sandbox** test imports `io.ably.lib.uts.infra.integration.SandboxApp` plus `io.ably.lib.uts.infra.unit.TestRealtimeClient` and `io.ably.lib.uts.infra.{awaitState, pollUntil}`; a **proxy** test additionally imports `io.ably.lib.uts.infra.integration.proxy.{ProxyManager, ProxySession, connectThroughProxy}`.
 
 `ensureProxy()`, the `ProxySession` methods, and the `SandboxApp` methods are all **`suspend`** functions. Per-test bodies use `runTest { }`; JUnit5 `@BeforeAll`/`@AfterAll` (with `@TestInstance(Lifecycle.PER_CLASS)`) wrap their suspend calls in `runBlocking { }`.
 
-### Test class docstring
+### Proxy test class docstring
 
 Give every proxy integration test class this KDoc:
 
@@ -455,9 +663,9 @@ Give every proxy integration test class this KDoc:
 /**
  * Proxy integration test against Ably Sandbox endpoint.
  *
- * Uses the programmable proxy (`uts/test/proxy/`) to inject transport-level faults while the
+ * Uses the programmable uts-proxy to inject transport-level faults while the
  * SDK communicates with the real Ably backend. See
- * `uts/test/realtime/integration/helpers/proxy.md` for proxy infrastructure details.
+ * `uts/realtime/integration/helpers/proxy.md` for proxy infrastructure details.
  */
 ```
 
@@ -589,4 +797,4 @@ assertNotNull(queryParams["resume"])
 5. Use generous timeouts (10–30s) — real network is involved: `awaitState(client, ConnectionState.connected, 15.seconds)`.
 6. Don't set `fallbackHosts`; explicit hosts already disable fallbacks.
 
-Steps 5 (compile) and 6 (run) still apply. Note that proxy tests hit the live sandbox and download the proxy binary on first run, so they are slower and require network access.
+Step 5 (compile) still applies; Step 6 (run) applies only in evaluate mode (Step E). Note that proxy tests hit the live sandbox and download the proxy binary on first run, so they are slower and require network access.
