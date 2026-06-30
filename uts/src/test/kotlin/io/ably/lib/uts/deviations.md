@@ -123,6 +123,20 @@ Deviations from the Ably spec identified during UTS test translation. Each entry
 
 ---
 
+## RTPO10 / RTPO10d / RTPO11 / RTPO11d — `keys()` / `values()` "IS Array" is a static-type tautology
+
+**Spec points:** RTPO10, RTPO10d, RTPO11, RTPO11d
+**What the spec requires:** `PathObject.keys()` / `values()` return an array, asserted with `ASSERT keys IS Array` / `ASSERT vals IS Array` (alongside element-count and membership checks).
+**What the SDK does:** ably-java is statically typed — `LiveMapPathObject.keys()` returns `Iterable<String>` and `values()` returns `Iterable<PathObject>` (mapping §4). The collection type is guaranteed by the method signature at compile time, so a runtime "is it an array" check is a tautology that cannot fail and adds no coverage.
+**Workaround in tests:** The substantive assertions — element count and membership (`size`, `in`) — are translated; the `IS Array` type-tautology line is omitted.
+**Tests affected (PathObjectTest.kt):**
+- `RTPO10 - keys returns array of key strings` (RTPO10/keys-returns-array-0) — `keys IS Array` omitted; count + membership asserted.
+- `RTPO10d - keys returns empty for non-LiveMap` (RTPO10d/keys-non-map-empty-0) — `keys IS Array` omitted; count == 0 asserted.
+- `RTPO11 - values returns array of PathObjects` (RTPO11/values-returns-array-0) — `vals IS Array` omitted; count + membership asserted.
+- `RTPO11d - values returns empty for non-LiveMap` (RTPO11d/values-non-map-empty-0) — `vals IS Array` omitted; count == 0 asserted.
+
+---
+
 ## RTLM20 / RTLM21 — set/remove wire-message-shape assertions are internal; assert observable local effect
 
 **Spec points:** RTLM20e2, RTLM20e3, RTLM20e6, RTLM20e7b, RTLM20e7c, RTLM20e7d, RTLM20e7e, RTLM20e7f, RTLM20h2, RTLM21e2, RTLM21e5
@@ -196,6 +210,17 @@ Deviations from the Ably spec identified during UTS test translation. Each entry
 
 ---
 
+## RTLC12b / RTLC12c / RTLC12d — increment write-preconditions relocated to RTO26; no executable spec content
+
+**Spec points:** RTLC12b, RTLC12c, RTLC12d
+**What the spec requires:** The spec entry `objects/unit/RTLC12b/increment-requires-publish-0` carries no Setup/Test Steps/Assertions — its body states that RTLC12b/c/d (the OBJECT_PUBLISH-mode, channel-state and echoMessages write preconditions) "have been replaced by RTO26" and are "tested separately in `objects/unit/rto26_write_preconditions.md`".
+**What the SDK does:** N/A — there is no executable spec content to translate from this entry; the precondition behaviour is covered by the RTO26 spec instead.
+**Workaround in tests:** The empty marker entry is intentionally not translated into `LiveCounterApiTest.kt`; the preconditions belong with an RTO26 translation, which is not part of this module's current scope.
+**Tests affected (LiveCounterApiTest.kt):**
+- `objects/unit/RTLC12b/increment-requires-publish-0` — no corresponding `@Test`; relocated to RTO26, no executable spec content.
+
+---
+
 ## RTO15 — `RealtimeObject.publish` and its OBJECT/ACK wire-message assertions are internal, not public
 
 **Spec point:** RTO15 (RTO15e1, RTO15e2, RTO15e3, RTO15h)
@@ -204,6 +229,19 @@ Deviations from the Ably spec identified during UTS test translation. Each entry
 **Workaround in tests:** None expressible against the public surface. The publish-and-apply *effect* (RTO20) is covered observably elsewhere in this file (e.g. `RTO20 - publishAndApply applies locally on ACK` asserts `value() == 110` after a public `increment`). The RTO15 test body is a documented no-op.
 **Tests affected (RealtimeObjectTest.kt):**
 - `RTO15 - publish sends OBJECT ProtocolMessage` (RTO15/publish-sends-object-pm-0) — not expressible; documented no-op.
+
+---
+
+## RTO23f — `get()` result "IS PathObject" is guaranteed by the `LiveMapPathObject` return type
+
+**Spec point:** RTO23f
+**What the spec requires:** The object returned by `channel.object.get()` is a `PathObject`, asserted with `ASSERT root IS PathObject` (RTO23f — always a `LiveMapPathObject`).
+**What the SDK does:** ably-java's `RealtimeObject.get()` is statically typed to return `CompletableFuture<LiveMapPathObject>`, and `LiveMapPathObject` is a `PathObject` sub-type (mapping §2, §4). The result's PathObject-ness is proven by the return type at compile time, so a runtime `IS PathObject` check is a tautology that cannot fail.
+**Workaround in tests:** The observable behaviour around the call (`path() == ""`, channel-state transitions) is asserted; the `IS PathObject` type-tautology line is omitted, with an inline note at the call site.
+**Tests affected (RealtimeObjectTest.kt):**
+- `RTO23d - get returns PathObject wrapping root` (RTO23/get-returns-path-object-0) — `root IS PathObject` omitted; `path() == ""` asserted.
+- `RTO23 - get implicitly attaches channel` (RTO23/get-implicit-attach-0) — `root IS PathObject` omitted; channel state + `path() == ""` asserted.
+- `RTO23d - get resolves immediately when already SYNCED` (RTO23d/get-resolves-immediately-synced-0) — `root2 IS PathObject` omitted; `path() == ""` asserted.
 
 ---
 
