@@ -112,7 +112,7 @@ def main():
 
     if not MAPPING.is_file():
         fail("MAPPING_NOT_FOUND", f"mapping file not found at {MAPPING}")
-    data = json.loads(MAPPING.read_text())
+    data = json.loads(MAPPING.read_text(encoding="utf-8"))
     packages = data.setdefault("packages", {})
     test_root = data.get("testRoot", "")
 
@@ -133,7 +133,10 @@ def main():
         if notes:
             new_entry["notes"] = notes
         packages[source_module] = new_entry
-        MAPPING.write_text(json.dumps(data, indent=2) + "\n")
+        # Write bytes (not write_text): explicit utf-8, and binary mode does zero newline
+        # translation on any OS or Python version — so this git-tracked file stays LF on
+        # Windows too. (write_text(newline=...) would need Python 3.10+.)
+        MAPPING.write_bytes((json.dumps(data, indent=2) + "\n").encode("utf-8"))
 
     mapped = source_module in packages
     entry = packages.get(source_module, {})
