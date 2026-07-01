@@ -1,4 +1,6 @@
-package io.ably.lib.liveobjects.value
+package io.ably.lib.liveobjects.value.livecounter
+
+import io.ably.lib.liveobjects.value.LiveCounter
 
 /**
  * Default implementation of the [LiveCounter] value type - an immutable holder for

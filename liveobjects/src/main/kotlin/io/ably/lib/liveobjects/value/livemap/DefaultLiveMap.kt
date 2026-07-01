@@ -1,4 +1,7 @@
-package io.ably.lib.liveobjects.value
+package io.ably.lib.liveobjects.value.livemap
+
+import io.ably.lib.liveobjects.value.LiveMap
+import io.ably.lib.liveobjects.value.LiveMapValue
 
 /**
  * Default implementation of the [LiveMap] value type - an immutable holder for the
@@ -16,7 +19,7 @@ package io.ably.lib.liveobjects.value
  * Spec: RTLMV1, RTLMV2, RTLMV3
  */
 internal class DefaultLiveMap(
-  internal val entries: Map<String, LiveMapValue>,
+    internal val entries: Map<String, LiveMapValue>,
 ) : LiveMap() {
   // TODO - build the MAP_CREATE ObjectMessage (plus nested object create messages)
   //  from `entries`, mirroring ably-js LiveMapValueType.createMapCreateMessage.

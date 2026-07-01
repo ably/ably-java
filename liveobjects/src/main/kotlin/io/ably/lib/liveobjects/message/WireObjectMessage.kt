@@ -288,3 +288,12 @@ private fun WireObjectData.size(): Int {
   json?.let { return it.toString().byteSize } // Spec: OD3e
   return 0
 }
+
+internal fun WireObjectData?.isInvalid(): Boolean {
+  return this?.objectId.isNullOrEmpty() &&
+    this?.string == null &&
+    this?.number == null &&
+    this?.boolean == null &&
+    this?.bytes == null &&
+    this?.json == null
+}
