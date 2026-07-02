@@ -284,7 +284,7 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
           Log.e(tag, "Received partial sync message for a counter object, skipping: ${objectMessage.id}")
         }
         else -> {
-          // RTO5f2c - unsupported type, log warning and skip
+          // RTO5f3 - unsupported type, log warning and skip
           Log.w(tag, "Received partial sync message for an unsupported object type, skipping: ${objectMessage.id}")
         }
       }

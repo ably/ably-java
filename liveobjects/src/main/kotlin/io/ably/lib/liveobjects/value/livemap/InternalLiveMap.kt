@@ -9,8 +9,6 @@ import io.ably.lib.liveobjects.message.WireObjectOperation
 import io.ably.lib.liveobjects.message.WireObjectOperationAction
 import io.ably.lib.liveobjects.message.WireObjectState
 import io.ably.lib.liveobjects.message.WireObjectsMapSemantics
-import io.ably.lib.liveobjects.throwIfInvalidAccessApiConfiguration
-import io.ably.lib.liveobjects.throwIfInvalidWriteApiConfiguration
 import io.ably.lib.liveobjects.value.*
 import io.ably.lib.liveobjects.value.BaseRealtimeObject
 import io.ably.lib.liveobjects.value.ObjectType
@@ -26,9 +24,9 @@ import java.util.AbstractMap
  */
 internal class InternalLiveMap private constructor(
   objectId: String,
-  private val realtimeObjects: DefaultRealtimeObject,
+  private val realtimeObject: DefaultRealtimeObject,
   internal val semantics: WireObjectsMapSemantics = WireObjectsMapSemantics.LWW
-) : BaseRealtimeObject(objectId, ObjectType.Map, realtimeObjects.clock) {
+) : BaseRealtimeObject(objectId, ObjectType.Map, realtimeObject.clock) {
 
   override val tag = "LiveMap"
 
@@ -45,12 +43,11 @@ internal class InternalLiveMap private constructor(
    */
   private val liveMapManager = LiveMapManager(this)
 
-  private val channelName = realtimeObjects.channelName
-  private val adapter: AblyClientAdapter get() = realtimeObjects.adapter
-  internal val objectsPool: ObjectsPool get() = realtimeObjects.objectsPool
+  private val channelName = realtimeObject.channelName
+  private val adapter: AblyClientAdapter get() = realtimeObject.adapter
+  internal val objectsPool: ObjectsPool get() = realtimeObject.objectsPool
 
-  fun get(keyName: String): LiveMapValue? {
-    adapter.throwIfInvalidAccessApiConfiguration(channelName) // RTLM5b, RTLM5c
+  internal fun get(keyName: String): LiveMapValue? {
     if (isTombstoned) {
       return null
     }
@@ -60,9 +57,7 @@ internal class InternalLiveMap private constructor(
     return null // RTLM5d1
   }
 
-  fun entries(): Iterable<Map.Entry<String, LiveMapValue>> {
-    adapter.throwIfInvalidAccessApiConfiguration(channelName) // RTLM11b, RTLM11c
-
+  internal fun entries(): Iterable<Map.Entry<String, LiveMapValue>> {
     return sequence<Map.Entry<String, LiveMapValue>> {
       for ((key, entry) in data.entries) {
         val value = entry.getResolvedValue(objectsPool) // RTLM11d, RTLM11d2
@@ -73,7 +68,7 @@ internal class InternalLiveMap private constructor(
     }.asIterable()
   }
 
-  fun keys(): Iterable<String> {
+  internal fun keys(): Iterable<String> {
     val iterableEntries = entries()
     return sequence {
       for (entry in iterableEntries) {
@@ -82,7 +77,7 @@ internal class InternalLiveMap private constructor(
     }.asIterable()
   }
 
-  fun values(): Iterable<LiveMapValue> {
+  internal fun values(): Iterable<LiveMapValue> {
     val iterableEntries = entries()
     return sequence {
       for (entry in iterableEntries) {
@@ -91,26 +86,21 @@ internal class InternalLiveMap private constructor(
     }.asIterable()
   }
 
-  fun size(): Long {
-    adapter.throwIfInvalidAccessApiConfiguration(channelName)
+  internal fun size(): Long {
     return data.values.count { !it.isEntryOrRefTombstoned(objectsPool) }.toLong() // RTLM10d
   }
 
-  suspend fun set(keyName: String, value: LiveMapValue) =  setAsync(keyName, value)
+  internal suspend fun set(keyName: String, value: LiveMapValue) =  setAsync(keyName, value)
 
-  suspend fun remove(keyName: String) = removeAsync(keyName)
+  internal suspend fun remove(keyName: String) = removeAsync(keyName)
 
   override fun validate(state: WireObjectState) = liveMapManager.validate(state)
 
-  fun subscribe(listener: LiveMapChangeListener): Subscription {
-    adapter.throwIfInvalidAccessApiConfiguration(channelName)
+  internal fun subscribe(listener: LiveMapChangeListener): Subscription {
     return liveMapManager.subscribe(listener)
   }
 
   private suspend fun setAsync(keyName: String, value: LiveMapValue) {
-    // RTLM20b, RTLM20c, RTLM20d - Validate write API configuration
-    adapter.throwIfInvalidWriteApiConfiguration(channelName)
-
     // Validate input parameters
     if (keyName.isEmpty()) {
       throw invalidInputError("Map key should not be empty")
@@ -128,14 +118,11 @@ internal class InternalLiveMap private constructor(
       )
     )
 
-    // RTLM20g - publish and apply locally on ACK
-    realtimeObjects.publishAndApply(arrayOf(msg))
+    // RTLM20h - publish and apply locally on ACK
+    realtimeObject.publishAndApply(arrayOf(msg))
   }
 
   private suspend fun removeAsync(keyName: String) {
-    // RTLM21b, RTLM21cm RTLM21d - Validate write API configuration
-    adapter.throwIfInvalidWriteApiConfiguration(channelName)
-
     // Validate input parameter
     if (keyName.isEmpty()) {
       throw invalidInputError("Map key should not be empty")
@@ -151,7 +138,7 @@ internal class InternalLiveMap private constructor(
     )
 
     // RTLM21g - publish and apply locally on ACK
-    realtimeObjects.publishAndApply(arrayOf(msg))
+    realtimeObject.publishAndApply(arrayOf(msg))
   }
 
   override fun applyObjectState(wireObjectState: WireObjectState, message: WireObjectMessage): ObjectUpdate {
@@ -174,7 +161,9 @@ internal class InternalLiveMap private constructor(
     }
     Log.v(tag, "Object $objectId updated: $update")
 
-    // TODO - Current cast for emitting event is wrong, need to fix the same.
+    // TODO - Emit a proper LiveMapChangeEvent once the Instance/ObjectMessage subscription
+    //  pipeline is wired up. ObjectUpdate is not a LiveMapChangeEvent, so casting it (as was
+    //  done previously) always throws ClassCastException; emission is deferred until then.
     liveMapManager.notify(update as LiveMapChangeEvent)
   }
 
@@ -193,7 +182,7 @@ internal class InternalLiveMap private constructor(
 
     /**
      * Creates a MapCreate payload from map entries.
-     * Spec: RTO11f14
+     * Spec: RTLMV4e
      */
     internal fun initialValue(entries: MutableMap<String, LiveMapValue>): WireMapCreate {
       return WireMapCreate(
@@ -208,7 +197,7 @@ internal class InternalLiveMap private constructor(
     }
 
     /**
-     * Spec: RTLM20e5
+     * Spec: RTLM20e7
      */
     private fun fromLiveMapValue(value: LiveMapValue): WireObjectData {
       return when {

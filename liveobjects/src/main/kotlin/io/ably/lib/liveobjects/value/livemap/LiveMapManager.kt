@@ -63,18 +63,18 @@ internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChan
       }
       WireObjectOperationAction.MapSet -> {
         if (operation.mapSet != null) {
-          val update = applyMapSet(operation.mapSet, serial) // RTLM15d2
-          liveMap.notifyUpdated(update) // RTLM15d2a
-          true // RTLM15d2b
+          val update = applyMapSet(operation.mapSet, serial) // RTLM15d6
+          liveMap.notifyUpdated(update) // RTLM15d6a
+          true // RTLM15d6b
         } else {
           throw objectError("No payload found for ${operation.action} op for LiveMap objectId=${objectId}")
         }
       }
       WireObjectOperationAction.MapRemove -> {
         if (operation.mapRemove != null) {
-          val update = applyMapRemove(operation.mapRemove, serial, serialTimestamp) // RTLM15d3
-          liveMap.notifyUpdated(update) // RTLM15d3a
-          true // RTLM15d3b
+          val update = applyMapRemove(operation.mapRemove, serial, serialTimestamp) // RTLM15d7
+          liveMap.notifyUpdated(update) // RTLM15d7a
+          true // RTLM15d7b
         } else {
           throw objectError("No payload found for ${operation.action} op for LiveMap objectId=${objectId}")
         }
@@ -121,7 +121,7 @@ internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChan
    * @spec RTLM7 - Applies MAP_SET operation to LiveMap
    */
   private fun applyMapSet(
-    wireMapSet: WireMapSet, // RTLM7d1
+    wireMapSet: WireMapSet, // RTLM7d3
     timeSerial: String?, // RTLM7d2
   ): ObjectUpdate {
     // RTLM7h - skip if operation is older than the last MAP_CLEAR
@@ -148,13 +148,13 @@ internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChan
       throw objectError("Invalid object data for MAP_SET op on objectId=${objectId} on key=${wireMapSet.key}")
     }
 
-    // RTLM7c
+    // RTLM7g
     wireMapSet.value.objectId?.let {
       // this MAP_SET op is setting a key to point to another object via its object id,
       // but it is possible that we don't have the corresponding object in the pool yet (for example, we haven't seen the *_CREATE op for it).
       // we don't want to return undefined from this map's .get() method even if we don't have the object,
       // so instead we create a zero-value object for that object id if it not exists.
-      liveMap.objectsPool.createZeroValueObjectIfNotExists(it) // RTLM7c1
+      liveMap.objectsPool.createZeroValueObjectIfNotExists(it) // RTLM7g1
     }
 
     if (existingEntry != null) {
@@ -162,10 +162,10 @@ internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChan
       liveMap.data[wireMapSet.key] = LiveMapEntry(
         isTombstoned = false, // RTLM7a2c
         timeserial = timeSerial, // RTLM7a2b
-        data = wireMapSet.value // RTLM7a2a
+        data = wireMapSet.value // RTLM7a2e
       )
     } else {
-      // RTLM7b, RTLM7b1
+      // RTLM7b, RTLM7b4
       liveMap.data[wireMapSet.key] = LiveMapEntry(
         isTombstoned = false, // RTLM7b2
         timeserial = timeSerial,
@@ -180,7 +180,7 @@ internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChan
    * @spec RTLM8 - Applies MAP_REMOVE operation to LiveMap
    */
   private fun applyMapRemove(
-    wireMapRemove: WireMapRemove, // RTLM8c1
+    wireMapRemove: WireMapRemove, // RTLM8c4
     timeSerial: String?, // RTLM8c2
     timeStamp: Long?, // RTLM8c3
   ): ObjectUpdate {
@@ -383,7 +383,10 @@ internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChan
       }
     }
 
-    return ObjectUpdate(update)
+    // An empty diff means nothing actually changed (e.g. clearing an already-empty root
+    // map on a channel with no objects). Return the no-op update so notifyUpdated()
+    // short-circuits and no change event is emitted. Spec: RTLM/RTO4b.
+    return if (update.isEmpty()) noOpMapUpdate else ObjectUpdate(update)
   }
 
   internal fun validate(state: WireObjectState) {

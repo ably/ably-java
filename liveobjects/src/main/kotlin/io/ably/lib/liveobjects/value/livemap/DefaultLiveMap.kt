@@ -23,5 +23,5 @@ internal class DefaultLiveMap(
 ) : LiveMap() {
   // TODO - build the MAP_CREATE ObjectMessage (plus nested object create messages)
   //  from `entries`, mirroring ably-js LiveMapValueType.createMapCreateMessage.
-  //  Spec: RTO11f
+  //  Spec: RTLMV4
 }

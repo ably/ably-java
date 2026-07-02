@@ -10,8 +10,6 @@ import io.ably.lib.liveobjects.message.WireObjectMessage
 import io.ably.lib.liveobjects.message.WireObjectOperation
 import io.ably.lib.liveobjects.message.WireObjectOperationAction
 import io.ably.lib.liveobjects.message.WireObjectState
-import io.ably.lib.liveobjects.throwIfInvalidAccessApiConfiguration
-import io.ably.lib.liveobjects.throwIfInvalidWriteApiConfiguration
 import io.ably.lib.liveobjects.value.BaseRealtimeObject
 import io.ably.lib.liveobjects.value.ObjectType
 import io.ably.lib.liveobjects.value.ObjectUpdate
@@ -24,8 +22,8 @@ import io.ably.lib.util.Log
  */
 internal class InternalLiveCounter private constructor(
   objectId: String,
-  private val realtimeObjects: DefaultRealtimeObject,
-) : BaseRealtimeObject(objectId, ObjectType.Counter, realtimeObjects.clock) {
+  private val realtimeObject: DefaultRealtimeObject,
+) : BaseRealtimeObject(objectId, ObjectType.Counter, realtimeObject.clock) {
 
   override val tag = "LiveCounter"
 
@@ -40,35 +38,30 @@ internal class InternalLiveCounter private constructor(
    */
   private val liveCounterManager = LiveCounterManager(this)
 
-  private val channelName = realtimeObjects.channelName
-  private val adapter: AblyClientAdapter get() = realtimeObjects.adapter
+  private val channelName = realtimeObject.channelName
+  private val adapter: AblyClientAdapter get() = realtimeObject.adapter
 
-  suspend fun increment(amount: Number) = incrementAsync(amount.toDouble())
+  internal suspend fun increment(amount: Number) = incrementAsync(amount.toDouble())
 
-  suspend fun decrement(amount: Number) = incrementAsync(-amount.toDouble())
+  internal suspend fun decrement(amount: Number) = incrementAsync(-amount.toDouble())
 
-  fun value(): Double {
-    adapter.throwIfInvalidAccessApiConfiguration(channelName)
+  internal fun value(): Double {
     return data.get()
   }
 
-  fun subscribe(listener: LiveCounterChangeListener): Subscription {
-    adapter.throwIfInvalidAccessApiConfiguration(channelName)
+  internal fun subscribe(listener: LiveCounterChangeListener): Subscription {
     return liveCounterManager.subscribe(listener)
   }
 
   override fun validate(state: WireObjectState) = liveCounterManager.validate(state)
 
   private suspend fun incrementAsync(amount: Double) {
-    // RTLC12b, RTLC12c, RTLC12d - Validate write API configuration
-    adapter.throwIfInvalidWriteApiConfiguration(channelName)
-
     // RTLC12e1 - Validate input parameter
     if (amount.isNaN() || amount.isInfinite()) {
       throw invalidInputError("Counter value increment should be a valid number")
     }
 
-    // RTLC12e2, RTLC12e3, RTLC12e4 - Create ObjectMessage with the COUNTER_INC operation
+    // RTLC12e2, RTLC12e3, RTLC12e5 - Create ObjectMessage with the COUNTER_INC operation
     val msg = WireObjectMessage(
       operation = WireObjectOperation(
         action = WireObjectOperationAction.CounterInc,
@@ -78,7 +71,7 @@ internal class InternalLiveCounter private constructor(
     )
 
     // RTLC12g - publish and apply locally on ACK
-    realtimeObjects.publishAndApply(arrayOf(msg))
+    realtimeObject.publishAndApply(arrayOf(msg))
   }
 
   override fun applyObjectState(wireObjectState: WireObjectState, message: WireObjectMessage): ObjectUpdate {
@@ -99,7 +92,9 @@ internal class InternalLiveCounter private constructor(
     }
     Log.v(tag, "Object $objectId updated: $update")
 
-    // TODO - Current cast for emitting event is wrong, need to fix the same.
+    // TODO - Emit a proper LiveCounterChangeEvent once the Instance/ObjectMessage subscription
+    //  pipeline is wired up. ObjectUpdate is not a LiveCounterChangeEvent, so casting it (as was
+    //  done previously) always throws ClassCastException; emission is deferred until then.
     liveCounterManager.notify(update as LiveCounterChangeEvent)
   }
 
@@ -119,7 +114,7 @@ internal class InternalLiveCounter private constructor(
 
     /**
      * Creates initial value payload for counter creation.
-     * Spec: RTO12f12
+     * Spec: RTLCV4b
      */
     internal fun initialValue(count: Number): WireCounterCreate {
       return WireCounterCreate(count = count.toDouble())

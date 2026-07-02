@@ -5,7 +5,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Represents the value at a given key in a {@code LiveMap} object.
  *
- * <p>Spec: ME1
+ * <p>Spec: OME1
  */
 public interface ObjectsMapEntry {
 

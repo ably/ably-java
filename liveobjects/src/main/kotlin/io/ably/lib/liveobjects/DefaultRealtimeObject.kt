@@ -79,36 +79,46 @@ internal class DefaultRealtimeObject(
     incomingObjectsHandler = initializeHandlerForIncomingObjectMessages()
   }
 
-  override fun get(): CompletableFuture<LiveMapPathObject> = TODO("Not yet implemented, this should call getRootAsync")
+  override fun get(): CompletableFuture<LiveMapPathObject> {
+    throwIfInvalidAccessApiConfiguration()
+    TODO("Not yet implemented, this should call getRootAsync")
+  }
 
-  override fun on(event: ObjectStateEvent, listener: ObjectStateChange.Listener): Subscription =
-    objectsManager.on(event, listener)
+  override fun on(event: ObjectStateEvent, listener: ObjectStateChange.Listener): Subscription {
+    throwIfInvalidAccessApiConfiguration()
+    return objectsManager.on(event, listener)
+  }
 
-  override fun off(listener: ObjectStateChange.Listener): Unit = objectsManager.off(listener)
+  override fun off(listener: ObjectStateChange.Listener) {
+    throwIfInvalidAccessApiConfiguration()
+    objectsManager.off(listener)
+  }
 
-  override fun offAll() = objectsManager.offAll()
+  override fun offAll() {
+    throwIfInvalidAccessApiConfiguration()
+    objectsManager.offAll()
+  }
 
   private suspend fun getRootAsync(): LiveMap = withContext(sequentialScope.coroutineContext) {
-    adapter.throwIfInvalidAccessApiConfiguration(channelName)
     adapter.ensureAttached(channelName)
     objectsManager.ensureSynced(state)
     objectsPool.get(ROOT_OBJECT_ID) as LiveMap
   }
 
   private suspend fun createMapAsync(entries: MutableMap<String, LiveMapValue>): LiveMap {
-    adapter.throwIfInvalidWriteApiConfiguration(channelName) // RTO11c, RTO11d, RTO11e
+    throwIfInvalidWriteApiConfiguration() // RTO26
 
-    if (entries.keys.any { it.isEmpty() }) { // RTO11f2
+    if (entries.keys.any { it.isEmpty() }) { // RTLMV4b
       throw invalidInputError("Map keys should not be empty")
     }
 
-    // RTO11f14 - Create initial value operation
+    // RTLMV4e - Create initial value operation
     val initialMapValue = InternalLiveMap.initialValue(entries)
 
-    // RTO11f15 - Create initial value JSON string
+    // RTLMV4f - Create initial value JSON string
     val initialValueJSONString = gson.toJson(initialMapValue)
 
-    // RTO11f8 - Create object ID from initial value
+    // RTO14 - Create object ID from initial value
     val (objectId, nonce) = getObjectIdStringWithNonce(ObjectType.Map, initialValueJSONString)
 
     // Create ObjectMessage with the operation
@@ -124,28 +134,28 @@ internal class DefaultRealtimeObject(
       )
     )
 
-    // RTO11i - publish and apply locally on ACK
+    // RTLMV3 - publish and apply locally on ACK
     publishAndApply(arrayOf(msg))
 
-    // RTO11h2 - Return existing object if found after apply
+    // RTLMV3 - Return existing object if found after apply
     return objectsPool.get(objectId) as? LiveMap
-      ?: throw serverError("createMap: MAP_CREATE was not applied as expected; objectId=$objectId") // RTO11h3d
+      ?: throw serverError("createMap: MAP_CREATE was not applied as expected; objectId=$objectId") // RTLMV3
   }
 
   private suspend fun createCounterAsync(initialValue: Number): LiveCounter {
-    adapter.throwIfInvalidWriteApiConfiguration(channelName) // RTO12c, RTO12d, RTO12e
+    throwIfInvalidWriteApiConfiguration() // RTO26
 
     // Validate input parameter
     if (initialValue.toDouble().isNaN() || initialValue.toDouble().isInfinite()) {
       throw invalidInputError("Counter value should be a valid number")
     }
 
-    // RTO12f12
+    // RTLCV4b
     val initialCounterValue = InternalLiveCounter.initialValue(initialValue)
-    // RTO12f13 - Create initial value operation
+    // RTLCV4c - Create initial value operation
     val initialValueJSONString = gson.toJson(initialCounterValue)
 
-    // RTO12f6- Create object ID from initial value
+    // RTO14 - Create object ID from initial value
     val (objectId, nonce) = getObjectIdStringWithNonce(ObjectType.Counter, initialValueJSONString)
 
     // Create ObjectMessage with the operation
@@ -161,16 +171,16 @@ internal class DefaultRealtimeObject(
       )
     )
 
-    // RTO12i - publish and apply locally on ACK
+    // RTLCV3 - publish and apply locally on ACK
     publishAndApply(arrayOf(msg))
 
-    // RTO12h2 - Return existing object if found after apply
+    // RTLCV3 - Return existing object if found after apply
     return objectsPool.get(objectId) as? LiveCounter
-      ?: throw serverError("createCounter: COUNTER_CREATE was not applied as expected; objectId=$objectId") // RTO12h3d
+      ?: throw serverError("createCounter: COUNTER_CREATE was not applied as expected; objectId=$objectId") // RTLCV3
   }
 
   /**
-   * Spec: RTO11f8, RTO12f6
+   * Spec: RTO14
    */
   private suspend fun getObjectIdStringWithNonce(objectType: ObjectType, initialValue: String): Pair<String, String> {
     val nonce = generateNonce()

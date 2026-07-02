@@ -126,7 +126,7 @@ internal class ObjectsPool(
       ObjectType.Map -> InternalLiveMap.zeroValue(objectId, realtimeObjects) // RTO6b2
       ObjectType.Counter -> InternalLiveCounter.zeroValue(objectId, realtimeObjects) // RTO6b3
     }.apply {
-      set(objectId, this) // RTO6b4 - Add the zero-value object to the pool
+      set(objectId, this) // RTO6b2, RTO6b3 - Add the zero-value object to the pool
     }
   }
 

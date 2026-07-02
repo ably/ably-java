@@ -20,5 +20,5 @@ internal class DefaultLiveCounter(
   internal val initialCount: Number,
 ) : LiveCounter() {
   // TODO - build the COUNTER_CREATE ObjectMessage from `initialCount`, mirroring
-  //  ably-js LiveCounterValueType.createCounterCreateMessage. Spec: RTO12f
+  //  ably-js LiveCounterValueType.createCounterCreateMessage. Spec: RTLCV4
 }

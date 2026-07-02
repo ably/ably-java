@@ -48,9 +48,9 @@ internal class LiveCounterManager(private val liveCounter: InternalLiveCounter):
       }
       WireObjectOperationAction.CounterInc -> {
         if (operation.counterInc != null) {
-          val update = applyCounterInc(operation.counterInc) // RTLC7d2
-          liveCounter.notifyUpdated(update) // RTLC7d2a
-          true // RTLC7d2b
+          val update = applyCounterInc(operation.counterInc) // RTLC7d5
+          liveCounter.notifyUpdated(update) // RTLC7d5a
+          true // RTLC7d5b
         } else {
           throw objectError("No payload found for ${operation.action} op for LiveCounter objectId=${objectId}")
         }
@@ -97,7 +97,9 @@ internal class LiveCounterManager(private val liveCounter: InternalLiveCounter):
   }
 
   internal fun calculateUpdateFromDataDiff(prevData: Double, newData: Double): ObjectUpdate {
-    return ObjectUpdate(newData - prevData)
+    // A zero delta means the value did not change (e.g. clearing an already-zero counter).
+    // Return the no-op update so notifyUpdated() short-circuits and no event is emitted.
+    return if (newData == prevData) noOpCounterUpdate else ObjectUpdate(newData - prevData)
   }
 
   /**

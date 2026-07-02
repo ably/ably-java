@@ -41,7 +41,7 @@ internal fun LiveMapEntry.isEntryOrRefTombstoned(objectsPool: ObjectsPool): Bool
  * a reference to another RealtimeObject from the pool if it stores an objectId.
  */
 internal fun LiveMapEntry.getResolvedValue(objectsPool: ObjectsPool): LiveMapValue? {
-  if (isTombstoned) { return null } // RTLM5d2a
+  if (isTombstoned) { return null } // RTLM5d2h
 
   data?.let { d -> // RTLM5d2b, RTLM5d2c, RTLM5d2d, RTLM5d2e
     d.string?.let { return LiveMapValue.of(it) }
