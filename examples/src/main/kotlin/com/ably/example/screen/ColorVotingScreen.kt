@@ -44,11 +44,13 @@ fun ColorVotingScreen(realtimeClient: AblyRealtime) {
       modifier = Modifier.padding(vertical = 16.dp)
     )
 
+    ObjectsSyncStatusRow(channel, root)
+
     ColorVoteCard(
       color = Color.Red,
       colorName = "Red",
       count = redCount ?: 0,
-      enabled = greenCounter != null,
+      enabled = redCounter != null,
       onVote = {
         // Fire-and-forget: the path subscription updates the displayed count on ack
         redCounter?.increment(1)

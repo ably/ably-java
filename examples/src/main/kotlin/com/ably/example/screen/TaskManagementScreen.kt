@@ -53,6 +53,8 @@ fun TaskManagementScreen(realtimeClient: AblyRealtime) {
       modifier = Modifier.fillMaxWidth()
     )
 
+    ObjectsSyncStatusRow(channel, root)
+
     Card(
       modifier = Modifier.fillMaxWidth(),
       elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -75,6 +77,9 @@ fun TaskManagementScreen(realtimeClient: AblyRealtime) {
           horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
           Button(
+            // Disabled until the tasks map is bound, so input is never cleared
+            // without the task actually being enqueued
+            enabled = liveTasks != null,
             onClick = {
               if (taskText.isNotBlank()) {
                 val taskId = "${System.currentTimeMillis()}_${Uuid.random().toHexString()}"

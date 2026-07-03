@@ -27,8 +27,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import io.ably.lib.liveobjects.ValueType
 import io.ably.lib.liveobjects.path.types.LiveCounterPathObject
 import io.ably.lib.liveobjects.path.types.LiveMapPathObject
+import io.ably.lib.liveobjects.state.ObjectStateEvent
 import io.ably.lib.liveobjects.value.LiveCounter
 import io.ably.lib.liveobjects.value.LiveMap
 import io.ably.lib.liveobjects.value.LiveMapValue
@@ -42,13 +44,17 @@ import kotlinx.coroutines.future.await
 
 /**
  * Returns the counter path object at [key] under [root], creating and linking a fresh
- * zero-value counter when nothing exists at that path yet. Path objects re-resolve on
- * every call, so the returned reference stays valid even if another client replaces the
- * counter object at this key.
+ * zero-value counter when the path is missing or holds a non-counter value. Path objects
+ * re-resolve on every call, so the returned reference stays valid even if another client
+ * replaces the counter object at this key.
+ *
+ * The check-then-set is not atomic: another client can create the same key in between.
+ * That is fine here - the colliding operations converge deterministically via
+ * last-write-wins, and both sides end up bound to whichever counter won.
  */
 suspend fun getOrCreateCounter(root: LiveMapPathObject, key: String): LiveCounterPathObject {
   val path = root.get(key)
-  if (!path.exists()) {
+  if (path.type != ValueType.LIVE_COUNTER) {
     // Creates the counter and links it under root in a single published operation
     root.set(key, LiveMapValue.of(LiveCounter.create())).await()
   }
@@ -57,11 +63,12 @@ suspend fun getOrCreateCounter(root: LiveMapPathObject, key: String): LiveCounte
 
 /**
  * Returns the map path object at [key] under [root], creating and linking a fresh empty
- * map when nothing exists at that path yet.
+ * map when the path is missing or holds a non-map value. Same last-write-wins caveat as
+ * [getOrCreateCounter].
  */
 suspend fun getOrCreateMap(root: LiveMapPathObject, key: String): LiveMapPathObject {
   val path = root.get(key)
-  if (!path.exists()) {
+  if (path.type != ValueType.LIVE_MAP) {
     root.set(key, LiveMapValue.of(LiveMap.create())).await()
   }
   return path.asLiveMap()
@@ -72,7 +79,7 @@ fun observeCounter(root: LiveMapPathObject?, key: String): CounterState {
   var counter by remember { mutableStateOf<LiveCounterPathObject?>(null) }
   var counterValue by remember { mutableStateOf<Int?>(null) }
 
-  LaunchedEffect(root) {
+  LaunchedEffect(root, key) {
     root?.let {
       supressCoroutineExceptions {
         counter = getOrCreateCounter(it, key)
@@ -134,7 +141,7 @@ fun observeMap(root: LiveMapPathObject?, key: String): Pair<Map<String, String>,
       ?.toMap()
       ?: mapOf()
 
-  LaunchedEffect(root) {
+  LaunchedEffect(root, key) {
     root?.let {
       supressCoroutineExceptions {
         map = getOrCreateMap(it, key)
@@ -157,6 +164,29 @@ fun observeMap(root: LiveMapPathObject?, key: String): Pair<Map<String, String>,
   }
 
   return mapValue to map
+}
+
+/**
+ * Observes the channel's objects synchronization state via `channel.object.on(event)`.
+ * Returns the most recent [ObjectStateEvent], or null before any event has been received
+ * (events fire on transitions only, so an already-completed sync emits nothing).
+ */
+@Composable
+fun observeObjectsSyncState(channel: Channel): ObjectStateEvent? {
+  var syncState by remember { mutableStateOf<ObjectStateEvent?>(null) }
+
+  DisposableEffect(channel) {
+    // There is no wildcard subscription - register one listener per event
+    val subscriptions = listOf(ObjectStateEvent.SYNCING, ObjectStateEvent.SYNCED).map { event ->
+      channel.`object`.on(event) { stateEvent -> syncState = stateEvent }
+    }
+
+    onDispose {
+      subscriptions.forEach { it.unsubscribe() }
+    }
+  }
+
+  return syncState
 }
 
 @Composable
