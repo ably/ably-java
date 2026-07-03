@@ -14,23 +14,20 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ably.example.getRealtimeChannel
-import com.ably.example.incrementCoroutine
 import com.ably.example.observeCounter
 import com.ably.example.observeRootObject
 import io.ably.lib.realtime.AblyRealtime
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ColorVotingScreen(realtimeClient: AblyRealtime) {
-  val scope = rememberCoroutineScope()
   val channel = getRealtimeChannel(realtimeClient, "objects-live-counter")
 
   val root = observeRootObject(channel)
 
-  val (redCount, redCounter, resetRed) = observeCounter(channel, root,"red")
-  val (greenCount, greenCounter, resetGreen) = observeCounter(channel, root,"green")
-  val (blueCount, blueCounter, resetBlue) = observeCounter(channel, root,"blue")
+  val (redCount, redCounter, resetRed) = observeCounter(root, "red")
+  val (greenCount, greenCounter, resetGreen) = observeCounter(root, "green")
+  val (blueCount, blueCounter, resetBlue) = observeCounter(root, "blue")
 
   Column(
     modifier = Modifier
@@ -53,9 +50,8 @@ fun ColorVotingScreen(realtimeClient: AblyRealtime) {
       count = redCount ?: 0,
       enabled = greenCounter != null,
       onVote = {
-        scope.launch {
-          redCounter?.incrementCoroutine(1)
-        }
+        // Fire-and-forget: the path subscription updates the displayed count on ack
+        redCounter?.increment(1)
       }
     )
 
@@ -65,9 +61,7 @@ fun ColorVotingScreen(realtimeClient: AblyRealtime) {
       count = greenCount ?: 0,
       enabled = greenCounter != null,
       onVote = {
-        scope.launch {
-          greenCounter?.incrementCoroutine(1)
-        }
+        greenCounter?.increment(1)
       }
     )
 
@@ -77,20 +71,16 @@ fun ColorVotingScreen(realtimeClient: AblyRealtime) {
       count = blueCount ?: 0,
       enabled = blueCounter != null,
       onVote = {
-        scope.launch {
-          blueCounter?.incrementCoroutine(1)
-        }
+        blueCounter?.increment(1)
       }
     )
 
     Button(
       enabled = redCounter != null && greenCounter != null && blueCounter != null,
       onClick = {
-        scope.launch {
-          resetRed()
-          resetBlue()
-          resetGreen()
-        }
+        resetRed()
+        resetBlue()
+        resetGreen()
       },
     ) {
       Text(
