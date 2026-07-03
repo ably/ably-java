@@ -39,9 +39,6 @@ internal fun objectError(errorMessage: String, cause: Throwable? = null): AblyEx
   return ablyException(errorMessage, ObjectErrorCode.InvalidObject, ObjectHttpStatusCode.InternalServerError, cause)
 }
 
-internal fun invalidInputError(errorMessage: String, cause: Throwable? = null): AblyException {
-  return ablyException(errorMessage, ObjectErrorCode.InvalidInputParams, ObjectHttpStatusCode.InternalServerError, cause)
-}
 
 /**
  * Calculates the byte size of a string.

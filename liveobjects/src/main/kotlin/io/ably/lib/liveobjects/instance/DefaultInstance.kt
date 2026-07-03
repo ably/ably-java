@@ -1,14 +1,26 @@
 package io.ably.lib.liveobjects.instance
 
 import io.ably.lib.liveobjects.DefaultRealtimeObject
+import io.ably.lib.liveobjects.ValueType
 import io.ably.lib.liveobjects.instance.types.BinaryInstance
 import io.ably.lib.liveobjects.instance.types.BooleanInstance
+import io.ably.lib.liveobjects.instance.types.DefaultBinaryInstance
+import io.ably.lib.liveobjects.instance.types.DefaultBooleanInstance
+import io.ably.lib.liveobjects.instance.types.DefaultJsonArrayInstance
+import io.ably.lib.liveobjects.instance.types.DefaultJsonObjectInstance
+import io.ably.lib.liveobjects.instance.types.DefaultLiveCounterInstance
+import io.ably.lib.liveobjects.instance.types.DefaultLiveMapInstance
+import io.ably.lib.liveobjects.instance.types.DefaultNumberInstance
+import io.ably.lib.liveobjects.instance.types.DefaultStringInstance
 import io.ably.lib.liveobjects.instance.types.JsonArrayInstance
 import io.ably.lib.liveobjects.instance.types.JsonObjectInstance
 import io.ably.lib.liveobjects.instance.types.LiveCounterInstance
 import io.ably.lib.liveobjects.instance.types.LiveMapInstance
 import io.ably.lib.liveobjects.instance.types.NumberInstance
 import io.ably.lib.liveobjects.instance.types.StringInstance
+import io.ably.lib.liveobjects.value.ResolvedValue
+import io.ably.lib.liveobjects.value.valueType
+import java.util.Base64
 
 /**
  * Default implementation of [Instance], the identity-addressed node in the LiveObjects graph.
@@ -43,4 +55,26 @@ internal abstract class DefaultInstance(
   override fun asJsonObject(): JsonObjectInstance = throw IllegalStateException("Not a JsonObject instance")
 
   override fun asJsonArray(): JsonArrayInstance = throw IllegalStateException("Not a JsonArray instance")
+}
+
+/**
+ * Wraps a resolved value in its typed Instance. Returns null only for a Leaf that matches no
+ * known category (ValueType.UNKNOWN - no typed wrapper exists for it). Primitive instances bind
+ * the extracted (decoded) value, not the wire leaf: an Instance is identity/value-addressed and
+ * O(1), so it must not re-read mutable map state.
+ *
+ * Spec: RTPO8c, RTINS5c, RTTS7e (an Instance is always a concrete typed sub-class)
+ */
+internal fun ResolvedValue.toInstance(channelObject: DefaultRealtimeObject): Instance? = when (this) {
+  is ResolvedValue.MapRef -> DefaultLiveMapInstance(channelObject, map)
+  is ResolvedValue.CounterRef -> DefaultLiveCounterInstance(channelObject, counter)
+  is ResolvedValue.Leaf -> when (valueType()) {
+    ValueType.STRING -> DefaultStringInstance(channelObject, data.string!!)
+    ValueType.NUMBER -> DefaultNumberInstance(channelObject, data.number!!)
+    ValueType.BOOLEAN -> DefaultBooleanInstance(channelObject, data.boolean!!)
+    ValueType.BINARY -> DefaultBinaryInstance(channelObject, Base64.getDecoder().decode(data.bytes))
+    ValueType.JSON_OBJECT -> DefaultJsonObjectInstance(channelObject, data.json!!.asJsonObject)
+    ValueType.JSON_ARRAY -> DefaultJsonArrayInstance(channelObject, data.json!!.asJsonArray)
+    else -> null // UNKNOWN leaf - no typed wrapper exists
+  }
 }

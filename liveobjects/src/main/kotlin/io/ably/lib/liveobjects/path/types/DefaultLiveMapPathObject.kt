@@ -3,15 +3,17 @@ package io.ably.lib.liveobjects.path.types
 import io.ably.lib.liveobjects.DefaultRealtimeObject
 import io.ably.lib.liveobjects.path.DefaultPathObject
 import io.ably.lib.liveobjects.path.PathObject
+import io.ably.lib.liveobjects.path.PathSegments
 import io.ably.lib.liveobjects.pathNotResolvedError
 import io.ably.lib.liveobjects.typeMismatchError
 import io.ably.lib.liveobjects.value.LiveMapValue
 import io.ably.lib.liveobjects.value.ResolvedValue
+import java.util.AbstractMap
 import java.util.concurrent.CompletableFuture
 
 /**
  * Default implementation of [LiveMapPathObject], adding map navigation and read/write
- * operations on top of [DefaultPathObject]; all left unimplemented for now.
+ * operations on top of [DefaultPathObject].
  *
  * Spec: RTTS6a
  */
@@ -20,55 +22,60 @@ internal class DefaultLiveMapPathObject(
   path: String,
 ) : DefaultPathObject(channelObject, path), LiveMapPathObject {
 
-  override fun get(key: String): PathObject = TODO("Not yet implemented")
+  // RTPO5c, RTPO5d - purely navigational, no resolution; returns the untyped base node (RTTS3h)
+  override fun get(key: String): PathObject =
+    DefaultPathObject(channelObject, PathSegments.appendKey(path, key))
 
-  override fun at(path: String): PathObject = TODO("Not yet implemented")
+  // RTPO6b, RTPO6c, RTPO6d - purely navigational, dot-delimited with backslash-escaped dots
+  override fun at(path: String): PathObject =
+    DefaultPathObject(channelObject, PathSegments.appendPath(this.path, path))
 
-  override fun entries(): Iterable<Map.Entry<String, PathObject>> {
-    channelObject.throwIfInvalidAccessApiConfiguration()
-    if (resolveValueAtPath(path) !is ResolvedValue.MapRef) return emptyList() // not a LiveMap (or unresolved) -> empty
-    // TODO - iterate the resolved map's entries, yielding (key, child PathObject)
-    TODO("Not yet implemented")
+  override fun entries(): Iterable<Map.Entry<String, PathObject>> { // RTPO9
+    channelObject.throwIfInvalidAccessApiConfiguration() // RTPO9a
+    val map = (resolveValueAtPath(path) as? ResolvedValue.MapRef)?.map
+      ?: return emptyList() // RTPO9d - not a LiveMap (or unresolved) -> empty
+    // RTPO9c - derive from the map's keys at call time; child paths as if by get()
+    return map.keys().map { key ->
+      AbstractMap.SimpleImmutableEntry<String, PathObject>(key, get(key))
+    }
   }
 
-  override fun keys(): Iterable<String> {
-    channelObject.throwIfInvalidAccessApiConfiguration()
-    if (resolveValueAtPath(path) !is ResolvedValue.MapRef) return emptyList() // not a LiveMap (or unresolved) -> empty
-    // TODO - return the resolved map's keys
-    TODO("Not yet implemented")
+  override fun keys(): Iterable<String> { // RTPO10
+    channelObject.throwIfInvalidAccessApiConfiguration() // RTPO10a
+    val map = (resolveValueAtPath(path) as? ResolvedValue.MapRef)?.map
+      ?: return emptyList() // RTPO10d - not a LiveMap (or unresolved) -> empty
+    return map.keys().toList() // RTPO10c - via RTLM12
   }
 
-  override fun values(): Iterable<PathObject> {
-    channelObject.throwIfInvalidAccessApiConfiguration()
-    if (resolveValueAtPath(path) !is ResolvedValue.MapRef) return emptyList() // not a LiveMap (or unresolved) -> empty
-    // TODO - return a child PathObject for each entry of the resolved map
-    TODO("Not yet implemented")
+  override fun values(): Iterable<PathObject> { // RTPO11
+    channelObject.throwIfInvalidAccessApiConfiguration() // RTPO11a
+    val map = (resolveValueAtPath(path) as? ResolvedValue.MapRef)?.map
+      ?: return emptyList() // RTPO11d - not a LiveMap (or unresolved) -> empty
+    return map.keys().map { key -> get(key) } // RTPO11c - child paths as if by get()
   }
 
-  override fun size(): Long? {
-    channelObject.throwIfInvalidAccessApiConfiguration()
-    if (resolveValueAtPath(path) !is ResolvedValue.MapRef) return null // not a LiveMap (or unresolved) -> null
-    // TODO - return the resolved map's size
-    TODO("Not yet implemented")
+  override fun size(): Long? { // RTPO12
+    channelObject.throwIfInvalidAccessApiConfiguration() // RTPO12a
+    val map = (resolveValueAtPath(path) as? ResolvedValue.MapRef)?.map
+      ?: return null // RTPO12d - not a LiveMap (or unresolved) -> null
+    return map.size() // RTPO12c - via RTLM10d
   }
 
   override fun set(key: String, value: LiveMapValue): CompletableFuture<Void> {
-    channelObject.throwIfInvalidWriteApiConfiguration()
-    val resolvedValue = resolveValueAtPath(path) ?: throw pathNotResolvedError(path)
+    channelObject.throwIfInvalidWriteApiConfiguration() // RTPO15b / RTO26
+    val resolvedValue = resolveValueAtPath(path) ?: throw pathNotResolvedError(path) // RTPO15c / RTPO3c2
     if (resolvedValue !is ResolvedValue.MapRef) {
-      throw typeMismatchError("Cannot set a key on a non-LiveMap object at path: \"$path\"")
+      throw typeMismatchError("Cannot set a key on a non-LiveMap object at path: \"$path\"") // RTPO15e
     }
-    // TODO - delegate the MAP_SET to the resolved LiveMap
-    TODO("Not yet implemented")
+    return channelObject.asyncVoidApi { resolvedValue.map.set(key, value) } // RTPO15d -> RTLM20
   }
 
   override fun remove(key: String): CompletableFuture<Void> {
-    channelObject.throwIfInvalidWriteApiConfiguration()
-    val resolvedValue = resolveValueAtPath(path) ?: throw pathNotResolvedError(path)
+    channelObject.throwIfInvalidWriteApiConfiguration() // RTPO16b / RTO26
+    val resolvedValue = resolveValueAtPath(path) ?: throw pathNotResolvedError(path) // RTPO16c / RTPO3c2
     if (resolvedValue !is ResolvedValue.MapRef) {
-      throw typeMismatchError("Cannot remove a key from a non-LiveMap object at path: \"$path\"")
+      throw typeMismatchError("Cannot remove a key from a non-LiveMap object at path: \"$path\"") // RTPO16e
     }
-    // TODO - delegate the MAP_REMOVE to the resolved LiveMap
-    TODO("Not yet implemented")
+    return channelObject.asyncVoidApi { resolvedValue.map.remove(key) } // RTPO16d -> RTLM21
   }
 }

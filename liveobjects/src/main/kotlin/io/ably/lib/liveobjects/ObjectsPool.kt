@@ -83,6 +83,11 @@ internal class ObjectsPool(
   }
 
   /**
+   * All objects currently in the pool. Used by the RTO5c10 parent-reference rebuild.
+   */
+  internal fun all(): Collection<BaseRealtimeObject> = pool.values
+
+  /**
    * Removes all objects but root from the pool and clears the data for root.
    * Does not create a new root object, so the reference to the root object remains the same.
    */

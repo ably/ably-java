@@ -2,20 +2,19 @@ package io.ably.lib.liveobjects.value.livemap
 
 import io.ably.lib.liveobjects.*
 import io.ably.lib.liveobjects.ObjectsPool
-import io.ably.lib.liveobjects.adapter.AblyClientAdapter
+import io.ably.lib.liveobjects.instance.DefaultInstanceSubscriptionEvent
+import io.ably.lib.liveobjects.instance.InstanceListener
+import io.ably.lib.liveobjects.instance.types.DefaultLiveMapInstance
 import io.ably.lib.liveobjects.message.*
-import io.ably.lib.liveobjects.message.WireObjectMessage
-import io.ably.lib.liveobjects.message.WireObjectOperation
-import io.ably.lib.liveobjects.message.WireObjectOperationAction
-import io.ably.lib.liveobjects.message.WireObjectState
-import io.ably.lib.liveobjects.message.WireObjectsMapSemantics
 import io.ably.lib.liveobjects.value.*
 import io.ably.lib.liveobjects.value.BaseRealtimeObject
 import io.ably.lib.liveobjects.value.ObjectType
 import io.ably.lib.liveobjects.value.ObjectUpdate
-import io.ably.lib.liveobjects.value.noOp
-import io.ably.lib.util.Log
-import java.util.Base64
+import io.ably.lib.liveobjects.value.livecounter.DefaultLiveCounter
+import com.google.gson.JsonElement
+import com.google.gson.JsonNull
+import com.google.gson.JsonObject
+import com.google.gson.JsonPrimitive
 import java.util.concurrent.ConcurrentHashMap
 import java.util.AbstractMap
 
@@ -24,9 +23,9 @@ import java.util.AbstractMap
  */
 internal class InternalLiveMap private constructor(
   objectId: String,
-  private val realtimeObject: DefaultRealtimeObject,
+  realtimeObject: DefaultRealtimeObject,
   internal val semantics: WireObjectsMapSemantics = WireObjectsMapSemantics.LWW
-) : BaseRealtimeObject(objectId, ObjectType.Map, realtimeObject.clock) {
+) : BaseRealtimeObject(objectId, ObjectType.Map, realtimeObject) {
 
   override val tag = "LiveMap"
 
@@ -43,27 +42,25 @@ internal class InternalLiveMap private constructor(
    */
   private val liveMapManager = LiveMapManager(this)
 
-  private val channelName = realtimeObject.channelName
-  private val adapter: AblyClientAdapter get() = realtimeObject.adapter
   internal val objectsPool: ObjectsPool get() = realtimeObject.objectsPool
 
-  internal fun get(keyName: String): LiveMapValue? {
+  /** Spec: RTLM5 */
+  internal fun get(keyName: String): ResolvedValue? {
     if (isTombstoned) {
-      return null
+      return null // RTLM5e
     }
-    data[keyName]?.let { liveMapEntry ->
-      return liveMapEntry.getResolvedValue(objectsPool)
-    }
-    return null // RTLM5d1
+    return data[keyName]?.getResolvedValue(objectsPool) // RTLM5d1, RTLM5d2
   }
 
-  internal fun entries(): Iterable<Map.Entry<String, LiveMapValue>> {
-    return sequence<Map.Entry<String, LiveMapValue>> {
+  /**
+   * Non-tombstoned entries (RTLM11d1). A non-tombstoned entry whose objectId reference does not
+   * resolve is still yielded with a null value (RTLM11d3a).
+   */
+  internal fun entries(): Iterable<Map.Entry<String, ResolvedValue?>> {
+    return sequence<Map.Entry<String, ResolvedValue?>> {
       for ((key, entry) in data.entries) {
-        val value = entry.getResolvedValue(objectsPool) // RTLM11d, RTLM11d2
-        value?.let {
-          yield(AbstractMap.SimpleImmutableEntry(key, it))
-        }
+        if (entry.isEntryOrRefTombstoned(objectsPool)) continue // RTLM11d1
+        yield(AbstractMap.SimpleImmutableEntry(key, entry.getResolvedValue(objectsPool))) // RTLM11d3, RTLM11d3a
       }
     }.asIterable()
   }
@@ -77,7 +74,7 @@ internal class InternalLiveMap private constructor(
     }.asIterable()
   }
 
-  internal fun values(): Iterable<LiveMapValue> {
+  internal fun values(): Iterable<ResolvedValue?> {
     val iterableEntries = entries()
     return sequence {
       for (entry in iterableEntries) {
@@ -90,36 +87,89 @@ internal class InternalLiveMap private constructor(
     return data.values.count { !it.isEntryOrRefTombstoned(objectsPool) }.toLong() // RTLM10d
   }
 
+  /**
+   * Recursively compacted JSON snapshot. Cycles are emitted as {"objectId": <id>} markers
+   * (RTPO14b2); binary leaves stay base64 strings - already the wire form (RTPO14b1).
+   * Visited ids are added before iterating and never removed (ably-js parity: a map referenced
+   * twice on sibling branches yields the marker for the second sibling too).
+   *
+   * Spec: RTPO13c (structure), RTPO14b (JSON differences)
+   */
+  internal fun compactJson(visited: MutableSet<String> = mutableSetOf()): JsonObject {
+    val result = JsonObject()
+    visited.add(objectId)
+    for ((key, resolved) in entries()) { // RTPO13c1 - tombstoned entries excluded via entries()
+      when (resolved) {
+        is ResolvedValue.MapRef ->
+          if (resolved.map.objectId in visited) {
+            result.add(key, JsonObject().apply { addProperty("objectId", resolved.map.objectId) }) // RTPO14b2
+          } else {
+            result.add(key, resolved.map.compactJson(visited)) // RTPO13c2
+          }
+        is ResolvedValue.CounterRef -> result.addProperty(key, resolved.counter.value()) // RTPO13c3
+        is ResolvedValue.Leaf -> result.add(key, resolved.data.toCompactJsonElement()) // RTPO13c4, RTPO14b1
+        null -> {
+          // dangling reference (RTLM11d3a) - omitted from the snapshot, matching the ably-js
+          // observable result (undefined-valued keys are dropped by JSON serialisation)
+        }
+      }
+    }
+    return result
+  }
+
   internal suspend fun set(keyName: String, value: LiveMapValue) =  setAsync(keyName, value)
 
   internal suspend fun remove(keyName: String) = removeAsync(keyName)
 
   override fun validate(state: WireObjectState) = liveMapManager.validate(state)
 
-  internal fun subscribe(listener: LiveMapChangeListener): Subscription {
+  /** Identity-based subscription to this map's updates. Spec: RTINS16d, RTLO4b */
+  internal fun subscribe(listener: InstanceListener): Subscription {
     return liveMapManager.subscribe(listener)
   }
 
   private suspend fun setAsync(keyName: String, value: LiveMapValue) {
-    // Validate input parameters
+    // RTLM20e1 / RTLMV4b - validate input parameters
     if (keyName.isEmpty()) {
       throw invalidInputError("Map key should not be empty")
     }
 
+    // RTLM20e7 - the wire value; LiveMap/LiveCounter value types are evaluated into their
+    // *_CREATE messages first (RTLM20e7g1) and referenced by objectId (RTLM20e7g2)
+    val createMessages: List<WireObjectMessage>
+    val objectData: WireObjectData
+    when {
+      value.isLiveCounter -> { // RTLM20e7g
+        val msg = (value.asLiveCounter as DefaultLiveCounter).createCounterCreateMessage(realtimeObject) // RTLCV4
+        createMessages = listOf(msg)
+        objectData = WireObjectData(objectId = msg.operation!!.objectId) // RTLM20e7g2
+      }
+      value.isLiveMap -> { // RTLM20e7g
+        val msgs = (value.asLiveMap as DefaultLiveMap).createMapCreateMessages(realtimeObject) // RTLMV4
+        createMessages = msgs
+        objectData = WireObjectData(objectId = msgs.last().operation!!.objectId) // RTLM20e7g2
+      }
+      else -> {
+        createMessages = emptyList()
+        objectData = fromPrimitiveLiveMapValue(value) // RTLM20e7b..f
+      }
+    }
+
     // RTLM20e - Create ObjectMessage with the MAP_SET operation
-    val msg = WireObjectMessage(
+    val mapSetMsg = WireObjectMessage(
       operation = WireObjectOperation(
-        action = WireObjectOperationAction.MapSet,
-        objectId = objectId,
+        action = WireObjectOperationAction.MapSet, // RTLM20e2
+        objectId = objectId, // RTLM20e3
         mapSet = WireMapSet(
-          key = keyName,
-          value = fromLiveMapValue(value)
+          key = keyName, // RTLM20e6
+          value = objectData // RTLM20e7
         )
       )
     )
 
-    // RTLM20h - publish and apply locally on ACK
-    realtimeObject.publishAndApply(arrayOf(msg))
+    // RTLM20h - publish (nested creates first, RTLM20h1; single message otherwise, RTLM20h2)
+    // and apply locally on ACK
+    realtimeObject.publishAndApply((createMessages + mapSetMsg).toTypedArray())
   }
 
   private suspend fun removeAsync(keyName: String) {
@@ -142,30 +192,35 @@ internal class InternalLiveMap private constructor(
   }
 
   override fun applyObjectState(wireObjectState: WireObjectState, message: WireObjectMessage): ObjectUpdate {
-    return liveMapManager.applyState(wireObjectState, message.serialTimestamp)
+    return liveMapManager.applyState(wireObjectState, message)
   }
 
   override fun applyObjectOperation(operation: WireObjectOperation, message: WireObjectMessage): Boolean {
-    return liveMapManager.applyOperation(operation, message.serial, message.serialTimestamp)
+    return liveMapManager.applyOperation(operation, message)
   }
 
   override fun clearData(): ObjectUpdate {
-    clearTimeserial = null  // RTLM4
+    // RTLO4e9 - before the data is reset, drop the parent references this map holds on objects
+    // referenced by its entries. Covers RTO4b resets, detached/failed clears and object
+    // tombstoning in one place (ably-js does the same in LiveMap.clearData).
+    for ((key, entry) in data) {
+      val refId = entry.data?.objectId ?: continue
+      objectsPool.get(refId)?.removeParentReference(this, key) // RTLO4e9a, RTLO4e9b
+    }
+    clearTimeserial = null  // RTLM4d
     return liveMapManager.calculateUpdateFromDataDiff(data.toMap(), emptyMap())
       .apply { this@InternalLiveMap.data.clear() }
   }
 
-  override fun notifyUpdated(update: ObjectUpdate) {
-    if (update.noOp) {
-      return
-    }
-    Log.v(tag, "Object $objectId updated: $update")
-
-    // TODO - Emit a proper LiveMapChangeEvent once the Instance/ObjectMessage subscription
-    //  pipeline is wired up. ObjectUpdate is not a LiveMapChangeEvent, so casting it (as was
-    //  done previously) always throws ClassCastException; emission is deferred until then.
-    liveMapManager.notify(update as LiveMapChangeEvent)
+  override fun notifyInstanceSubscriptions(update: ObjectUpdate, message: ObjectMessage?) {
+    // RTINS16e1, RTINS16e2 - the event wraps a fresh instance bound to this map (the spec
+    // requires "an Instance wrapping the underlying LiveObject", not a specific wrapper identity)
+    liveMapManager.notify(
+      DefaultInstanceSubscriptionEvent(DefaultLiveMapInstance(realtimeObject, this), message)
+    )
   }
+
+  override fun deregisterInstanceListeners() = liveMapManager.offAll() // RTLO4b4c3c
 
   override fun onGCInterval(gcGracePeriod: Long) {
     data.entries.removeIf { (_, entry) -> entry.isEligibleForGc(gcGracePeriod, clock) }
@@ -179,45 +234,18 @@ internal class InternalLiveMap private constructor(
     internal fun zeroValue(objectId: String, objects: DefaultRealtimeObject): InternalLiveMap {
       return InternalLiveMap(objectId, objects)
     }
-
-    /**
-     * Creates a MapCreate payload from map entries.
-     * Spec: RTLMV4e
-     */
-    internal fun initialValue(entries: MutableMap<String, LiveMapValue>): WireMapCreate {
-      return WireMapCreate(
-        semantics = WireObjectsMapSemantics.LWW,
-        entries = entries.mapValues { (_, value) ->
-          WireObjectsMapEntry(
-            tombstone = false,
-            data = fromLiveMapValue(value)
-          )
-        }
-      )
-    }
-
-    /**
-     * Spec: RTLM20e7
-     */
-    private fun fromLiveMapValue(value: LiveMapValue): WireObjectData {
-      return when {
-        value.isLiveMap || value.isLiveCounter ->
-          WireObjectData(objectId = (value.value as BaseRealtimeObject).objectId)
-        value.isBoolean ->
-          WireObjectData(boolean = value.asBoolean)
-        value.isBinary ->
-          WireObjectData(bytes = Base64.getEncoder().encodeToString(value.asBinary))
-        value.isNumber ->
-          WireObjectData(number = value.asNumber.toDouble())
-        value.isString ->
-          WireObjectData(string = value.asString)
-        value.isJsonObject ->
-          WireObjectData(json = value.asJsonObject)
-        value.isJsonArray ->
-          WireObjectData(json = value.asJsonArray)
-        else ->
-          throw IllegalArgumentException("Unsupported value type")
-      }
-    }
   }
+}
+
+/**
+ * Compact-JSON form of a primitive wire leaf: primitives become JsonPrimitives, binary
+ * stays base64-encoded (RTPO14b1), embedded JSON passes through.
+ */
+internal fun WireObjectData.toCompactJsonElement(): JsonElement = when {
+  string != null -> JsonPrimitive(string)
+  number != null -> JsonPrimitive(number)
+  boolean != null -> JsonPrimitive(boolean)
+  bytes != null -> JsonPrimitive(bytes) // base64 kept encoded - RTPO14b1
+  json != null -> json!!
+  else -> JsonNull.INSTANCE // unreachable for a valid Leaf (isInvalid-filtered)
 }

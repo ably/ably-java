@@ -9,6 +9,7 @@ import io.ably.lib.liveobjects.value.BaseRealtimeObject
 import io.ably.lib.liveobjects.value.ObjectUpdate
 import io.ably.lib.liveobjects.value.livecounter.InternalLiveCounter
 import io.ably.lib.liveobjects.value.livemap.InternalLiveMap
+import io.ably.lib.liveobjects.value.livemap.isEntryOrRefTombstoned
 import io.ably.lib.types.AblyException
 import io.ably.lib.util.Log
 import kotlinx.coroutines.CompletableDeferred
@@ -180,9 +181,35 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
     // RTO5c2 - need to remove realtimeObject instances from the ObjectsPool for which objectIds were not received during the sync sequence
     realtimeObjects.objectsPool.deleteExtraObjectIds(receivedObjectIds)
 
+    // RTO5c10 - rebuild every parentReferences map after the pool has settled, so that
+    // getFullPaths is correct by the time the RTO5c7 notifications below are dispatched
+    rebuildAllParentReferences()
+
     // RTO5c7 - call subscription callbacks for all updated existing objects
     existingObjectUpdates.forEach { (obj, update) ->
       obj.notifyUpdated(update)
+    }
+  }
+
+  /**
+   * Rebuilds all parent references from the settled pool state. Necessary after a sync because
+   * objects may reference other objects that were not yet in the pool when their references
+   * were first applied. Mirrors ably-js realtimeobject.ts#_rebuildAllParentReferences.
+   *
+   * @spec RTO5c10
+   */
+  private fun rebuildAllParentReferences() {
+    val objects = realtimeObjects.objectsPool.all()
+    objects.forEach { it.clearParentReferences() } // RTO5c10a
+    objects.filterIsInstance<InternalLiveMap>().forEach { map ->
+      // RTO5c10b - RTLM11-equivalent iteration over the raw entries: skip entries that are
+      // tombstoned or reference a tombstoned object (RTLM14), but avoid the full value
+      // resolution of entries() since only entry.data.objectId is needed here
+      for ((key, entry) in map.data) {
+        val refId = entry.data?.objectId ?: continue
+        if (entry.isEntryOrRefTombstoned(realtimeObjects.objectsPool)) continue
+        realtimeObjects.objectsPool.get(refId)?.addParentReference(map, key)
+      }
     }
   }
 

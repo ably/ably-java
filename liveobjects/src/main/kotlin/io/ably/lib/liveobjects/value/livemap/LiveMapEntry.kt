@@ -2,11 +2,11 @@ package io.ably.lib.liveobjects.value.livemap
 
 import io.ably.lib.liveobjects.ObjectsPool
 import io.ably.lib.liveobjects.message.WireObjectData
-import io.ably.lib.liveobjects.value.*
-import io.ably.lib.liveobjects.value.BaseRealtimeObject
+import io.ably.lib.liveobjects.message.isInvalid
 import io.ably.lib.liveobjects.value.ObjectType
+import io.ably.lib.liveobjects.value.ResolvedValue
+import io.ably.lib.liveobjects.value.livecounter.InternalLiveCounter
 import io.ably.lib.util.Clock
-import java.util.Base64
 
 /**
  * @spec RTLM3 - Map data structure storing entries
@@ -37,34 +37,28 @@ internal fun LiveMapEntry.isEntryOrRefTombstoned(objectsPool: ObjectsPool): Bool
 }
 
 /**
- * Returns value as is if object data stores a primitive type or
- * a reference to another RealtimeObject from the pool if it stores an objectId.
+ * Resolves this entry to the internal graph view: a primitive leaf as wire ObjectData,
+ * or a reference to another internal object from the pool.
+ * Spec: RTLM5d2
  */
-internal fun LiveMapEntry.getResolvedValue(objectsPool: ObjectsPool): LiveMapValue? {
+internal fun LiveMapEntry.getResolvedValue(objectsPool: ObjectsPool): ResolvedValue? {
   if (isTombstoned) { return null } // RTLM5d2h
-
-  data?.let { d -> // RTLM5d2b, RTLM5d2c, RTLM5d2d, RTLM5d2e
-    d.string?.let { return LiveMapValue.of(it) }
-    d.number?.let { return LiveMapValue.of(it) }
-    d.boolean?.let { return LiveMapValue.of(it) }
-    d.bytes?.let { return LiveMapValue.of(Base64.getDecoder().decode(it)) }
-    d.json?.let { parsed ->
-      return when {
-        parsed.isJsonObject -> LiveMapValue.of(parsed.asJsonObject)
-        parsed.isJsonArray -> LiveMapValue.of(parsed.asJsonArray)
-        else -> null
-      }
+  val d = data ?: return null // RTLM5d2g
+  d.objectId?.let { refId -> // RTLM5d2f - has an objectId reference
+    val refObject = objectsPool.get(refId) ?: return null // RTLM5d2f1
+    if (refObject.isTombstoned) {
+      return null // tombstoned objects must not be surfaced to the end users (RTLM14c behaviour)
     }
-    d.objectId?.let { refId -> // RTLM5d2f - has an objectId reference
-      objectsPool.get(refId)?.let { refObject ->
-        if (refObject.isTombstoned) {
-          return null // tombstoned objects must not be surfaced to the end users
-        }
-        return fromRealtimeObject(refObject) // RTLM5d2f2
-      }
+    // RTLM5d2f2 - safe casts by construction: the pool only ever contains these two subclasses
+    return when (refObject.objectType) {
+      ObjectType.Map -> ResolvedValue.MapRef(refObject as InternalLiveMap)
+      ObjectType.Counter -> ResolvedValue.CounterRef(refObject as InternalLiveCounter)
     }
   }
-  return null // RTLM5d2g, RTLM5d2f1
+  // RTLM5d2b..e - primitive leaf; keep the wire form, typed narrowing (incl. base64 decode
+  // for bytes) happens at the PathObject/Instance layer
+  if (d.isInvalid()) return null // RTLM5d2g
+  return ResolvedValue.Leaf(d)
 }
 
 /**
@@ -73,11 +67,4 @@ internal fun LiveMapEntry.getResolvedValue(objectsPool: ObjectsPool): LiveMapVal
 internal fun LiveMapEntry.isEligibleForGc(gcGracePeriod: Long, clock: Clock): Boolean {
   val currentTime = clock.currentTimeMillis()
   return isTombstoned && tombstonedAt?.let { currentTime - it >= gcGracePeriod } == true
-}
-
-private fun fromRealtimeObject(realtimeObject: BaseRealtimeObject): LiveMapValue {
-  return when (realtimeObject.objectType) {
-    ObjectType.Map -> LiveMapValue.of(realtimeObject as LiveMap)
-    ObjectType.Counter -> LiveMapValue.of(realtimeObject as LiveCounter)
-  }
 }
