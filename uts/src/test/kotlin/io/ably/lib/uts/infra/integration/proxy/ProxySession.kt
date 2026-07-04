@@ -113,7 +113,8 @@ fun wsFrameToClientRule(
 ): ProxyRule = buildMap {
     put("match", buildMap<String, Any> {
         put("type", "ws_frame_to_client")
-        if (messageAction != null) put("action", messageAction)
+        // The proxy's MatchConfig.Action is a Go string (action name or numeric string).
+        if (messageAction != null) put("action", messageAction.toString())
         if (channel != null) put("channel", channel)
     })
     put("action", action)
@@ -137,7 +138,8 @@ fun wsFrameToServerRule(
 ): ProxyRule = buildMap {
     put("match", buildMap<String, Any> {
         put("type", "ws_frame_to_server")
-        if (messageAction != null) put("action", messageAction)
+        // The proxy's MatchConfig.Action is a Go string (action name or numeric string).
+        if (messageAction != null) put("action", messageAction.toString())
         if (channel != null) put("channel", channel)
     })
     put("action", action)

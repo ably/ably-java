@@ -604,7 +604,7 @@ Some specs are **integration tests** — they run against the **real Ably sandbo
 
 **Shared foundation (both tiers, covered once):** `SandboxApp` provisioning + the `@BeforeAll`/`@AfterAll` lifecycle (see **Infrastructure** below), `runTest` test bodies, suspend-function handling, and the `awaitState` / `awaitChannelState` / `pollUntil` waits — never a fixed sleep, since real network is involved (use generous 10–30s timeouts). Only the *wiring* differs per tier; that's what the two tier subsections below cover.
 
-Recognise a **proxy** spec by a reference to `create_proxy_session()`, proxy `rules`, `trigger_action`, `get_log`, or a pointer to `uts/realtime/integration/helpers/proxy.md`. A spec with none of those is **direct sandbox**.
+Recognise a **proxy** spec by a reference to `create_proxy_session()`, proxy `rules`, `trigger_action`, `get_log`, or a pointer to `uts/docs/proxy.md`. A spec with none of those is **direct sandbox**.
 
 ### Which integration tier?
 
@@ -686,7 +686,7 @@ Give every proxy integration test class this KDoc:
  *
  * Uses the programmable uts-proxy to inject transport-level faults while the
  * SDK communicates with the real Ably backend. See
- * `uts/realtime/integration/helpers/proxy.md` for proxy infrastructure details.
+ * `uts/docs/proxy.md` for proxy infrastructure details.
  */
 ```
 

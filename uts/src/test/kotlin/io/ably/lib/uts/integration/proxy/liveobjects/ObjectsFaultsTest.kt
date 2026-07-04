@@ -3,10 +3,10 @@ package io.ably.lib.uts.integration.proxy.liveobjects
 import io.ably.lib.liveobjects.path.PathObject
 import io.ably.lib.liveobjects.value.LiveMapValue
 import io.ably.lib.realtime.AblyRealtime
+import io.ably.lib.types.AblyException
 import io.ably.lib.realtime.Channel
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.realtime.ConnectionState
-import io.ably.lib.types.AblyException
 import io.ably.lib.types.ChannelMode
 import io.ably.lib.types.ChannelOptions
 import io.ably.lib.uts.infra.awaitChannelState
@@ -18,10 +18,13 @@ import io.ably.lib.uts.infra.integration.proxy.connectThroughProxy
 import io.ably.lib.uts.infra.integration.proxy.wsFrameToClientRule
 import io.ably.lib.uts.infra.pollUntil
 import io.ably.lib.uts.infra.unit.TestRealtimeClient
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.future.await
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withTimeout
+import io.ably.lib.uts.infra.withRealTimeout
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -30,6 +33,7 @@ import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertFailsWith
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -37,22 +41,18 @@ import kotlin.time.Duration.Companion.seconds
  *
  * Uses the programmable uts-proxy to inject transport-level faults while the
  * SDK communicates with the real Ably backend. See
- * `uts/realtime/integration/helpers/proxy.md` for proxy infrastructure details.
+ * `uts/docs/proxy.md` for proxy infrastructure details.
  *
  * Exercises objects sync/mutation behaviour under faults: sync interrupted by disconnect and
  * re-synced on reconnect, mutations buffered during re-sync, server-initiated detach re-sync, and
- * publishAndApply failing when the channel enters FAILED.
+ * an in-flight publishAndApply failing when the channel enters FAILED during the sync wait.
  *
- * Spec points: RTO5a2, RTO7, RTO8, RTO17, RTO20e. Source spec:
+ * Spec points: RTO5a2, RTO7, RTO8, RTO17, RTO20e, RTO20e1. Source spec:
  * `objects/integration/proxy/objects_faults.md`. Corresponding unit specs: `objects/unit/objects_pool.md`,
  * `objects/unit/realtime_object.md`.
  *
  * Proxy tests always use JSON (the proxy can only inspect text frames), which is the
  * `ClientOptionsBuilder` default.
- *
- * > **Translate-only:** `channel.object.get()` resolves only once the SDK's OBJECT_SYNC processing
- * > + `RealtimeObject.get()` land, so these compile now and run once the LiveObjects engine is
- * > implemented.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ObjectsFaultsTest {
@@ -98,12 +98,12 @@ class ObjectsFaultsTest {
             awaitState(client, ConnectionState.connected, 30.seconds)
 
             // get() waits for SYNCED — resolves only if the re-sync completes.
-            val root = withTimeout(30.seconds) { channel.`object`.get().await() }
+            val root = withRealTimeout(30.seconds) { channel.`object`.get().await() }
 
             assertIs<PathObject>(root)
             assertEquals("", root.path())
         } finally {
-            client.close()
+            closeClient(client)
             session.close()
         }
     }
@@ -123,15 +123,17 @@ class ObjectsFaultsTest {
         try {
             clientA.connect()
             awaitState(clientA, ConnectionState.connected, 15.seconds)
-            val rootA = withTimeout(15.seconds) { objectChannel(clientA, channelName).`object`.get().await() }
+            val rootA = withRealTimeout(15.seconds) { objectChannel(clientA, channelName).`object`.get().await() }
 
             // Set initial data
             rootA.set("key1", LiveMapValue.of("initial")).await()
 
-            // Client B connects and syncs
+            // Client B connects and syncs. The channel is fetched once and reused — re-calling
+            // Channels.get() with mode options on an attached channel throws (use setOptions instead).
+            val channelB = objectChannel(clientB, channelName)
             clientB.connect()
             awaitState(clientB, ConnectionState.connected, 15.seconds)
-            var rootB = withTimeout(15.seconds) { objectChannel(clientB, channelName).`object`.get().await() }
+            var rootB = withRealTimeout(15.seconds) { channelB.`object`.get().await() }
             pollUntil(10.seconds) { rootB.get("key1").asString().value() == "initial" }
 
             // Disconnect client B
@@ -143,13 +145,13 @@ class ObjectsFaultsTest {
 
             // Client B reconnects and re-syncs; the mutation should be visible
             awaitState(clientB, ConnectionState.connected, 30.seconds)
-            rootB = withTimeout(15.seconds) { objectChannel(clientB, channelName).`object`.get().await() }
+            rootB = withRealTimeout(15.seconds) { channelB.`object`.get().await() }
             pollUntil(15.seconds) { rootB.get("key1").asString().value() == "updated_during_disconnect" }
 
             assertEquals("updated_during_disconnect", rootB.get("key1").asString().value())
         } finally {
-            clientA.close()
-            clientB.close()
+            closeClient(clientA)
+            closeClient(clientB)
             session.close()
         }
     }
@@ -168,7 +170,7 @@ class ObjectsFaultsTest {
             awaitState(client, ConnectionState.connected, 15.seconds)
 
             val channel = objectChannel(client, channelName)
-            var root = withTimeout(15.seconds) { channel.`object`.get().await() }
+            var root = withRealTimeout(15.seconds) { channel.`object`.get().await() }
 
             // Set some data
             root.set("before_detach", LiveMapValue.of("hello")).await()
@@ -186,12 +188,12 @@ class ObjectsFaultsTest {
             awaitChannelState(channel, ChannelState.attached, 30.seconds)
 
             // Re-sync should restore the data.
-            root = withTimeout(15.seconds) { channel.`object`.get().await() }
+            root = withRealTimeout(15.seconds) { channel.`object`.get().await() }
             pollUntil(15.seconds) { root.get("before_detach").asString().value() == "hello" }
 
             assertEquals("hello", root.get("before_detach").asString().value())
         } finally {
-            client.close()
+            closeClient(client)
             session.close()
         }
     }
@@ -201,6 +203,10 @@ class ObjectsFaultsTest {
      */
     @Test
     fun `RTO20e - publishAndApply fails when channel enters FAILED during SYNCING`() = runTest {
+        // RTO20e1 sequence: mutation in flight while SYNCING, then the channel enters FAILED
+        // → 92008 (a mutation issued after FAILED would hit the RTO26b precondition, 90001).
+        // Spec fixed in the local ably-specification checkout; see PROXY_UTS_SPEC_FIX.md until
+        // merged upstream.
         val channelName = "objects-publish-failed-" + UUID.randomUUID()
 
         val session = ProxySession.create(rules = emptyList())
@@ -210,9 +216,34 @@ class ObjectsFaultsTest {
             awaitState(client, ConnectionState.connected, 15.seconds)
 
             val channel = objectChannel(client, channelName)
-            val root = withTimeout(15.seconds) { channel.`object`.get().await() }
+            val root = withRealTimeout(15.seconds) { channel.`object`.get().await() }
 
-            // Inject a channel ERROR (action 9) to transition the channel to FAILED.
+            // Re-enter SYNCING: inject an ATTACHED (action 11) carrying the HAS_OBJECTS flag
+            // (bit 7 = 128). RTO4c starts a new sync on every ATTACHED protocol message, and since
+            // the server never sent this ATTACHED, no OBJECT_SYNC follows — objects stay SYNCING.
+            session.triggerAction(
+                mapOf(
+                    "type" to "inject_to_client",
+                    "message" to mapOf("action" to 11, "channel" to channelName, "flags" to 128),
+                ),
+            )
+
+            // Mutate while SYNCING: the publish + ACK complete against the real server (the channel
+            // is still ATTACHED), then publishAndApply waits for a SYNCED that never comes (RTO20e).
+            val pending = root.set("key", LiveMapValue.of("value"))
+
+            // Wait for the server's ACK (action 1) so the operation is in the RTO20e sync-wait
+            // rather than still publishing, then give the SDK a beat to enter the wait (real-time
+            // delay — a bare delay() inside runTest is virtual and would skip instantly).
+            pollUntil(10.seconds) {
+                session.getLog().any {
+                    it.type == "ws_frame" && it.direction == "server_to_client" &&
+                        it.message?.get("action")?.asInt == 1
+                }
+            }
+            withContext(Dispatchers.Default) { delay(500.milliseconds) }
+
+            // The channel enters FAILED whilst the operation waits for SYNCED (RTO20e1).
             session.triggerAction(
                 mapOf(
                     "type" to "inject_to_client",
@@ -225,18 +256,16 @@ class ObjectsFaultsTest {
             )
             awaitChannelState(channel, ChannelState.failed, 15.seconds)
 
-            // A mutation (publishAndApply internally) must fail since the channel is FAILED.
             val error = assertFailsWith<AblyException> {
-                root.set("key", LiveMapValue.of("value")).await()
+                withRealTimeout(15.seconds) { pending.await() }
             }
             assertEquals(92008, error.errorInfo.code)
-            // The objects layer wraps the channel-level error as the AblyException cause
-            // (ablyException(errorInfo, cause) -> AblyException.fromErrorInfo(cause, errorInfo)),
-            // so the injected 90000 channel error is the cause.
+            assertEquals(400, error.errorInfo.statusCode)
+            // RTO20e1 - cause is the channel's errorReason, i.e. the injected 90000 channel error.
             val cause = assertIs<AblyException>(error.cause)
             assertEquals(90000, cause.errorInfo.code)
         } finally {
-            client.close()
+            closeClient(client)
             session.close()
         }
     }
@@ -260,7 +289,7 @@ class ObjectsFaultsTest {
         try {
             clientA.connect()
             awaitState(clientA, ConnectionState.connected, 15.seconds)
-            val rootA = withTimeout(15.seconds) { objectChannel(clientA, channelName).`object`.get().await() }
+            val rootA = withRealTimeout(15.seconds) { objectChannel(clientA, channelName).`object`.get().await() }
 
             // Set up initial data
             rootA.set("existing", LiveMapValue.of("before")).await()
@@ -275,20 +304,33 @@ class ObjectsFaultsTest {
             rootA.set("existing", LiveMapValue.of("after")).await()
 
             // B's get() resolves once the delayed sync completes.
-            val rootB = withTimeout(30.seconds) { channelB.`object`.get().await() }
+            val rootB = withRealTimeout(30.seconds) { channelB.`object`.get().await() }
 
             // The mutation from A should be visible (in sync data or as a buffered OBJECT).
             pollUntil(15.seconds) { rootB.get("existing").asString().value() == "after" }
 
             assertEquals("after", rootB.get("existing").asString().value())
         } finally {
-            clientA.close()
-            clientB.close()
+            closeClient(clientA)
+            closeClient(clientB)
             session.close()
         }
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
+
+    /**
+     * Common Cleanup (source spec): close the client and, when the connection was active
+     * (connected/connecting/disconnected), await CLOSED so the transport is torn down before
+     * the proxy session is deleted. Wrapped in runCatching so cleanup never masks a test failure.
+     */
+    private suspend fun closeClient(client: AblyRealtime) {
+        val awaitClosed = client.connection.state in setOf(
+            ConnectionState.connected, ConnectionState.connecting, ConnectionState.disconnected,
+        )
+        runCatching { client.close() }
+        if (awaitClosed) runCatching { awaitState(client, ConnectionState.closed, 10.seconds) }
+    }
 
     /** A realtime client routed through the proxy (localhost hop → nonprod sandbox upstream). */
     private fun proxyClient(session: ProxySession): AblyRealtime = TestRealtimeClient {
