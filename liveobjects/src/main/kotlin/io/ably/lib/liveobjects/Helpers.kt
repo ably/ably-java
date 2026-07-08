@@ -8,7 +8,6 @@ import io.ably.lib.realtime.CompletionListener
 import io.ably.lib.realtime.ConnectionEvent
 import io.ably.lib.realtime.ConnectionStateListener
 import io.ably.lib.types.*
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.resume
@@ -169,29 +168,25 @@ internal fun AblyClientAdapter.setChannelSerial(channelName: String, protocolMes
   getChannel(channelName).properties.channelSerial = channelSerial
 }
 
+/**
+ * *Ensure-active-channel* procedure: makes the channel usable before an objects operation.
+ *
+ * Spec: RTL33
+ */
 internal suspend fun AblyClientAdapter.ensureAttached(channelName: String) {
   val channel = getChannel(channelName)
   when (val currentChannelStatus = channel.state) {
-    ChannelState.initialized -> attachAsync(channelName)
-    ChannelState.attached -> return
-    ChannelState.attaching -> {
-      val attachDeferred = CompletableDeferred<Unit>()
-      getChannel(channelName).once {
-        when(it.current) {
-          ChannelState.attached -> attachDeferred.complete(Unit)
-          else -> {
-            val exception = ablyException("Channel $channelName is in invalid state: ${it.current}, " +
-              "error: ${it.reason}", ObjectErrorCode.ChannelStateError)
-            attachDeferred.completeExceptionally(exception)
-          }
-        }
-      }
-      if (channel.state == ChannelState.attached) {
-        attachDeferred.complete(Unit)
-      }
-      attachDeferred.await()
-    }
+    // RTL33a - already usable, no attach performed
+    ChannelState.attached, ChannelState.suspended -> return
+    // RTL33b - implicit attach per RTL4 and wait for completion. attachAsync propagates the
+    // ErrorInfo that caused the attach to fail (RTL33b1). Channel#attach already resolves the
+    // ATTACHING/DETACHING in-flight cases per RTL4h, so a single call covers all four states.
+    ChannelState.initialized,
+    ChannelState.detached,
+    ChannelState.detaching,
+    ChannelState.attaching -> attachAsync(channelName)
+    // RTL33c - failed (and any other/unknown state): code 90001, statusCode 400
     else ->
-      throw ablyException("Channel $channelName is in invalid state: $currentChannelStatus", ObjectErrorCode.ChannelStateError)
+      throw objectException("Channel $channelName is in invalid state: $currentChannelStatus", ObjectErrorCode.ChannelStateError)
   }
 }
