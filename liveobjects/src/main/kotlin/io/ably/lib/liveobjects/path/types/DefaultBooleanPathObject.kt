@@ -19,7 +19,7 @@ internal class DefaultBooleanPathObject(
 
   override fun value(): Boolean? {
     channelObject.throwIfInvalidAccessApiConfiguration()
-    val resolved = resolveValueAtPath(path) ?: return null
+    val resolved = resolveValueAtCurrentPath() ?: return null
     if (resolved.valueType() != ValueType.BOOLEAN) return null // RTTS6c - exact type only
     return (resolved as ResolvedValue.Leaf).data.boolean
   }

@@ -35,7 +35,7 @@ import io.ably.lib.liveobjects.value.valueType
  *
  * The `as*` casts return a typed view of the same position without resolving it; operations
  * that need a value re-resolve the stored path against the live objects graph on every call
- * via [resolveValueAtPath], so a PathObject never holds a stale reference.
+ * via [resolveValueAtCurrentPath], so a PathObject never holds a stale reference.
  *
  * Spec: RTPO1, RTPO2, RTTS3
  */
@@ -48,12 +48,12 @@ internal open class DefaultPathObject(
 
   override fun getType(): ValueType? {
     channelObject.throwIfInvalidAccessApiConfiguration()
-    return resolveValueAtPath(path)?.valueType()
+    return resolveValueAtCurrentPath()?.valueType()
   }
 
   override fun instance(): Instance? {
     channelObject.throwIfInvalidAccessApiConfiguration() // RTPO8a
-    val resolvedValue = resolveValueAtPath(path) ?: return null // RTPO8e - unresolved path -> no instance
+    val resolvedValue = resolveValueAtCurrentPath() ?: return null // RTPO8e - unresolved path -> no instance
     return when (resolvedValue) {
       is ResolvedValue.Leaf -> null // RTPO8d - primitives have no Instance here; only live objects do
       // RTPO8c - wrap the resolved live object in its typed Instance (RTTS6e: primitive
@@ -64,7 +64,7 @@ internal open class DefaultPathObject(
 
   override fun compactJson(): JsonElement? {
     channelObject.throwIfInvalidAccessApiConfiguration() // RTPO14a / RTO25
-    return when (val resolved = resolveValueAtPath(path)) {
+    return when (val resolved = resolveValueAtCurrentPath()) {
       null -> null // RTPO3c1 - unresolved path
       is ResolvedValue.MapRef -> resolved.map.compactJson() // RTPO13c
       is ResolvedValue.CounterRef -> JsonPrimitive(resolved.counter.value()) // RTPO13d
@@ -74,7 +74,7 @@ internal open class DefaultPathObject(
 
   override fun exists(): Boolean {
     channelObject.throwIfInvalidAccessApiConfiguration()
-    return resolveValueAtPath(path) != null
+    return resolveValueAtCurrentPath() != null
   }
 
   override fun asLiveMap(): LiveMapPathObject = DefaultLiveMapPathObject(channelObject, path)
@@ -108,7 +108,7 @@ internal open class DefaultPathObject(
    * Returns null on resolution failure; read callers degrade per RTPO3c1, write callers
    * throw 92005 per RTPO3c2.
    */
-  protected fun resolveValueAtPath(path: String): ResolvedValue? {
+  protected fun resolveValueAtCurrentPath(): ResolvedValue? {
     // root is always present and always an InternalLiveMap (RTO3b); the pool never replaces
     // the root instance (RTO4b2, RTO5c2a), so looking it up per call is equivalent to
     // holding the RTPO2b root reference

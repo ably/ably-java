@@ -20,7 +20,7 @@ internal class DefaultJsonObjectPathObject(
 
   override fun value(): JsonObject? {
     channelObject.throwIfInvalidAccessApiConfiguration()
-    val resolved = resolveValueAtPath(path) ?: return null
+    val resolved = resolveValueAtCurrentPath() ?: return null
     if (resolved.valueType() != ValueType.JSON_OBJECT) return null // RTTS6c - exact type only
     return (resolved as ResolvedValue.Leaf).data.json!!.asJsonObject
   }

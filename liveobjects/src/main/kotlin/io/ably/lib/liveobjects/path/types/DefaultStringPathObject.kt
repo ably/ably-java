@@ -19,7 +19,7 @@ internal class DefaultStringPathObject(
 
   override fun value(): String? {
     channelObject.throwIfInvalidAccessApiConfiguration()
-    val resolved = resolveValueAtPath(path) ?: return null
+    val resolved = resolveValueAtCurrentPath() ?: return null
     if (resolved.valueType() != ValueType.STRING) return null // RTTS6c - exact type only
     return (resolved as ResolvedValue.Leaf).data.string
   }

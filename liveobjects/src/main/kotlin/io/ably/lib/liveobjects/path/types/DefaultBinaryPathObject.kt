@@ -20,7 +20,7 @@ internal class DefaultBinaryPathObject(
 
   override fun value(): ByteArray? {
     channelObject.throwIfInvalidAccessApiConfiguration()
-    val resolved = resolveValueAtPath(path) ?: return null
+    val resolved = resolveValueAtCurrentPath() ?: return null
     if (resolved.valueType() != ValueType.BINARY) return null // RTTS6c - exact type only
     return Base64.getDecoder().decode((resolved as ResolvedValue.Leaf).data.bytes) // wire form is base64 (OD2d)
   }
