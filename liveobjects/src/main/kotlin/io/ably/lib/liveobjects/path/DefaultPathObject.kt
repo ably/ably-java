@@ -26,7 +26,7 @@ import io.ably.lib.liveobjects.path.types.NumberPathObject
 import io.ably.lib.liveobjects.path.types.StringPathObject
 import io.ably.lib.liveobjects.value.ResolvedValue
 import io.ably.lib.liveobjects.value.livemap.InternalLiveMap
-import io.ably.lib.liveobjects.value.livemap.toCompactJsonElement
+import io.ably.lib.liveobjects.message.toCompactJsonElement
 import io.ably.lib.liveobjects.value.valueType
 
 /**
