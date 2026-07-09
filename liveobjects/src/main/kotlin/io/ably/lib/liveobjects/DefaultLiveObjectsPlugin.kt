@@ -10,7 +10,8 @@ public class DefaultLiveObjectsPlugin(private val adapter: AblyClientAdapter) : 
   private val objects = ConcurrentHashMap<String, DefaultRealtimeObject>()
 
   override fun getInstance(channelName: String): RealtimeObject {
-    return objects.getOrPut(channelName) { DefaultRealtimeObject(channelName, adapter) }
+    // Requires Java 8 / Android API 24, already mandated by this module's CompletableFuture API.
+    return objects.computeIfAbsent(channelName) { DefaultRealtimeObject(channelName, adapter) }
   }
 
   override fun handle(msg: ProtocolMessage) {
