@@ -27,8 +27,9 @@ doubt, that IDL is the source of truth; this doc is the applied version of it fo
 11. [Message / operation types (`PublicAPI::ObjectMessage` →)](#11-messages)
 12. [Errors & error codes](#12-errors)
 13. [Internal-graph types (unit specs) — important caveat](#13-internal-graph)
-14. [Worked example](#14-worked-example)
-15. [Quick symbol index](#15-symbol-index)
+14. [Integration-test helpers — REST fixture provisioning](#14-integration-helpers)
+15. [Worked example](#15-worked-example)
+16. [Quick symbol index](#16-symbol-index)
 
 ---
 
@@ -481,6 +482,15 @@ Assert the code as a plain int — `assertEquals(90001, ex.errorInfo.code)` — 
 tags). The `90000` a spec injects via a mocked `ERROR`/`DETACHED` `ProtocolMessage` is the channel-level
 error, not an objects code — it's what drives the channel into the state that makes the objects call fail.
 
+**Nested cause (`error.cause.code`).** `ErrorInfo` has no `cause` field, so a spec's nested
+`error.cause.code` (e.g. `RTO20e`: top-level `92008` plus cause `90000`) lives on the **exception's** Java
+cause — the objects layer sets it to the underlying `AblyException`. Read it by casting the cause:
+
+```kotlin
+assertEquals(92008, ex.errorInfo.code)
+assertEquals(90000, assertIs<AblyException>(ex.cause).errorInfo.code)
+```
+
 ---
 
 ## 13. Internal-graph types (unit specs) — important caveat <a id="13-internal-graph"></a>
@@ -554,9 +564,48 @@ wire `action` / `semantics` are integer enum codes — the builders emit the cod
 > is implemented. (`buildPublicObjectMessage` does *not* depend on this — the message/operation layer is
 > implemented, so those tests can run now.)
 
+(For the **integration** tier's REST fixture helper — `provision_objects_via_rest` — see §14.)
+
 ---
 
-## 14. Worked example <a id="14-worked-example"></a>
+## 14. Integration-test helpers — REST fixture provisioning (`standard_test_pool.md` → integration `Helpers.kt`) <a id="14-integration-helpers"></a>
+
+Some objects **integration** specs (tier `integration/standard`) seed object state over REST *before* the
+realtime client connects, via the spec's `## REST Fixture Provisioning` helper `provision_objects_via_rest`.
+Its ably-java translation lives in
+`uts/src/test/kotlin/io/ably/lib/uts/integration/standard/liveobjects/Helpers.kt` (package
+`io.ably.lib.uts.integration.standard.liveobjects`) — **call it; don't hand-roll the REST request or payload
+JSON.** (Currently only `objects/integration/RTPO15` uses it.) Unlike the unit helpers (§13), this needs no
+reflection and no `:liveobjects` dependency — it compiles and runs against `:java`'s public `AblyRest`.
+
+| Spec helper / operation shape | integration `Helpers.kt` |
+|---|---|
+| `provision_objects_via_rest(api_key, channel_name, operations)` | `provisionObjectsViaRest(apiKey, channelName, operations: List<JsonObject>): List<String>` (POSTs the op(s); returns created/updated `objectIds`) |
+| op `{ mapSet: { key, value }, objectId/path }` | `mapSetOp(key, value, objectId = …, path = …, id = …)` |
+| op `{ mapRemove: { key }, objectId/path }` | `mapRemoveOp(key, objectId = …, path = …, id = …)` |
+| op `{ mapCreate: { semantics: 0, entries }, [objectId/path] }` | `mapCreateOp(entries: Map<String, JsonObject>, semantics = 0, objectId = …, path = …, id = …)` |
+| op `{ counterCreate: { count }, [objectId/path] }` | `counterCreateOp(count, objectId = …, path = …, id = …)` |
+| op `{ counterInc: { number }, objectId/path }` | `counterIncOp(number, objectId = …, path = …, id = …)` |
+| value `{ string }` / `{ number }` / `{ boolean }` / `{ bytes }` / `{ objectId }` | `valueString` / `valueNumber` / `valueBoolean` / `valueBytes` / `valueObjectId` (each → `JsonObject`; `valueString` / `valueBytes` take an optional `encoding`) |
+
+> **V2 REST format.** These builders follow the LiveObjects **V2** objects REST API (the OpenAPI is the
+> source of truth): `POST /channels/{channel}/object` (**singular**), body is a single operation **or** a
+> bare array (no `messages` wrapper), each op named by its payload key (`mapSet` / `mapRemove` / `mapCreate`
+> / `counterInc` / `counterCreate`) with an `objectId`/`path` target (and optional idempotency `id`). The
+> spec's `standard_test_pool.md` originally showed the legacy `POST …/objects` + `{ messages: [...] }`
+> envelope on the legacy `sandbox-rest.ably.io` host; both were aligned upstream — to this V2 shape and to
+> the canonical nonprod sandbox host `sandbox.realtime.ably-nonprod.net` — in ably/specification#497.
+>
+> **Sandbox host.** `provisionObjectsViaRest` sets `restHost = SandboxApp.sandboxHost`
+> (`sandbox.realtime.ably-nonprod.net`) — the same nonprod host `SandboxApp` and the realtime clients use,
+> **not** `environment="sandbox"` (which resolves to the legacy `sandbox-rest.ably.io`, and
+> can't be combined with `restHost` per `Hosts.java` TO3k2/TO3k3). The REST call hits the live sandbox
+> today; the realtime client it provisions for only *observes* the data once the SDK's OBJECT_SYNC +
+> `RealtimeObject.get()` land.
+
+---
+
+## 15. Worked example <a id="15-worked-example"></a>
 
 Spec pseudocode (public-API style):
 
@@ -597,7 +646,7 @@ wrapped in `LiveMapValue.of`; `at(...)` followed by `asLiveCounter()` before cou
 
 ---
 
-## 15. Quick symbol index <a id="15-symbol-index"></a>
+## 16. Quick symbol index <a id="16-symbol-index"></a>
 
 | ably-js / spec symbol | ably-java |
 |---|---|

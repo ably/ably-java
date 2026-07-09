@@ -420,9 +420,13 @@ Fix any compilation errors and recompile until clean. Common issues:
 
 ## Step 6 — Run tests *(evaluate mode only)*
 
-Skip this whole step in "translate only" mode. In "translate and evaluate" mode, run the test and **keep
-fixing until it passes** — either the spec-correct assertion passes, or it's deliberately gated/adapted as a
-documented deviation (below). A red test is never an acceptable end state here.
+Skip this whole step in "translate only" mode. In "translate and evaluate" mode, run the test and resolve
+every failure via the decision tree below. Each test must end in exactly one of these states — never an
+**unexplained** red:
+- the spec-correct assertion **passes**; or
+- a documented **SDK deviation** — env-gated or adapted, stays green (SDK ≠ spec; fix belongs in the SDK); or
+- a documented **UTS spec error** — **fails fast** (the spec is wrong; fix belongs in the spec). This is the
+  one acceptable red.
 
 Use the per-tier task that matches the chosen tier (both are registered in `uts/build.gradle.kts`), and the
 resolver's `package` + the spec's `className` for the `--tests` filter:
@@ -442,15 +446,19 @@ Handle test failures using this decision tree (the **Required reading** doc you 
 ```
 Test fails
   |
-  +-- Does UTS spec match features spec?
-  |     NO  → fix test, record UTS spec error in deviations file
+  +-- Does UTS spec match features spec?  (fetch the features spec — see Required reading)
+  |     NO  → UTS SPEC ERROR — fix the spec at source, not the test. Record in deviations.md
+  |           (UTS Spec Errors) + emit a fail-fast test (below) so it's fixed early.
   |     YES
   |       +-- Does test accurately translate the UTS spec?
   |             NO  → fix the test (no deviation entry needed)
   |             YES → SDK deviation — adapt test, record in deviations file
 ```
 
-### Deviation patterns
+### Test patterns for a diagnosed failure
+
+Two patterns are for an **SDK deviation** (both write the spec-correct assertions); the third,
+**spec-error fail-fast**, is for a **UTS spec error** and is not a deviation.
 
 **Env-gated skip (preferred)** — test contains spec-correct assertions but is skipped by default:
 
@@ -474,15 +482,28 @@ fun `RSA4c2 - callback error connecting disconnected`() = runTest {
 assertEquals(40160, error.errorInfo.code)
 ```
 
+**Spec-error fail-fast** *(UTS spec error — NOT an SDK deviation)* — when the decision tree's first branch is **NO** (the UTS spec contradicts the features spec, or is internally inconsistent), the spec is the fixable source of truth, so the test must **fail loudly** pointing at the deviation entry, rather than be quietly adapted to green. This is the opposite of the SDK-deviation patterns above (which stay green / assert actual behaviour) — failing fast is the forcing function that gets the spec fixed early.
+
+```kotlin
+/**
+ * @UTS objects/unit/RTLC7c2/local-source-no-sitetimeserials-0
+ */
+@Test
+fun `RTLC7c2 - LOCAL source does not write siteTimeserials`() = runTest {
+    // SPEC ERROR RTLC7c2: replayed ACK serial "t:1:0" contradicts the harness ("ack-0:0").
+    // Fix the UTS spec first — see deviations.md (UTS Spec Errors).
+    fail("UTS spec error RTLC7c2 — fix the spec first; see deviations.md")
+}
+```
+
 **Never use the accommodate-both pattern** (accept either spec or SDK behaviour). Every test must assert either spec behaviour or the SDK's actual behaviour — never both at once.
 
 ### Deviations file
 
-Append to `uts/src/test/kotlin/io/ably/lib/uts/deviations.md`. Each entry needs:
-1. The spec point (e.g. `RSA4c2`)
-2. What the spec says
-3. What the SDK does
-4. Which test is affected and how it was adapted
+Append to `uts/src/test/kotlin/io/ably/lib/uts/deviations.md`, using the manual's **Recording deviations**
+entry format and sections. The ably-java-specific mapping: a **UTS Spec Error** (test fails fast — fix in
+the spec) goes under the manual's *UTS Spec Errors* section; an **SDK deviation** (env-gated/adapted — fix
+in the SDK) goes under *Failing Tests* / *Adapted Tests*.
 
 ---
 
