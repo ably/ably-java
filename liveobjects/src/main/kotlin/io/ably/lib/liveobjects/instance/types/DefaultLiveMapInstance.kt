@@ -71,12 +71,12 @@ internal class DefaultLiveMapInstance(
 
   override fun set(key: String, value: LiveMapValue): CompletableFuture<Void> {
     channelObject.throwIfInvalidWriteApiConfiguration() // RTINS12b
-    return channelObject.asyncVoidApi { map.set(key, value) } // RTINS12c -> RTLM20
+    return channelObject.asyncVoidFuture { map.set(key, value) } // RTINS12c -> RTLM20
   }
 
   override fun remove(key: String): CompletableFuture<Void> {
     channelObject.throwIfInvalidWriteApiConfiguration() // RTINS13b
-    return channelObject.asyncVoidApi { map.remove(key) } // RTINS13c -> RTLM21
+    return channelObject.asyncVoidFuture { map.remove(key) } // RTINS13c -> RTLM21
   }
 
   override fun subscribe(listener: InstanceListener): Subscription {

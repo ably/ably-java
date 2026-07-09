@@ -78,17 +78,24 @@ internal class DefaultRealtimeObject(
     incomingObjectsHandler = initializeHandlerForIncomingObjectMessages()
   }
 
-  override fun get(): CompletableFuture<LiveMapPathObject> {
-    throwIfInvalidAccessApiConfiguration() // RTO23a
-    return asyncApi { getRootAsync() }
-  }
-
   /**
    * Runs [block] on the sequential scope and exposes it as a CompletableFuture. Failures
    * complete the future exceptionally with the original AblyException.
    */
-  internal fun <T> asyncApi(block: suspend () -> T): CompletableFuture<T> =
+  internal fun <T> asyncFuture(block: suspend () -> T): CompletableFuture<T> =
     sequentialScope.future { block() }
+
+  /**
+   * Runs a mutating [block] on the sequential scope, exposed as a CompletableFuture<Void>.
+   * Used by the path/instance write APIs.
+   */
+  internal fun asyncVoidFuture(block: suspend () -> Unit): CompletableFuture<Void> =
+    asyncFuture(block).thenApply { null }
+
+  override fun get(): CompletableFuture<LiveMapPathObject> {
+    throwIfInvalidAccessApiConfiguration() // RTO23a
+    return asyncFuture { getRootAsync() }
+  }
 
   override fun on(event: ObjectStateEvent, listener: ObjectStateChange.Listener): Subscription {
     throwIfInvalidAccessApiConfiguration()
@@ -114,13 +121,6 @@ internal class DefaultRealtimeObject(
     // RTTS6d - the static type is LiveMapPathObject.
     return DefaultLiveMapPathObject(this, "")
   }
-
-  /**
-   * Runs a mutating [block] on the sequential scope, exposed as a CompletableFuture<Void>.
-   * Used by the path/instance write APIs.
-   */
-  internal fun asyncVoidApi(block: suspend () -> Unit): CompletableFuture<Void> =
-    asyncApi(block).thenApply { null }
 
   /**
    * Spec: RTO14

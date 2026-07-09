@@ -67,7 +67,7 @@ internal class DefaultLiveMapPathObject(
     if (resolvedValue !is ResolvedValue.MapRef) {
       throw typeMismatchError("Cannot set a key on a non-LiveMap object at path: \"$path\"") // RTPO15e
     }
-    return channelObject.asyncVoidApi { resolvedValue.map.set(key, value) } // RTPO15d -> RTLM20
+    return channelObject.asyncVoidFuture { resolvedValue.map.set(key, value) } // RTPO15d -> RTLM20
   }
 
   override fun remove(key: String): CompletableFuture<Void> {
@@ -76,6 +76,6 @@ internal class DefaultLiveMapPathObject(
     if (resolvedValue !is ResolvedValue.MapRef) {
       throw typeMismatchError("Cannot remove a key from a non-LiveMap object at path: \"$path\"") // RTPO16e
     }
-    return channelObject.asyncVoidApi { resolvedValue.map.remove(key) } // RTPO16d -> RTLM21
+    return channelObject.asyncVoidFuture { resolvedValue.map.remove(key) } // RTPO16d -> RTLM21
   }
 }

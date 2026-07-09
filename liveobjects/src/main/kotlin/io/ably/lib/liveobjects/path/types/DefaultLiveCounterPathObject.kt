@@ -36,7 +36,7 @@ internal class DefaultLiveCounterPathObject(
     if (resolvedValue !is ResolvedValue.CounterRef) {
       throw typeMismatchError("Cannot increment a non-LiveCounter object at path: \"$path\"") // RTPO17e
     }
-    return channelObject.asyncVoidApi { resolvedValue.counter.increment(amount) } // RTPO17d -> RTLC12
+    return channelObject.asyncVoidFuture { resolvedValue.counter.increment(amount) } // RTPO17d -> RTLC12
   }
 
   // RTPO18a1 - default amount of 1; delegates to decrement(Number)
@@ -48,6 +48,6 @@ internal class DefaultLiveCounterPathObject(
     if (resolvedValue !is ResolvedValue.CounterRef) {
       throw typeMismatchError("Cannot decrement a non-LiveCounter object at path: \"$path\"") // RTPO18e
     }
-    return channelObject.asyncVoidApi { resolvedValue.counter.decrement(amount) } // RTPO18d -> RTLC13
+    return channelObject.asyncVoidFuture { resolvedValue.counter.decrement(amount) } // RTPO18d -> RTLC13
   }
 }
