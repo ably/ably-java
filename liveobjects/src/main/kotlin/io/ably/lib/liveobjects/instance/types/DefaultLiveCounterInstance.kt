@@ -36,20 +36,16 @@ internal class DefaultLiveCounterInstance(
     return counter.value() // RTINS4b via RTLC5c; RTTS10b non-null
   }
 
-  override fun increment(): CompletableFuture<Void> {
-    channelObject.throwIfInvalidWriteApiConfiguration() // RTINS14b
-    return channelObject.asyncVoidApi { counter.increment(1) } // RTINS14a1 default, RTINS14c -> RTLC12
-  }
+  // RTINS14a1 - default amount of 1; delegates to increment(Number)
+  override fun increment(): CompletableFuture<Void> = increment(1)
 
   override fun increment(amount: Number): CompletableFuture<Void> {
     channelObject.throwIfInvalidWriteApiConfiguration() // RTINS14b
     return channelObject.asyncVoidApi { counter.increment(amount) } // RTINS14c -> RTLC12
   }
 
-  override fun decrement(): CompletableFuture<Void> {
-    channelObject.throwIfInvalidWriteApiConfiguration() // RTINS15b
-    return channelObject.asyncVoidApi { counter.decrement(1) } // RTINS15a1 default, RTINS15c -> RTLC13
-  }
+  // RTINS15a1 - default amount of 1; delegates to decrement(Number)
+  override fun decrement(): CompletableFuture<Void> = decrement(1)
 
   override fun decrement(amount: Number): CompletableFuture<Void> {
     channelObject.throwIfInvalidWriteApiConfiguration() // RTINS15b
