@@ -39,7 +39,6 @@ internal class DefaultLiveMapInstance(
 
   override fun getId(): String = map.objectId // RTINS3a; RTTS10a non-null
 
-  @Suppress("RedundantNullableReturnType")
   override fun get(key: String): Instance? {
     channelObject.throwIfInvalidAccessApiConfiguration() // RTINS5b
     return map.get(key)?.toInstance(channelObject) // RTINS5c - null result stays null

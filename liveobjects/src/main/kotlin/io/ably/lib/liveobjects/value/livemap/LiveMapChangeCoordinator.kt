@@ -10,6 +10,9 @@ import io.ably.lib.util.Log
 
 internal val noOpMapUpdate: ObjectUpdate = ObjectUpdate.NoOp
 
+/** Change type for a LiveMap key diff. Spec: RTLM18b */
+internal enum class MapChange { Updated, Removed }
+
 /**
  * Interface for handling live map changes by notifying subscribers of updates.
  * Implementations typically propagate updates through event emission to registered listeners.

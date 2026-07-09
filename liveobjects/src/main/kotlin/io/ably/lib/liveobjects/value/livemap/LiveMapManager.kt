@@ -2,7 +2,6 @@ package io.ably.lib.liveobjects.value.livemap
 
 import io.ably.lib.liveobjects.message.*
 import io.ably.lib.liveobjects.objectError
-import io.ably.lib.liveobjects.value.MapChange
 import io.ably.lib.liveobjects.value.ObjectUpdate
 import io.ably.lib.util.Log
 
