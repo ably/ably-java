@@ -26,7 +26,7 @@ import java.util.Map;
  */
 public abstract class LiveMap {
 
-    private static final String IMPLEMENTATION_CLASS = "io.ably.lib.liveobjects.value.DefaultLiveMap";
+    private static final String IMPLEMENTATION_CLASS = "io.ably.lib.liveobjects.value.livemap.DefaultLiveMap";
 
     /**
      * Extended by the LiveObjects implementation; not intended for

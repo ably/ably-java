@@ -16,7 +16,7 @@ internal enum class ObjectErrorCode(val code: Int) {
   InvalidInputParams(40_003),
   MapValueDataTypeUnsupported(40_013),
   PathNotResolved(92_005), // RTPO3c2 - write operation on a path that does not resolve
-  ObjectsTypeMismatch(92_007), // RTTS5d2/RTTS9d2 - operation on a cast wrapper with mismatched resolved type
+  ObjectsTypeMismatch(92_007), // RTTS5d2/RTTS9d - operation on a cast wrapper with mismatched resolved type
   // Channel mode and state validation error codes
   ChannelModeRequired(40_024),
   ChannelStateError(90_001),
@@ -46,7 +46,7 @@ internal fun invalidInputError(message: String) =
 internal fun pathNotResolvedError(path: String) =
   objectException("Path could not be resolved: \"$path\"", ObjectErrorCode.PathNotResolved)
 
-/** ErrorInfo 400 / 92007 - resolved/wrapped type does not match the typed wrapper (RTTS5d2/RTTS9d2). */
+/** ErrorInfo 400 / 92007 - resolved/wrapped type does not match the typed wrapper (RTTS5d2/RTTS9d). */
 internal fun typeMismatchError(message: String) =
   objectException(message, ObjectErrorCode.ObjectsTypeMismatch)
 

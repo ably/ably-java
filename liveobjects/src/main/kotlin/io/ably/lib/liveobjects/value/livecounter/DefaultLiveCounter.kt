@@ -1,4 +1,6 @@
-package io.ably.lib.liveobjects.value
+package io.ably.lib.liveobjects.value.livecounter
+
+import io.ably.lib.liveobjects.value.LiveCounter
 
 /**
  * Default implementation of the [LiveCounter] value type - an immutable holder for
@@ -18,5 +20,5 @@ internal class DefaultLiveCounter(
   internal val initialCount: Number,
 ) : LiveCounter() {
   // TODO - build the COUNTER_CREATE ObjectMessage from `initialCount`, mirroring
-  //  ably-js LiveCounterValueType.createCounterCreateMessage. Spec: RTO12f
+  //  ably-js LiveCounterValueType.createCounterCreateMessage. Spec: RTLCV4
 }
