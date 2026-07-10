@@ -23,16 +23,17 @@ import kotlinx.coroutines.future.await
  * unit spec.
  *
  * Status:
- *  - The builders construct the **wire JSON** form (Gson [JsonObject]) of object messages and drop them
- *    into [ProtocolMessage.state] (`Object[]`); the file compiles against `:java` only (no *compile-time*
- *    `:liveobjects` dependency).
+ *  - The builders construct the **wire JSON** form (Gson [JsonObject]) of each object message, then convert
+ *    it to the SDK's internal `WireObjectMessage` (reflectively, via `JsonSerializationKt.toObjectMessage`)
+ *    before placing it in [ProtocolMessage.state] (`Object[]`). The conversion is required because the SDK's
+ *    `@JsonAdapter(ObjectJsonSerializer)` outbound path casts each `state` element to `WireObjectMessage`;
+ *    raw `JsonObject`s would throw `ClassCastException` when the mock serializes the frame. The file still
+ *    compiles against `:java` only (the reflection targets the runtime-only `:liveobjects` dependency).
  *  - [buildPublicObjectMessage] reaches the implemented message/operation layer in `:liveobjects` by
- *    reflection (`testRuntimeOnly(project(":liveobjects"))` in build.gradle.kts), so PAOM3/PAOOP3
- *    construction tests run today.
+ *    reflection (`testRuntimeOnly(project(":liveobjects"))` in build.gradle.kts).
  *  - [setupSyncedChannel] drives CONNECTED -> ATTACH/ATTACHED(HAS_OBJECTS) -> OBJECT_SYNC over the existing
- *    [MockWebSocket], then awaits `channel.object.get()`. That last step needs the SDK's OBJECT_SYNC
- *    processing + `RealtimeObject.get()`, both still TODO — so the generated tests **compile** now and
- *    become **runnable** once the SDK lands (translate-only until then).
+ *    [MockWebSocket], then awaits `channel.object.get()` — which now resolves against the implemented SDK
+ *    engine (OBJECT_SYNC processing + `RealtimeObject.get()`), so the generated tests run.
  */
 
 // ---------------------------------------------------------------------------
@@ -45,6 +46,45 @@ private fun JsonObject.num(key: String, value: Number) = addProperty(key, value)
 private fun JsonObject.bool(key: String, value: Boolean) = addProperty(key, value)
 
 // ---------------------------------------------------------------------------
+// Canonical constants (standard_test_pool.md "Canonical Constants")
+// ---------------------------------------------------------------------------
+
+/** The harness `ConnectionDetails` siteCode delivered on CONNECT. */
+const val SITE_CODE: String = "test-site"
+
+/**
+ * The fixed apply-on-ACK serial scheme: `ack_serial(msgSerial, i) == "t:${msgSerial + 1}:$i"`, so the
+ * first publish's first op is `t:1:0`. The value must sort AFTER the standard pool's `t:0` entry
+ * timeserials under string LWW comparison (RTLM9) — otherwise locally applied MAP_SETs on existing pool
+ * entries would be rejected as stale. Replay tests that reuse the apply-on-ACK serial MUST reference this.
+ */
+fun ackSerial(msgSerial: Long?, i: Int): String = "t:${(msgSerial ?: 0) + 1}:$i"
+
+/**
+ * Baseline timeserial every standard-pool entry/object is seeded with; every synthetic serial is chosen
+ * relative to this under lexicographic string LWW comparison (RTLM9e).
+ */
+const val POOL_SERIAL: String = "t:0"
+
+/**
+ * A REMOTE inbound MAP_SET / MAP_REMOVE serial on an EXISTING pool entry: it sorts after [POOL_SERIAL], so it
+ * wins the per-entry LWW comparison (RTLM9e). A bare number like `"99"` sorts BEFORE `"t:0"` and would be
+ * rejected as stale. 0-based → `remoteSerial(0) == "t:1"`, `remoteSerial(1) == "t:2"`. (Counter increments and
+ * other object-level ops from a fresh siteCode compare per-site, not per-entry, so they apply regardless of
+ * serial value and need NOT use this.)
+ */
+fun remoteSerial(i: Int): String = "t:${i + 1}"
+
+/**
+ * A serial that is NOT an [ackSerial] (so it escapes the RTO9a3 apply-on-ACK echo dedup) yet sorts BELOW the
+ * first ackSerial (`ackSerial(0, 0) == "t:1:0"`), while still after [POOL_SERIAL]. Used by RTO20f to prove a
+ * LOCAL apply-on-ACK left siteTimeserials untouched (RTLC7c): had it wrongly recorded
+ * `siteTimeserials[SITE_CODE] = "t:1:0"`, this lower serial would be rejected by the per-site newness check.
+ * 0-based → `belowAckSerial(9) == "t:0:9"`.
+ */
+fun belowAckSerial(i: Int): String = "t:0:$i"
+
+// ---------------------------------------------------------------------------
 // ObjectData (leaf value) wire builders — the `data` of a map entry / mapSet
 // ---------------------------------------------------------------------------
 
@@ -53,13 +93,15 @@ fun dataNumber(value: Number): JsonObject = json { num("number", value) }
 fun dataBoolean(value: Boolean): JsonObject = json { bool("boolean", value) }
 fun dataObjectId(objectId: String): JsonObject = json { str("objectId", objectId) }
 fun dataBytes(base64: String): JsonObject = json { str("bytes", base64) }
-fun dataJson(element: JsonElement): JsonObject = json { add("json", element) }
+// Wire format OD4c5: the `json` leaf is a *stringified* JSON value, not a raw element. The SDK's
+// WireObjectDataJsonSerializer reads it via `get("json").asString`, so it must be encoded as a string.
+fun dataJson(element: JsonElement): JsonObject = json { str("json", element.toString()) }
 
 // ---------------------------------------------------------------------------
 // map / counter state + createOp fragments
 // ---------------------------------------------------------------------------
 
-fun mapEntry(data: JsonObject, timeserial: String = "t:0", tombstone: Boolean? = null): JsonObject = json {
+fun mapEntry(data: JsonObject, timeserial: String = POOL_SERIAL, tombstone: Boolean? = null): JsonObject = json {
     add("data", data)
     str("timeserial", timeserial)
     tombstone?.let { bool("tombstone", it) }
@@ -115,7 +157,12 @@ fun buildObjectState(
             map?.let { add("map", it) }
             counter?.let { add("counter", it) }
             bool("tombstone", tombstone ?: false) // WireObjectState.tombstone is non-nullable
-            createOp?.let { add("createOp", it) }
+            // The createOp is a WireObjectOperation whose objectId must equal the object's id
+            // (LiveMapManager.validate / validateObjectId). Inject it so the create validates.
+            createOp?.let { op ->
+                if (!op.has("objectId")) op.addProperty("objectId", objectId)
+                add("createOp", op)
+            }
         },
     )
 }
@@ -179,7 +226,24 @@ fun buildMapCreate(objectId: String, mapCreate: JsonObject, serial: String? = nu
 // ProtocolMessage builders
 // ---------------------------------------------------------------------------
 
-private fun List<JsonObject>.asState(): Array<Any?> = Array(size) { this[it] }
+/**
+ * The SDK carries object messages in [ProtocolMessage.state] as an `Object[]` of internal
+ * `WireObjectMessage` instances (its `@JsonAdapter(ObjectJsonSerializer)` outbound path casts each
+ * element to `WireObjectMessage`). Our builders produce the **wire JSON** ([JsonObject]) form, so we
+ * must convert each to a `WireObjectMessage` before placing it in `state` — otherwise the mock's
+ * outbound serialization (`Serialisation.gson.toJson`) throws `ClassCastException` and the frame is
+ * never delivered. We reach the internal `JsonSerializationKt.toObjectMessage(JsonObject)` by
+ * reflection (same runtime-only technique as [buildPublicObjectMessage]).
+ */
+private val toWireObjectMessageMethod by lazy {
+    Class.forName("io.ably.lib.liveobjects.serialization.JsonSerializationKt")
+        .getMethod("toObjectMessage", JsonObject::class.java)
+}
+
+private fun JsonObject.toWireObjectMessage(): Any =
+    toWireObjectMessageMethod.invoke(null, this) ?: error("toObjectMessage returned null for $this")
+
+private fun List<JsonObject>.asState(): Array<Any?> = Array(size) { this[it].toWireObjectMessage() }
 
 fun buildObjectSyncMessage(channel: String, channelSerial: String, objectMessages: List<JsonObject>): ProtocolMessage =
     ProtocolMessage(ProtocolMessage.Action.object_sync).apply {
@@ -197,6 +261,11 @@ fun buildObjectMessage(channel: String, objectMessages: List<JsonObject>): Proto
 fun buildAckMessage(msgSerial: Long?, serials: List<String>): ProtocolMessage =
     ProtocolMessage(ProtocolMessage.Action.ack).apply {
         this.msgSerial = msgSerial
+        // `count` is the number of protocol messages acknowledged starting at msgSerial (one OBJECT
+        // publish per ACK here). ConnectionManager.PendingMessageQueue.ack acks `subList(0, count)`, so
+        // an unset count (0) would acknowledge nothing and the publish future would hang. The single
+        // acked message's PublishResult (res[0]) carries the per-object serials.
+        count = 1
         res = arrayOf(PublishResult(serials.toTypedArray()))
     }
 
@@ -233,7 +302,7 @@ fun buildPublicObjectMessage(objectMessage: JsonObject, channelName: String): Ob
 // STANDARD_POOL_OBJECTS — the fixed tree shared by all objects unit specs
 // ---------------------------------------------------------------------------
 
-private val SITE = mapOf("aaa" to "t:0")
+private val SITE = mapOf("aaa" to POOL_SERIAL)
 
 val STANDARD_POOL_OBJECTS: List<JsonObject> = listOf(
     buildObjectState(
@@ -251,7 +320,13 @@ val STANDARD_POOL_OBJECTS: List<JsonObject> = listOf(
         ),
         createOp = mapCreateOp(),
     ),
-    buildObjectState("counter:score@1000", SITE, counter = counterState(100), createOp = counterCreateOp(100)),
+    // Matches standard_test_pool.md: this counter's object-state carries the *post-create residual*
+    // count (0), with the initial value on the createOp. Counter sync is additive (RTLC6c+RTLC6d/RTLC16
+    // → data = count + createOp.count; the spec's own RTLC6/replace-data-with-create-op asserts 100+50=150),
+    // so 0 + 100 = 100 with createOperationIsMerged==true, as every consumer asserts.
+    // (Was UTS spec issue SI-1: the spec previously declared count:100 AND createOp:100, materialising 200;
+    // fixed upstream in standard_test_pool.md to count:0 — see uts/SPEC_ISSUES.md.)
+    buildObjectState("counter:score@1000", SITE, counter = counterState(0), createOp = counterCreateOp(100)),
     buildObjectState(
         "map:profile@1000", SITE,
         map = mapState(
@@ -263,7 +338,10 @@ val STANDARD_POOL_OBJECTS: List<JsonObject> = listOf(
         ),
         createOp = mapCreateOp(),
     ),
-    buildObjectState("counter:nested@1000", SITE, counter = counterState(5), createOp = counterCreateOp(5)),
+    // Matches standard_test_pool.md: residual count 0, the initial 5 carried by the createOp
+    // (0 + 5 = 5, merged=true). (Was SI-1: spec previously had count:5 + createOp:5 → 10; fixed
+    // upstream to count:0. See uts/SPEC_ISSUES.md.)
+    buildObjectState("counter:nested@1000", SITE, counter = counterState(0), createOp = counterCreateOp(5)),
     buildObjectState(
         "map:prefs@1000", SITE,
         map = mapState(linkedMapOf("theme" to mapEntry(dataString("dark")))),
@@ -298,8 +376,11 @@ private suspend fun setup(channelName: String, autoAck: Boolean): SyncedChannel 
                     connectionId = "conn-1"
                     connectionDetails = ConnectionDetails {
                         connectionKey = "conn-key-1"
-                        siteCode = "test-site"
+                        siteCode = SITE_CODE
                         objectsGCGracePeriod = 86_400_000L
+                        // Without an explicit maxMessageSize the field defaults to 0, which makes the
+                        // SDK's RTO15d size check reject every OBJECT publish ("size N exceeds 0 bytes").
+                        maxMessageSize = 65_536
                     }
                 },
             )
@@ -317,7 +398,7 @@ private suspend fun setup(channelName: String, autoAck: Boolean): SyncedChannel 
                     mockWs.sendToClient(buildObjectSyncMessage(msg.channel, "sync1:", STANDARD_POOL_OBJECTS))
                 }
                 ProtocolMessage.Action.`object` -> if (autoAck) {
-                    val serials = (msg.state?.indices ?: IntRange.EMPTY).map { "ack-${msg.msgSerial}:$it" }
+                    val serials = (msg.state?.indices ?: IntRange.EMPTY).map { ackSerial(msg.msgSerial, it) }
                     mockWs.sendToClient(buildAckMessage(msg.msgSerial, serials))
                 }
                 else -> Unit
@@ -333,7 +414,6 @@ private suspend fun setup(channelName: String, autoAck: Boolean): SyncedChannel 
         channelName,
         ChannelOptions().apply { modes = arrayOf(ChannelMode.object_subscribe, ChannelMode.object_publish) },
     )
-    // NOTE: throws until :liveobjects implements RealtimeObject.get() + OBJECT_SYNC processing.
     val root = channel.`object`.get().await()
     return SyncedChannel(client, channel, root, mockWs)
 }

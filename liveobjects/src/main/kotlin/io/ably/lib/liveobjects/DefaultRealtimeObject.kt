@@ -93,7 +93,8 @@ internal class DefaultRealtimeObject(
     asyncFuture(block).thenApply { null }
 
   override fun get(): CompletableFuture<LiveMapPathObject> {
-    throwIfInvalidAccessApiConfiguration() // RTO23a
+    // RTO23a - get() checks only the object_subscribe MODE here;
+    throwIfMissingObjectSubscribeMode()
     return asyncFuture { getRootAsync() }
   }
 
@@ -277,7 +278,7 @@ internal class DefaultRealtimeObject(
             ObjectHttpStatusCode.BadRequest,
             cause = errorReason?.let { AblyException.fromErrorInfo(it) }
           )
-          objectsManager.failBufferedAcks(error) // RTO20e1
+          objectsManager.failSyncWaiters(error) // RTO20e1
           if (state != ChannelState.suspended) {
             // do not emit data update events as the actual current state of Objects data is unknown when we're in these channel states
             objectsPool.clearObjectsData(false)
@@ -304,6 +305,9 @@ internal class DefaultRealtimeObject(
 
   /** Validates the channel is configured for access (read/subscribe) operations. Spec: RTO25 */
   internal fun throwIfInvalidAccessApiConfiguration() = adapter.throwIfInvalidAccessApiConfiguration(channelName)
+
+  /** Validates only the object_subscribe channel mode, for get() (RTO23a);. */
+  internal fun throwIfMissingObjectSubscribeMode() = adapter.throwIfMissingObjectSubscribeMode(channelName)
 
   /** Validates the channel is configured for write (mutation) operations. Spec: RTO26 */
   internal fun throwIfInvalidWriteApiConfiguration() = adapter.throwIfInvalidWriteApiConfiguration(channelName)

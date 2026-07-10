@@ -473,7 +473,8 @@ Spec assertions like `FAILS WITH error code 92007` map to ably-java exceptions:
 | write where path doesn't resolve | `AblyException` 400 / code `92005` |
 | write where value isn't the required type | `AblyException` 400 / code `92007` |
 | `get()` / op when channel lacks the object mode (`RTO23a`/`RTO2a2`) | `AblyException` 400 / code `40024` |
-| `get()` / access when channel is DETACHED or FAILED (`RTO23b`/`RTO25`) | `AblyException` 400 / code `90001` |
+| access methods (`on`/`off`/`offAll`) when channel is DETACHED or FAILED (`RTO25b`) | `AblyException` 400 / code `90001` |
+| `get()` when channel is FAILED (`RTO23e`/`RTL33c`) | `AblyException` 400 / code `90001`. **But `get()` on a DETACHED channel does *not* throw** — ensure-active-channel re-attaches and `get()` resolves (`RTO23e`/`RTL33b`); only the access methods above gate on DETACHED |
 | channel enters DETACHED/SUSPENDED/FAILED while awaiting SYNCED (`RTO20e`/`RTO23c`) | `AblyException` 400 / code `92008` |
 | write while `echoMessages` is false (`RTO26c`) | `AblyException` 400 / code `40000` |
 
@@ -554,15 +555,14 @@ setup or message JSON.**
 | `build_public_object_message(msg, channel)` | `buildPublicObjectMessage(wireJson, channel)` (reflective; §11) |
 | `STANDARD_POOL_OBJECTS` | `STANDARD_POOL_OBJECTS` |
 | inline ObjectData / map-entry / state fragments | `dataString` / `dataNumber` / `dataBoolean` / `dataObjectId` / `dataBytes` / `dataJson`, `mapEntry`, `mapState`, `counterState`, `mapCreateOp`, `counterCreateOp` |
+| Canonical Constants: `POOL_SERIAL`, `ack_serial(m, i)`, `remote_serial(i)`, `below_ack_serial(i)` | `POOL_SERIAL` (`"t:0"`), `ackSerial(msgSerial, i)`, `remoteSerial(i)`, `belowAckSerial(i)` — use these, never hand-rolled `"t:N"` literals (serials are compared as strings, so ad-hoc values silently sort wrong) |
 
 `mock_ws.send_to_client(...)` is the existing `mockWs.sendToClient(...)` (§ mock API in the main skill). The
 wire `action` / `semantics` are integer enum codes — the builders emit the codes for you.
 
-> **Runtime caveat:** `setupSyncedChannel` returns only once `RealtimeObject.get()` resolves, which needs
-> the `:liveobjects` SDK's OBJECT_SYNC processing. Until that lands the helpers **compile** and the test
-> structure is correct, but the setup throws at runtime — i.e. translate-only today, runnable once the SDK
-> is implemented. (`buildPublicObjectMessage` does *not* depend on this — the message/operation layer is
-> implemented, so those tests can run now.)
+> **Runtime status:** the `:liveobjects` SDK's OBJECT_SYNC processing and `RealtimeObject.get()` are
+> implemented — `setupSyncedChannel` and the full objects unit suite run green, so translate **and
+> evaluate** (don't stop at compile-only).
 
 (For the **integration** tier's REST fixture helper — `provision_objects_via_rest` — see §14.)
 
@@ -600,8 +600,8 @@ reflection and no `:liveobjects` dependency — it compiles and runs against `:j
 > (`sandbox.realtime.ably-nonprod.net`) — the same nonprod host `SandboxApp` and the realtime clients use,
 > **not** `environment="sandbox"` (which resolves to the legacy `sandbox-rest.ably.io`, and
 > can't be combined with `restHost` per `Hosts.java` TO3k2/TO3k3). The REST call hits the live sandbox
-> today; the realtime client it provisions for only *observes* the data once the SDK's OBJECT_SYNC +
-> `RealtimeObject.get()` land.
+> today, and the realtime client observes the provisioned data through the SDK's OBJECT_SYNC +
+> `RealtimeObject.get()` (both implemented).
 
 ---
 

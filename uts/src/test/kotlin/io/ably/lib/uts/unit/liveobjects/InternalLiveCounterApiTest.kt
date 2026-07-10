@@ -16,8 +16,9 @@ import kotlin.test.assertFailsWith
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Derived from UTS `objects/unit/live_counter_api.md` (RTLC5, RTLC11–RTLC13) — the **public** read/write
- * surface of a LiveCounter via `PathObject` / `Instance`.
+ * Derived from UTS `objects/unit/internal_live_counter_api.md` (RTLC5, RTLC11–RTLC13) — the **public**
+ * read/write surface of a counter via `PathObject` / `Instance`. (The `internal_` filename prefix is the
+ * PR-#499 CRDT rename; this spec is still the public-view API test.)
  *
  * ably-java implements the typed-SDK variant (RTTS): the spec's polymorphic `root.get("score")` is a base
  * `PathObject`; counter reads/writes live on `LiveCounterPathObject`, reached via `asLiveCounter()`. So
@@ -25,21 +26,17 @@ import kotlin.time.Duration.Companion.seconds
  * `counter.increment(n)` / `.decrement(n)` → `…asLiveCounter().increment(n)` returning
  * `CompletableFuture<Void>` (`.await()`).
  *
- * Two translation notes (recorded in `deviations.md`):
+ * Translation notes (recorded in `deviations.md`):
  *  - The "increment sends a v6 COUNTER_INC wire message" / "decrement negates the amount" assertions
  *    (RTLC12e2/e3/e5, RTLC13b) inspect the **outbound wire `ObjectMessage`** (`captured.state[0].operation`).
- *    That wire form (`WireObjectMessage` / `WireObjectOperation`) is `internal` to `:liveobjects` and not part
- *    of the public API, so it is read by reflection off the captured `ProtocolMessage.state` (the same
- *    reflection pattern `Helpers.kt` / `PublicObjectMessageTest.kt` already use). The observable public-API
- *    outcome (counter value after the await) is asserted alongside where the spec provides it.
+ *    That wire form (`WireObjectMessage` / `WireObjectOperation`) is `internal` to `:liveobjects`, so it is
+ *    read by reflection off the captured `ProtocolMessage.state` (same pattern as `Helpers.kt`). The
+ *    observable public-API outcome (counter value after the await) is asserted alongside.
  *  - RTLC12e1 feeds non-`Number` increment amounts and expects `40003`. ably-java's
- *    `increment(@NotNull Number)` signature rejects every one of those at compile time, so the cases are not
- *    expressible as runtime assertions — see deviations.md.
- *
- * All tests use `setupSyncedChannel` (Helpers.kt), which needs the SDK's OBJECT_SYNC processing +
- * `RealtimeObject.get()` — still TODO — so these compile now and run once that lands (translate-only).
+ *    `increment(@NotNull Number)` signature rejects the non-`Number` rows at compile time, so those are not
+ *    expressible; the numeric-but-invalid rows (NaN / ±Infinity) remain real runtime `40003` assertions.
  */
-class LiveCounterApiTest {
+class InternalLiveCounterApiTest {
 
     /**
      * @UTS objects/unit/RTLC5/value-returns-data-0
@@ -62,9 +59,8 @@ class LiveCounterApiTest {
         root.get("score").asLiveCounter().increment(25).await()
 
         // DEVIATION (RTLC12e2/e3/e5): the spec asserts on the outbound wire ObjectMessage
-        // (captured.state[0].operation.action/objectId/counterInc.number). The wire form
-        // (WireObjectMessage/WireObjectOperation) is internal to :liveobjects; read it by reflection off the
-        // captured ProtocolMessage.state. See deviations.md.
+        // (captured.state[0].operation.action/objectId/counterInc.number). The wire form is internal to
+        // :liveobjects; read it by reflection off the captured ProtocolMessage.state. See deviations.md.
         val captured = capturedObjectMessages(mockWs)
         assertEquals(1, captured.size)
         val op = wireOperation(captured[0].state!![0]!!)
@@ -133,10 +129,7 @@ class LiveCounterApiTest {
         )
         pollUntil(5.seconds) { updates.size >= 1 }
 
-        // DEVIATION (RTLC11b1): the spec reads `updates[0].message.operation.counterInc.number == 7`. ably-java's
-        // public InstanceSubscriptionEvent carries no LiveCounterUpdate diff (no `update.amount`), but it does
-        // expose the originating public ObjectMessage via getMessage(); assert the counterInc on that. See
-        // deviations.md.
+        // RTLC11b1: the spec reads the amount off the triggering message's operation (public ObjectMessage).
         val message = updates[0].getMessage()!!
         assertEquals(ObjectOperationAction.COUNTER_INC, message.operation.action)
         assertEquals(7.0, message.operation.counterInc!!.number)
@@ -150,13 +143,12 @@ class LiveCounterApiTest {
         // DEVIATION (RTLC12e1): the table feeds null / NaN / ±Infinity / String / Boolean / array / object as
         // the increment amount, each expecting ErrorInfo 40003. ably-java's `increment(@NotNull Number)`
         // signature makes the non-Number rows (null, String, Boolean, array, object) compile errors, so they
-        // are not expressible. The numeric-but-invalid rows (NaN, +Infinity, -Infinity) ARE expressible as
-        // runtime assertions and are exercised below. See deviations.md.
+        // are not expressible. The numeric-but-invalid rows (NaN, +Infinity, -Infinity) ARE expressible and
+        // are exercised below. See deviations.md.
         val (_, _, root, _) = setupSyncedChannel("test")
         val counter = root.get("score").asLiveCounter()
 
         for (invalid in listOf(Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY)) {
-            // The non-finite amounts must be rejected with 40003 (RTLC12e1).
             val ex = assertFailsWith<AblyException> { counter.increment(invalid).await() }
             assertEquals(40003, ex.errorInfo.code)
         }
@@ -165,12 +157,9 @@ class LiveCounterApiTest {
 
 // ---------------------------------------------------------------------------
 // Reflective access to the outbound wire ObjectMessage (internal to :liveobjects).
-//
 // The SDK serializes a published OBJECT operation into ProtocolMessage.state as internal
-// WireObjectMessage instances. These are decoded back by the mock and recorded in mockWs.events. Their
-// operation/action/objectId/counterInc fields are internal Kotlin data-class properties — addressable by
-// their declared field names on the JVM (Kotlin `internal` is not name-mangled here), reached with
-// isAccessible since they are package-private/internal. Mirrors the reflection pattern in Helpers.kt.
+// WireObjectMessage instances; their operation/action/objectId/counterInc fields are addressable by their
+// declared names on the JVM. Mirrors the reflection pattern in Helpers.kt.
 // ---------------------------------------------------------------------------
 
 private fun capturedObjectMessages(mockWs: MockWebSocket): List<ProtocolMessage> =
