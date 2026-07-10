@@ -800,7 +800,10 @@ private fun objectsClient(
                             },
                         )
                         if (sendSyncOnAttach) {
-                            mockWs.sendToClient(buildObjectSyncMessage(msg.channel, "sync1:", STANDARD_POOL_OBJECTS))
+                            // Derive the sync id from attachedSerial so a caller overriding it (e.g.
+                            // "sync2:cursor") gets a matching OBJECT_SYNC instead of a mismatched "sync1:".
+                            val syncId = attachedSerial.substringBefore(":") + ":"
+                            mockWs.sendToClient(buildObjectSyncMessage(msg.channel, syncId, STANDARD_POOL_OBJECTS))
                         }
                     }
                 }

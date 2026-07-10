@@ -306,7 +306,7 @@ internal class DefaultRealtimeObject(
   /** Validates the channel is configured for access (read/subscribe) operations. Spec: RTO25 */
   internal fun throwIfInvalidAccessApiConfiguration() = adapter.throwIfInvalidAccessApiConfiguration(channelName)
 
-  /** Validates only the object_subscribe channel mode, for get() (RTO23a);. */
+  /** Validates only the object_subscribe channel mode. Spec: RTO23a */
   internal fun throwIfMissingObjectSubscribeMode() = adapter.throwIfMissingObjectSubscribeMode(channelName)
 
   /** Validates the channel is configured for write (mutation) operations. Spec: RTO26 */
