@@ -581,6 +581,14 @@ class RealtimeObjectTest {
 
         val incFuture = root.get("score").asLiveCounter().increment(10)
 
+        // Wait for the publish to reach the transport before injecting the echo/ACK - an ACK
+        // arriving while no message is pending on the connection is silently discarded
+        // (ConnectionManager PendingMessages.ack) and incFuture would never complete.
+        pollUntil(5.seconds) {
+            mockWs.events.filterIsInstance<MockEvent.MessageFromClient>()
+                .any { it.message.action == ProtocolMessage.Action.`object` }
+        }
+
         // Echo BEFORE the ACK.
         mockWs.sendToClient(
             buildObjectMessage("test", listOf(buildCounterInc("counter:score@1000", 10, ackSerial(0, 0), "test-site"))),

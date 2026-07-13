@@ -84,7 +84,7 @@ Entries are grouped by actionability:
 
 *ably-js has the same documented deviation — the spec is ahead of both implementations. Optional joint fix.*
 
-## RTLC9h / RTLC16 / RTLO4b4c1 — missing-field counter ops are not treated as noops
+## RTLC9h / RTLC16 / RTLO4b4c1 — missing-field counter ops are not treated as no-ops
 
 **Spec points:** RTLC9h, RTLC16d, RTLO4b4c1
 **What the spec requires:** A `COUNTER_INC` whose `counterInc.number` is **absent** produces a no-op
