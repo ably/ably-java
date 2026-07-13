@@ -24,16 +24,13 @@ import kotlin.time.Duration.Companion.seconds
  * ably-java implements the typed-SDK variant (RTTS), so the spec's single polymorphic `Instance` is
  * partitioned: `id`, `value`, `get`, `set`, `subscribe`, … live on `LiveMapInstance` /
  * `LiveCounterInstance` / the primitive instances, reached through `as*` casts. Unlike `PathObject`, an
- * `Instance` cast **fails fast with `IllegalStateException`** on a type mismatch (RTTS9d). Three
- * consequences for translation, recorded in `deviations.md`:
+ * `Instance` cast **fails fast with `IllegalStateException`** on a type mismatch (RTTS9d). Consequences
+ * for translation, recorded in `deviations.md`:
  *  - "wrong-type write/subscribe → ErrorInfo 92007" (RTINS12d/14d/16c) surfaces instead as the `as*` cast
  *    throwing `IllegalStateException` — there is no typed view on which to even call the wrong method.
  *  - `value()` on a map / `size()` on a counter (RTINS4d/RTINS9c) are not expressible — those accessors are
  *    partitioned off the wrong-typed view.
  *  - `compact()` is not implemented (RTTS7d); `compactJson()` is the supported snapshot (RTINS10).
- *
- * All tests use `setupSyncedChannel` (Helpers.kt), which needs the SDK's OBJECT_SYNC processing +
- * `RealtimeObject.get()` — still TODO — so these compile now and run once that lands (translate-only).
  */
 class InstanceTest {
 
@@ -273,7 +270,7 @@ class InstanceTest {
         // DEVIATION (RTINS16c): spec expects ErrorInfo 92007. ably-java's primitive instances expose no
         // `subscribe`; obtaining a subscribable (map/counter) view of a primitive fails fast with
         // IllegalStateException (RTTS9d). See deviations.md.
-        assertFailsWith<IllegalStateException> { nameInst!!.asLiveMap() }
+        assertFailsWith<IllegalStateException> { nameInst!!.asLiveCounter() }
     }
 
     /**
@@ -287,14 +284,15 @@ class InstanceTest {
         rootInst.subscribe(InstanceListener { events.add(it) })
 
         mockWs.sendToClient(
-            buildObjectMessage("test", listOf(buildMapSet("root", "name", dataString("Bob"), "99", "remote"))),
+            buildObjectMessage("test", listOf(buildMapSet("root", "name", dataString("Bob"), remoteSerial(0), "remote"))),
         )
         pollUntil(5.seconds) { events.size >= 1 }
 
-        val event = events[0]
-        assertNotNull(event.getObject()) // IS Instance
-        assertEquals("root", event.getObject().asLiveMap().id)
-        val message = event.getMessage()
+        // RTINS16e1: event.object is an Instance wrapping the LiveObject (the root map).
+        assertNotNull(events[0].getObject())
+        assertEquals("root", events[0].getObject().asLiveMap().id)
+        // RTINS16e2: event.message is the PublicAPI::ObjectMessage derived from the triggering op.
+        val message = events[0].getMessage()
         assertNotNull(message)
         assertEquals("test", message!!.channel)
         assertEquals(ObjectOperationAction.MAP_SET, message.operation.action)
@@ -313,10 +311,18 @@ class InstanceTest {
         val sub = counterInst.subscribe(InstanceListener { events.add(it) })
         sub.unsubscribe()
 
+        // Quiescence control (standard_test_pool.md "Negative-assertion quiescence"): a second,
+        // still-subscribed listener on the same counter instance that WILL fire on the same dispatch.
+        val controlEvents = mutableListOf<InstanceSubscriptionEvent>()
+        counterInst.subscribe(InstanceListener { controlEvents.add(it) })
+
         mockWs.sendToClient(
             buildObjectMessage("test", listOf(buildCounterInc("counter:score@1000", 7, "99", "remote"))),
         )
 
+        // Await the control listener; once it has fired, the unsubscribed listener would also have fired
+        // had it remained subscribed — THEN assert its count is unchanged.
+        pollUntil(5.seconds) { controlEvents.size >= 1 }
         assertEquals(0, events.size)
     }
 
@@ -334,7 +340,7 @@ class InstanceTest {
         mockWs.sendToClient(
             buildObjectMessage(
                 "test",
-                listOf(buildMapSet("root", "score", dataObjectId("counter:new@2000"), "99", "remote")),
+                listOf(buildMapSet("root", "score", dataObjectId("counter:new@2000"), remoteSerial(0), "remote")),
             ),
         )
         mockWs.sendToClient(
@@ -343,7 +349,9 @@ class InstanceTest {
         pollUntil(5.seconds) { events.size >= 1 }
 
         assertTrue(events.size >= 1)
-        assertEquals("counter:score@1000", counterInst.id)
+        // RTINS16e1: assert the delivered event's object id (not the pre-existing handle's).
+        assertNotNull(events[0].getObject())
+        assertEquals("counter:score@1000", events[0].getObject().asLiveCounter().id)
     }
 
     /**

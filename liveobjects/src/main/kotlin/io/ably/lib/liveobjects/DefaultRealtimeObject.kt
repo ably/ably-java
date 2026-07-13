@@ -42,10 +42,12 @@ internal class DefaultRealtimeObject(
    */
   internal val objectsPool = ObjectsPool(this)
 
+  // Non-volatile by design: written and read only on [sequentialScope].
   internal var state = ObjectsState.Initialized
 
   /**
    * Set of serials for operations applied locally upon ACK, awaiting deduplication of the server echo.
+   * Unsynchronized: accessed only on [sequentialScope].
    * @spec RTO7b, RTO7b1
    */
   internal val appliedOnAckSerials = mutableSetOf<String>()
@@ -62,7 +64,12 @@ internal class DefaultRealtimeObject(
   internal val pathObjectSubscriptionRegister = PathObjectSubscriptionRegister(this)
 
   /**
-   *  Coroutine scope for running sequential operations on a single thread, used to avoid concurrency issues.
+   * Coroutine scope running all objects work one task at a time. `limitedParallelism(1)` is a view
+   * over the shared Default pool - no dedicated thread is created or blocked, and the single slot is
+   * released at every suspension point (e.g. while awaiting a publish ACK). It is the safety contract
+   * for the unsynchronized state in this class and in ObjectsManager/ObjectsStateCoordinator
+   * (e.g. [state], [appliedOnAckSerials], pendingSyncWaiters), and its FIFO order preserves
+   * submission-order publishing for un-awaited mutations.
    */
   private val sequentialScope =
     CoroutineScope(Dispatchers.Default.limitedParallelism(1) + CoroutineName(channelName) + SupervisorJob())
@@ -81,6 +88,16 @@ internal class DefaultRealtimeObject(
   /**
    * Runs [block] on the sequential scope and exposes it as a CompletableFuture. Failures
    * complete the future exceptionally with the original AblyException.
+   *
+   * Deliberately kept on [sequentialScope] rather than a parallel dispatcher, at no performance
+   * cost: blocks suspend almost immediately on network I/O (releasing the slot), so only
+   * microseconds of CPU work per operation are serialized, and all publishes funnel into the
+   * single connection anyway. In return the FIFO order keeps un-awaited back-to-back mutations
+   * publishing in submission order (deterministic LWW outcomes), [dispose] can cancel in-flight
+   * operations via this scope's children, and [get]'s sync wait stays race-free (see [get]).
+   *
+   * Caveat: the returned future completes on this scope, so synchronous dependents (thenApply etc.)
+   * run on the lane - a blocking callback there stalls objects processing for the channel.
    */
   internal fun <T> asyncFuture(block: suspend () -> T): CompletableFuture<T> =
     sequentialScope.future { block() }
@@ -93,7 +110,11 @@ internal class DefaultRealtimeObject(
     asyncFuture(block).thenApply { null }
 
   override fun get(): CompletableFuture<LiveMapPathObject> {
-    throwIfInvalidAccessApiConfiguration() // RTO23a
+    // RTO23a - get() checks only the object_subscribe MODE here;
+    throwIfMissingObjectSubscribeMode()
+    // MUST run on sequentialScope: ensureSynced()'s state check + SYNCED-listener registration is
+    // atomic only there (SYNCED transitions run on the same scope). On a parallel dispatcher the
+    // SYNCED event could fire between the two and this future would hang forever (lost wakeup).
     return asyncFuture { getRootAsync() }
   }
 
@@ -179,7 +200,10 @@ internal class DefaultRealtimeObject(
     }
     if (syntheticMessages.isEmpty()) return
 
-    // RTO20e, RTO20f - dispatch to sequential scope for ordering
+    // RTO20e, RTO20f - dispatch to sequential scope for ordering. This hop is also the thread-safety
+    // boundary of the write path: everything above it touches only thread-safe/local state, while
+    // applyAckResult touches unsynchronized state (sync waiters, objects state, pool mutation) whose
+    // safety contract is the sequential scope.
     withContext(sequentialScope.coroutineContext) {
       objectsManager.applyAckResult(syntheticMessages) // suspends if SYNCING (RTO20e), applies on SYNCED (RTO20f)
     }
@@ -277,7 +301,7 @@ internal class DefaultRealtimeObject(
             ObjectHttpStatusCode.BadRequest,
             cause = errorReason?.let { AblyException.fromErrorInfo(it) }
           )
-          objectsManager.failBufferedAcks(error) // RTO20e1
+          objectsManager.failSyncWaiters(error) // RTO20e1
           if (state != ChannelState.suspended) {
             // do not emit data update events as the actual current state of Objects data is unknown when we're in these channel states
             objectsPool.clearObjectsData(false)
@@ -304,6 +328,9 @@ internal class DefaultRealtimeObject(
 
   /** Validates the channel is configured for access (read/subscribe) operations. Spec: RTO25 */
   internal fun throwIfInvalidAccessApiConfiguration() = adapter.throwIfInvalidAccessApiConfiguration(channelName)
+
+  /** Validates only the object_subscribe channel mode. Spec: RTO23a */
+  internal fun throwIfMissingObjectSubscribeMode() = adapter.throwIfMissingObjectSubscribeMode(channelName)
 
   /** Validates the channel is configured for write (mutation) operations. Spec: RTO26 */
   internal fun throwIfInvalidWriteApiConfiguration() = adapter.throwIfInvalidWriteApiConfiguration(channelName)

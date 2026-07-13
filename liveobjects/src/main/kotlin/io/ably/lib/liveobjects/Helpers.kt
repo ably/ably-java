@@ -43,6 +43,18 @@ internal fun AblyClientAdapter.throwIfInvalidAccessApiConfiguration(channelName:
 }
 
 /**
+ * Validates only the `object_subscribe` channel mode (no channel-state check), for
+ * `RealtimeObject.get()` (RTO23a). Unlike the access methods, `get()` delegates channel-state handling to
+ * ensure-active-channel ([ensureAttached], RTO23e / RTL33), which re-attaches a DETACHED channel and
+ * rejects only FAILED — so `get()` must not pre-empt that with a state gate.
+ *
+ * Spec: RTO23a
+ */
+internal fun AblyClientAdapter.throwIfMissingObjectSubscribeMode(channelName: String) {
+  throwIfMissingChannelMode(channelName, ChannelMode.object_subscribe)
+}
+
+/**
  * Validates that the channel is configured for the write (mutation) API: message echo must be
  * enabled, the channel must be usable (not detached/failed/suspended) and have the
  * `object_publish` mode.

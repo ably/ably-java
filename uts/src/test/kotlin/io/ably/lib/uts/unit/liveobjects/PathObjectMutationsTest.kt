@@ -10,21 +10,16 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 
 /**
- * Derived from UTS `objects/unit/path_object_mutations.md` (RTPO15–RTPO18, RTPO3c2) — write operations
- * through the typed `PathObject` view.
+ * Derived from UTS `objects/unit/path_object_mutations.md` (RTPO15–RTPO18, RTPO3c2) — the public
+ * `PathObject` write surface (set / remove / increment / decrement).
  *
- * ably-java implements the typed-SDK variant (RTTS): the spec's single polymorphic `PathObject` partitions
- * `set`/`remove` onto `LiveMapPathObject` (via `asLiveMap()`) and `increment`/`decrement` onto
- * `LiveCounterPathObject` (via `asLiveCounter()`). The root from `setupSyncedChannel` is already a
- * `LiveMapPathObject`, so `root.set(...)`/`root.remove(...)` need no cast; deeper navigated nodes do.
- *
- * Wrong-type write cases (RTPO15d/16d/17d/18d) and unresolvable-path cases (RTPO3c2) are fully expressible:
- * the `as*` cast never throws (RTTS5d), so we cast to the view whose write method we need, then assert the
- * **operation** itself throws `AblyException` with the spec's error code (92007 wrong type, 92005
- * unresolvable path). No deviations.
- *
- * All tests use `setupSyncedChannel` (Helpers.kt), which needs the SDK's OBJECT_SYNC processing +
- * `RealtimeObject.get()` — still TODO — so these compile now and run once that lands (translate-only).
+ * ably-java implements the typed-SDK variant (RTTS): the base `PathObject` has no write methods; writes
+ * live on `LiveMapPathObject` (`set`/`remove`, reached via `asLiveMap()`) and `LiveCounterPathObject`
+ * (`increment`/`decrement`, via `asLiveCounter()`). `PathObject` `as*` casts never throw (RTTS5d), so a
+ * write on the wrong-typed view is expressed by casting to the needed view and asserting the **operation**
+ * throws `AblyException` 92007 (mapping §7). Writes on an unresolvable path throw 92005/400 (RTPO3c2).
+ * Values are wrapped in the `LiveMapValue` union; counter `value()` is a `Double`. All mutators return
+ * `CompletableFuture<Void>` and apply locally on ACK, so a read straight after `await()` reflects the write.
  */
 class PathObjectMutationsTest {
 
@@ -59,10 +54,10 @@ class PathObjectMutationsTest {
      * @UTS objects/unit/RTPO15d/set-non-map-throws-0
      */
     @Test
-    fun `RTPO15d - set on non-LiveMap throws 92007`() = runTest {
+    fun `RTPO15d - set on non-LiveMap throws`() = runTest {
         val (_, _, root, _) = setupSyncedChannel("test")
 
-        // The cast never throws (RTTS5d); the MAP_SET operation on a counter fails with 92007.
+        // score resolves to a counter; asLiveMap() never throws (RTTS5d), the set operation surfaces 92007.
         val ex = assertFailsWith<AblyException> {
             root.get("score").asLiveMap().set("key", LiveMapValue.of("value")).await()
         }
@@ -85,7 +80,7 @@ class PathObjectMutationsTest {
      * @UTS objects/unit/RTPO16d/remove-non-map-throws-0
      */
     @Test
-    fun `RTPO16d - remove on non-LiveMap throws 92007`() = runTest {
+    fun `RTPO16d - remove on non-LiveMap throws`() = runTest {
         val (_, _, root, _) = setupSyncedChannel("test")
 
         val ex = assertFailsWith<AblyException> {
@@ -122,10 +117,10 @@ class PathObjectMutationsTest {
      * @UTS objects/unit/RTPO17d/increment-non-counter-throws-0
      */
     @Test
-    fun `RTPO17d - increment on non-LiveCounter throws 92007`() = runTest {
+    fun `RTPO17d - increment on non-LiveCounter throws`() = runTest {
         val (_, _, root, _) = setupSyncedChannel("test")
 
-        // increment on the root map: cast never throws (RTTS5d); the COUNTER_INC operation fails with 92007.
+        // root is a map; asLiveCounter() never throws (RTTS5d), the increment operation surfaces 92007.
         val ex = assertFailsWith<AblyException> {
             root.asLiveCounter().increment(5).await()
         }
@@ -160,7 +155,7 @@ class PathObjectMutationsTest {
      * @UTS objects/unit/RTPO18d/decrement-non-counter-throws-0
      */
     @Test
-    fun `RTPO18d - decrement on non-LiveCounter throws 92007`() = runTest {
+    fun `RTPO18d - decrement on non-LiveCounter throws`() = runTest {
         val (_, _, root, _) = setupSyncedChannel("test")
 
         val ex = assertFailsWith<AblyException> {
@@ -173,12 +168,11 @@ class PathObjectMutationsTest {
      * @UTS objects/unit/RTPO3c2/set-unresolvable-throws-0
      */
     @Test
-    fun `RTPO3c2 - set on unresolvable path throws 92005`() = runTest {
+    fun `RTPO3c2 - set on unresolvable path throws`() = runTest {
         val (_, _, root, _) = setupSyncedChannel("test")
 
         val ex = assertFailsWith<AblyException> {
-            root.get("nonexistent").asLiveMap().get("deep").asLiveMap()
-                .set("key", LiveMapValue.of("value")).await()
+            root.get("nonexistent").asLiveMap().get("deep").asLiveMap().set("key", LiveMapValue.of("value")).await()
         }
         assertEquals(92005, ex.errorInfo.code)
         assertEquals(400, ex.errorInfo.statusCode)
@@ -188,7 +182,7 @@ class PathObjectMutationsTest {
      * @UTS objects/unit/RTPO3c2/increment-unresolvable-throws-0
      */
     @Test
-    fun `RTPO3c2 - increment on unresolvable path throws 92005`() = runTest {
+    fun `RTPO3c2 - increment on unresolvable path throws`() = runTest {
         val (_, _, root, _) = setupSyncedChannel("test")
 
         val ex = assertFailsWith<AblyException> {

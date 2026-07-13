@@ -13,10 +13,10 @@
 | # | UTS spec (`objects/unit/…`) | ably-java test class | Status | Layer it targets |
 |---|---|---|---|---|
 | 1 | `instance.md` | `InstanceTest` | ✅ Translated | Public view (`Instance`) |
-| 2 | `live_counter.md` | `LiveCounterTest` | ⛔ **Blocked** | **Internal CRDT node** |
-| 3 | `live_counter_api.md` | `LiveCounterApiTest` | ✅ Translated | Public view |
-| 4 | `live_map.md` | `LiveMapTest` | ⛔ **Blocked** | **Internal CRDT node** |
-| 5 | `live_map_api.md` | `LiveMapApiTest` | ✅ Translated | Public view |
+| 2 | `internal_live_counter.md` | `InternalLiveCounterTest` | ⛔ **Blocked** | **Internal CRDT node** |
+| 3 | `internal_live_counter_api.md` | `InternalLiveCounterApiTest` | ✅ Translated | Public view |
+| 4 | `internal_live_map.md` | `InternalLiveMapTest` | ⛔ **Blocked** | **Internal CRDT node** |
+| 5 | `internal_live_map_api.md` | `InternalLiveMapApiTest` | ✅ Translated | Public view |
 | 6 | `live_object_subscribe.md` | `LiveObjectSubscribeTest` | ✅ Translated | Public view |
 | 7 | `object_id.md` | `ObjectIdTest` | ⛔ **Blocked** | **Internal (object-id gen)** |
 | 8 | `objects_pool.md` | `ObjectsPoolTest` | ⛔ **Blocked** | **Internal (`ObjectsPool`)** |
@@ -106,13 +106,13 @@ unreadable).
 
 | Spec | What it asserts on | Required internal symbols | Blocked by |
 |---|---|---|---|
-| **2 `live_counter.md`** | internal counter node state after applying ops | `InternalLiveCounter` (`.data`, `.siteTimeserials`, `.createOperationIsMerged`, `applyOperation`, `replaceData`) | A + B |
-| **4 `live_map.md`** | internal map node state after applying ops | `InternalLiveMap` (`.data`, `.siteTimeserials`, `.isTombstone`, `applyOperation`, `replaceData`) | A + B |
+| **2 `internal_live_counter.md`** | internal counter node state after applying ops | `InternalLiveCounter` (`.data`, `.siteTimeserials`, `.createOperationIsMerged`, `applyOperation`, `replaceData`) | A + B |
+| **4 `internal_live_map.md`** | internal map node state after applying ops | `InternalLiveMap` (`.data`, `.siteTimeserials`, `.isTombstone`, `applyOperation`, `replaceData`) | A + B |
 | **7 `object_id.md`** | object-id generation & parsing | `generateObjectId` / object-id type (`RTO14`), `*WithObjectId` derivation | A + B |
 | **8 `objects_pool.md`** | the object pool and its sync lifecycle | `ObjectsPool`, `.syncState`, pool entry add/get/clear | A + B |
 | **9 `parent_references.md`** | the reverse parent-reference graph | parent-reference tracking on the pool/nodes | A + B |
 
-> Specs 2 and 4 have public counterparts (`live_counter_api.md` / `live_map_api.md`, both translated)
+> Specs 2 and 4 have public counterparts (`internal_live_counter_api.md` / `internal_live_map_api.md`, both translated)
 > that cover the *outcome* of these operations through the public API. Specs 7–9 have **no** public
 > counterpart — they are purely internal and have no representation in tiers 1–2.
 

@@ -10,8 +10,8 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 /**
- * Derived from UTS `objects/unit/public_object_message.md` — construction of the public-facing
- * `ObjectMessage` (PAOM3) and `ObjectOperation` (PAOOP3) from a source wire object message.
+ * Derived from UTS `objects/unit/public_object_message.md` (PAOM1–3, PAOOP1–3) — construction of the
+ * public-facing `ObjectMessage` (PAOM3) and `ObjectOperation` (PAOOP3) from a source wire object message.
  *
  * Pure data-structure construction, no mocks. The spec's `PublicObjectMessage.fromObjectMessage(source,
  * channel)` / `PublicObjectOperation.fromObjectOperation(op)` (PAOM3 / PAOOP3) are `internal` in
@@ -19,6 +19,11 @@ import kotlin.test.assertNull
  * built with the wire op builders (`buildMapSet`, `buildCounterInc`, …) and the public getters are asserted
  * on the result. Spec `op.action == "MAP_SET"` (string tag) becomes the `ObjectOperationAction` enum
  * constant; `op.mapCreate == null` becomes `assertNull`; getters read as Kotlin properties.
+ *
+ * PR #499 renamed the retained-create field `_derivedFrom` → `derivedFrom` (local-only per RTLCV4g5 /
+ * RTLMV4j5, not a wire field). PAOOP1: the public `ObjectOperation` carries only the resolved
+ * `mapCreate`/`counterCreate` (no `*WithObjectId` getter); PAOOP3b2/c2 resolution from the derived create is
+ * verified via [publicMessageWithDerivedCreate].
  */
 class PublicObjectMessageTest {
 
@@ -157,7 +162,13 @@ class PublicObjectMessageTest {
      */
     @Test
     fun `PAOOP3a - OBJECT_DELETE operation copies objectDelete, omits unrelated fields`() {
-        val source = buildObjectDelete("counter:abc@1000")
+        // The spec's source carries `objectDelete: {}` (an empty marker). The `buildObjectDelete` helper
+        // sets only action+objectId, so add the marker body here — otherwise the wire op's `objectDelete`
+        // stays null and `getObjectDelete()` (which is `operation.objectDelete?.let { DefaultObjectDelete }`)
+        // returns null. This mirrors the spec's source exactly.
+        val source = buildObjectDelete("counter:abc@1000").apply {
+            getAsJsonObject("operation").add("objectDelete", JsonObject())
+        }
 
         val op = buildPublicObjectMessage(source, "test-channel").operation
 
@@ -177,7 +188,11 @@ class PublicObjectMessageTest {
      */
     @Test
     fun `PAOOP3a - MAP_CLEAR operation copies mapClear, omits unrelated fields`() {
-        val source = buildMapClear("map:abc@1000")
+        // As OBJECT_DELETE above: the spec's source carries `mapClear: {}`; add the empty marker so the
+        // wire op's `mapClear` is non-null and `getMapClear()` returns the DefaultMapClear marker.
+        val source = buildMapClear("map:abc@1000").apply {
+            getAsJsonObject("operation").add("mapClear", JsonObject())
+        }
 
         val op = buildPublicObjectMessage(source, "test-channel").operation
 

@@ -10,9 +10,7 @@ import io.ably.lib.liveobjects.value.ObjectUpdate
 import io.ably.lib.liveobjects.value.livecounter.InternalLiveCounter
 import io.ably.lib.liveobjects.value.livemap.InternalLiveMap
 import io.ably.lib.liveobjects.value.livemap.isEntryOrRefTombstoned
-import io.ably.lib.types.AblyException
 import io.ably.lib.util.Log
-import kotlinx.coroutines.CompletableDeferred
 
 /**
  * @spec RTO5 - Processes OBJECT and OBJECT_SYNC messages during sync sequences
@@ -29,7 +27,6 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
    * @spec RTO7 - Buffered object operations during sync
    */
   private val bufferedObjectOperations = mutableListOf<WireObjectMessage>() // RTO7a
-  private var syncCompletionWaiter: CompletableDeferred<Unit>? = null
 
   /**
    * Handles object messages (non-sync messages).
@@ -85,7 +82,6 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
 
     syncObjectsPool.clear() // RTO5a2a
     currentSyncId = syncId
-    syncCompletionWaiter = CompletableDeferred()
     stateChange(ObjectsState.Syncing)
   }
 
@@ -102,31 +98,23 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
     syncObjectsPool.clear()                                                        // RTO5c4
     currentSyncId = null                                                           // RTO5c3
     realtimeObjects.appliedOnAckSerials.clear()                                    // RTO5c9
-    stateChange(ObjectsState.Synced)                              // RTO5c8
-    syncCompletionWaiter?.complete(Unit)
-    syncCompletionWaiter = null
+    stateChange(ObjectsState.Synced)                              // RTO5c8 - emits SYNCED, resolving any
+    // pending applyAckResult waiters (RTO20e) via awaitSyncCompletion's one-shot SYNCED listener
   }
 
   /**
    * Called from publishAndApply (via withContext sequentialScope).
    * If SYNCED: apply immediately with LOCAL source.
-   * If not SYNCED: suspend until endSync transitions to SYNCED (RTO20e), then apply.
+   * If not SYNCED: suspend until objects transition to SYNCED (RTO20e), then apply. If the channel leaves a
+   * usable state while waiting, [awaitSyncCompletion] throws the 92008 error and the apply fails (RTO20e1).
    */
   internal suspend fun applyAckResult(messages: List<WireObjectMessage>) {
+    // MUST run on the sequential scope: the state check + waiter registration in awaitSyncCompletion
+    // is atomic only there (same lost-wakeup hazard as ensureSynced).
     if (realtimeObjects.state != ObjectsState.Synced) {
-      if (syncCompletionWaiter == null) syncCompletionWaiter = CompletableDeferred()
-      syncCompletionWaiter?.await() // suspends; resumes after endSync transitions to SYNCED (RTO20e1)
+      awaitSyncCompletion() // suspends until SYNCED (RTO20e); throws 92008 on channel state change (RTO20e1)
     }
     applyObjectMessages(messages, ObjectsOperationSource.LOCAL) // RTO20f
-  }
-
-  /**
-   * Fails all pending apply waiters.
-   * Called when the channel enters DETACHED/SUSPENDED/FAILED (RTO20e1).
-   */
-  internal fun failBufferedAcks(error: AblyException) {
-    syncCompletionWaiter?.completeExceptionally(error)
-    syncCompletionWaiter = null
   }
 
   /**
@@ -352,7 +340,8 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
   }
 
   internal fun dispose() {
-    syncCompletionWaiter?.cancel()
+    // pending applyAckResult waiters are cancelled via the sequential scope teardown in
+    // DefaultRealtimeObject.dispose (their coroutines are cancelled, removing them from the waiter set)
     syncObjectsPool.clear()
     bufferedObjectOperations.clear()
     disposeObjectsStateListeners()

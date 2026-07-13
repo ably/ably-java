@@ -79,16 +79,14 @@ public interface PathObject {
     @NotNull String path();
 
     /**
-     * Resolves this path and returns a {@link Instance} wrapping the underlying
-     * value if it is a {@code LiveMap} or {@code LiveCounter}.
+     * Resolves this path and returns a {@link Instance} wrapping the resolved value,
+     * whether it is a {@code LiveMap}, {@code LiveCounter} or a primitive (RTPO8c/RTPO8f).
      *
-     * <p>Returns {@code null} when the resolved value is a primitive (LiveObjects with
-     * no object id), when the path does not resolve, or when called on primitive
-     * {@code *PathObject} sub-types.
+     * <p>Returns {@code null} when the path does not resolve (RTPO8e).
      *
      * <p>Spec: RTPO8 / RTTS3b
      *
-     * @return a {@link Instance} wrapping the resolved live object, or {@code null}
+     * @return a {@link Instance} wrapping the resolved value, or {@code null}
      */
     @Nullable Instance instance();
 

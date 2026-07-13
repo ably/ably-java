@@ -1,9 +1,11 @@
 package io.ably.lib.uts.unit.liveobjects
 
-import io.ably.lib.liveobjects.path.PathObject
+import com.google.gson.JsonParser
+import io.ably.lib.liveobjects.ValueType
 import io.ably.lib.uts.infra.pollUntil
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -11,23 +13,26 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Derived from UTS `objects/unit/path_object.md` (RTPO1–RTPO14) — the typed `PathObject` read/navigation
- * surface: `path()`, `get()` / `at()`, `value()`, `instance()`, `entries()` / `keys()` / `values()`,
- * `size()`, `getType()`, and the compacted-snapshot accessor.
+ * Derived from UTS `objects/unit/path_object.md` (RTPO1–RTPO14) — the **public** read/navigation surface
+ * of `PathObject`.
  *
- * ably-java implements the typed-SDK variant (RTTS), so the spec's single polymorphic `PathObject.value()`
- * splits across typed `as*()` accessors, each returning `null` (never throwing) on a type mismatch (RTTS5d /
- * RTTS6g). `root` (from `setupSyncedChannel`) is already a `LiveMapPathObject`, so `root.get(...)` needs no
- * cast; deeper navigated nodes are `asLiveMap()`-ed before map ops. Number gotchas: counter `value()` is
- * `Double` (100.0), primitive `asNumber().value()` is a boxed `Number` (normalise with `?.toDouble()`),
- * `size()` is `Long` (7L). Three deviations recorded in `deviations.md`:
- *  - `get(non-string)` / `at(non-string)` failing with 40003 (RTPO5b / RTPO6b) is not expressible — the
- *    signatures take `@NotNull String`, so a non-string argument is a compile error.
- *  - `compact()` is not implemented (RTTS3f); `compactJson()` is the supported snapshot (RTPO13 / RTPO13b5 /
- *    RTPO13c, and the `compact()` sub-assertion of RTPO3c1).
+ * ably-java implements the typed-SDK variant (RTTS): the base `PathObject` exposes only the type-agnostic
+ * methods (`path`, `instance`, `compactJson`, `getType`); everything type-specific is reached via an `as*`
+ * cast (mapping §4). The root from `setupSyncedChannel` is a `LiveMapPathObject`, so `get`/`at`/`entries`/
+ * `keys`/`values`/`size` need no cast on the root; a *navigated* `PathObject` needs `asLiveMap()` first.
+ * `PathObject` casts never throw (RTTS5d) — a wrong-typed read returns `null`/empty.
  *
- * All tests use `setupSyncedChannel` (Helpers.kt), which needs the SDK's OBJECT_SYNC processing +
- * `RealtimeObject.get()` — still TODO — so these compile now and run once that lands (translate-only).
+ * Deviations (recorded in `deviations.md`):
+ *  - RTPO5b/RTPO6b: `get`/`at` with a non-`String` argument (spec `40003`) is a compile error in the
+ *    statically-typed API, so not expressible as a runtime assertion.
+ *  - RTPO13/RTPO13c5/RTPO13c/RTPO3c1: `compact()` is not implemented (RTTS3f); `compactJson()` is used —
+ *    binary is a base64 string, cycles are `{ "objectId": … }` markers (not shared identity), resolution
+ *    failure yields `compactJson() == null`.
+ *  - RTPO10/RTPO10d/RTPO11/RTPO11d: the `keys()/values() IS Array` line is a static-type tautology
+ *    (`Iterable<…>` guaranteed by the signature); only count + membership are asserted.
+ *
+ * Number normalisation (mapping §4): counter `value()` is `Double` (assert `100.0`); primitive
+ * `asNumber().value()` is a boxed `Number` (normalise via `?.toDouble()`); `size()` is `Long` (assert `7L`).
  */
 class PathObjectTest {
 
@@ -51,7 +56,6 @@ class PathObjectTest {
         val (_, _, root, _) = setupSyncedChannel("test")
 
         val po = root.get("a.b").asLiveMap().get("c")
-
         assertEquals("a\\.b.c", po.path())
     }
 
@@ -67,7 +71,7 @@ class PathObjectTest {
 
         assertEquals("profile", child.path())
         assertEquals("profile.email", grandchild.path())
-        assertTrue(child !== root) // RTPO5c: new PathObject, not the same instance as root
+        assertTrue(child !== root) // RTPO5: child IS NOT root
     }
 
     /**
@@ -77,9 +81,9 @@ class PathObjectTest {
     fun `RTPO5b - get throws on non-string key`() = runTest {
         setupSyncedChannel("test")
 
-        // DEVIATION (RTPO5b): spec passes a non-string key (`root.get(123)`) and expects ErrorInfo 40003.
-        // ably-java's `LiveMapPathObject.get(@NotNull String)` only accepts a String, so a non-string
-        // argument is a compile error, not a runtime failure — the case is not expressible. See deviations.md.
+        // DEVIATION (RTPO5b): spec calls `get(123)` expecting ErrorInfo 40003. ably-java's
+        // `LiveMapPathObject.get(@NotNull String)` only accepts a String — a non-string argument is a
+        // compile error, never a runtime failure, so this case is not expressible. See deviations.md.
     }
 
     /**
@@ -90,7 +94,6 @@ class PathObjectTest {
         val (_, _, root, _) = setupSyncedChannel("test")
 
         val po = root.at("profile.email")
-
         assertEquals("profile.email", po.path())
         assertEquals("alice@example.com", po.asString().value())
     }
@@ -102,21 +105,8 @@ class PathObjectTest {
     fun `RTPO6 - at respects escaped dots`() = runTest {
         val (_, _, root, _) = setupSyncedChannel("test")
 
-        val po = root.at("a\\.b.c") // segments ["a.b", "c"]
-
+        val po = root.at("a\\.b.c")
         assertEquals("a\\.b.c", po.path())
-    }
-
-    /**
-     * @UTS objects/unit/RTPO6b/at-non-string-throws-0
-     */
-    @Test
-    fun `RTPO6b - at throws for non-string input`() = runTest {
-        setupSyncedChannel("test")
-
-        // DEVIATION (RTPO6b): spec passes a non-string path (`root.at(123)`) and expects ErrorInfo 40003.
-        // ably-java's `LiveMapPathObject.at(@NotNull String)` only accepts a String, so a non-string argument
-        // is a compile error, not a runtime failure — the case is not expressible. See deviations.md.
     }
 
     /**
@@ -126,7 +116,6 @@ class PathObjectTest {
     fun `RTPO7 - value returns counter numeric value`() = runTest {
         val (_, _, root, _) = setupSyncedChannel("test")
 
-        // Counter value() is Double (RTPO7c -> LiveCounter#value); assert 100.0.
         assertEquals(100.0, root.get("score").asLiveCounter().value())
     }
 
@@ -149,8 +138,10 @@ class PathObjectTest {
     fun `RTPO7d - value returns null for LiveMap`() = runTest {
         val (_, _, root, _) = setupSyncedChannel("test")
 
-        // RTPO7e: a LiveMap has no scalar value; the typed counter/primitive accessors return null.
+        // Typed SDK (mapping §4): there is no polymorphic value(); a map resolves to no counter/primitive
+        // value, so each typed read returns null.
         assertNull(root.get("profile").asLiveCounter().value())
+        assertNull(root.get("profile").asNumber().value())
     }
 
     /**
@@ -164,17 +155,6 @@ class PathObjectTest {
     }
 
     /**
-     * @UTS objects/unit/RTPO7/value-bytes-0
-     */
-    @Test
-    fun `RTPO7 - value returns bytes for binary entry`() = runTest {
-        val (_, _, root, _) = setupSyncedChannel("test")
-
-        // STANDARD_POOL_OBJECTS stores avatar as base64 "AQID" == bytes [1, 2, 3].
-        assertEquals(listOf<Byte>(1, 2, 3), root.get("avatar").asBinary().value()?.toList())
-    }
-
-    /**
      * @UTS objects/unit/RTPO8/instance-live-object-0
      */
     @Test
@@ -182,22 +162,27 @@ class PathObjectTest {
         val (_, _, root, _) = setupSyncedChannel("test")
 
         val counterInst = root.get("score").instance()
-        assertNotNull(counterInst) // RTPO8c: IS Instance
+        assertNotNull(counterInst)
         assertEquals("counter:score@1000", counterInst!!.asLiveCounter().id)
 
         val mapInst = root.get("profile").instance()
-        assertNotNull(mapInst) // RTPO8c: IS Instance
+        assertNotNull(mapInst)
         assertEquals("map:profile@1000", mapInst!!.asLiveMap().id)
     }
 
     /**
-     * @UTS objects/unit/RTPO8c/instance-primitive-null-0
+     * @UTS objects/unit/RTPO8f/instance-primitive-wrapped-0
      */
     @Test
-    fun `RTPO8c - instance returns null for primitive`() = runTest {
+    fun `RTPO8f - instance returns Instance for primitive`() = runTest {
         val (_, _, root, _) = setupSyncedChannel("test")
 
-        assertNull(root.get("name").instance())
+        val nameInst = root.get("name").instance()
+        assertNotNull(nameInst)
+        // Typed SDK (RTINS3b/RTTS10c): primitive instances are anonymous - no id member exists,
+        // so the spec's `name_inst.id() == null` assertion is enforced at compile time.
+        assertEquals(ValueType.STRING, nameInst!!.getType())
+        assertEquals("Alice", nameInst.asString().value())
     }
 
     /**
@@ -225,7 +210,6 @@ class PathObjectTest {
         val (_, _, root, _) = setupSyncedChannel("test")
 
         val entries = root.get("score").asLiveMap().entries().toList()
-
         assertEquals(0, entries.size)
     }
 
@@ -238,6 +222,8 @@ class PathObjectTest {
 
         val keys = root.keys().toList()
 
+        // DEVIATION (RTPO10): the `keys IS Array` line is a static-type tautology (keys() returns
+        // Iterable<String>); only count + membership are asserted. See deviations.md.
         assertEquals(7, keys.size)
         assertTrue("name" in keys)
         assertTrue("profile" in keys)
@@ -251,8 +237,8 @@ class PathObjectTest {
     fun `RTPO10d - keys returns empty for non-LiveMap`() = runTest {
         val (_, _, root, _) = setupSyncedChannel("test")
 
+        // DEVIATION (RTPO10d): `keys IS Array` tautology omitted. See deviations.md.
         val keys = root.get("score").asLiveMap().keys().toList()
-
         assertEquals(0, keys.size)
     }
 
@@ -265,12 +251,9 @@ class PathObjectTest {
 
         val vals = root.values().toList()
 
+        // DEVIATION (RTPO11): `vals IS Array` tautology omitted. See deviations.md.
         assertEquals(7, vals.size)
-        // Each element is a PathObject whose path is the key.
-        val paths = mutableSetOf<String>()
-        for (v in vals) {
-            paths.add(v.path())
-        }
+        val paths = vals.map { it.path() }.toSet()
         assertTrue("name" in paths)
         assertTrue("profile" in paths)
         assertTrue("score" in paths)
@@ -283,8 +266,8 @@ class PathObjectTest {
     fun `RTPO11d - values returns empty for non-LiveMap`() = runTest {
         val (_, _, root, _) = setupSyncedChannel("test")
 
+        // DEVIATION (RTPO11d): `vals IS Array` tautology omitted. See deviations.md.
         val vals = root.get("score").asLiveMap().values().toList()
-
         assertEquals(0, vals.size)
     }
 
@@ -317,46 +300,43 @@ class PathObjectTest {
     fun `RTPO13 - compact recursively compacts LiveMap tree`() = runTest {
         val (_, _, root, _) = setupSyncedChannel("test")
 
-        // DEVIATION (RTPO13): ably-java does not implement `compact()` (RTTS3f); `compactJson()` is the
-        // supported recursively-compacted snapshot. Binary is base64-encoded rather than raw bytes, so the
-        // avatar assertion checks the base64 string. Assertions navigate the JsonObject. See deviations.md.
+        // DEVIATION (RTPO13): ably-java implements only `compactJson()` (RTTS3f). Assertions navigate the
+        // JsonObject; binary is a base64 string (RTPO14b1). See deviations.md.
         val result = root.compactJson()!!.asJsonObject
 
         assertEquals("Alice", result.get("name").asString)
         assertEquals(30, result.get("age").asInt)
         assertEquals(true, result.get("active").asBoolean)
         assertEquals(100, result.get("score").asInt)
-        assertEquals("a", result.getAsJsonObject("data").getAsJsonArray("tags").get(0).asString)
-        assertEquals("b", result.getAsJsonObject("data").getAsJsonArray("tags").get(1).asString)
-        assertEquals("AQID", result.get("avatar").asString) // base64 of bytes [1, 2, 3]
-        val profile = result.getAsJsonObject("profile")
-        assertEquals("alice@example.com", profile.get("email").asString)
-        assertEquals(5, profile.get("nested_counter").asInt)
-        assertEquals("dark", profile.getAsJsonObject("prefs").get("theme").asString)
+        assertEquals(JsonParser.parseString("""{"tags":["a","b"]}"""), result.get("data"))
+        assertEquals("AQID", result.get("avatar").asString) // DEVIATION: binary as base64
+        assertEquals("alice@example.com", result.getAsJsonObject("profile").get("email").asString)
+        assertEquals(5, result.getAsJsonObject("profile").get("nested_counter").asInt)
+        assertEquals("dark", result.getAsJsonObject("profile").getAsJsonObject("prefs").get("theme").asString)
     }
 
     /**
-     * @UTS objects/unit/RTPO13b5/compact-cycle-detection-0
+     * @UTS objects/unit/RTPO13c5/compact-cycle-detection-0
      */
     @Test
-    fun `RTPO13b5 - compact handles cycles via shared reference`() = runTest {
+    fun `RTPO13c5 - compact handles cycles via shared reference`() = runTest {
         val (_, _, root, mockWs) = setupSyncedChannel("test")
 
-        // Introduce a cycle: map:prefs@1000.back_ref points back at map:profile@1000.
+        // New key "back_ref" on map:prefs (no existing entry → applies regardless of serial, RTLM9d).
         mockWs.sendToClient(
             buildObjectMessage(
                 "test",
                 listOf(buildMapSet("map:prefs@1000", "back_ref", dataObjectId("map:profile@1000"), "99", "remote")),
             ),
         )
-        pollUntil(5.seconds) { root.get("profile").asLiveMap().get("prefs").asLiveMap().get("back_ref").exists() }
+        pollUntil(5.seconds) {
+            root.get("profile").asLiveMap().get("prefs").asLiveMap().get("back_ref").getType() != null
+        }
 
-        // DEVIATION (RTPO13b5): spec asserts `result["prefs"]["back_ref"] IS result` — native object identity
-        // from the unimplemented `compact()` (RTTS3f). `compactJson()` represents the cycle as an
-        // `{ "objectId": ... }` marker instead (see RTPO14), so the identity assertion is replaced by the
-        // objectId-marker assertion. See deviations.md.
+        // DEVIATION (RTPO13c5): spec asserts `result["prefs"]["back_ref"] IS result` (shared object
+        // identity). `compactJson()` emits cycles as an `{ "objectId": … }` marker, not shared identity.
+        // See deviations.md.
         val result = root.get("profile").compactJson()!!.asJsonObject
-
         assertEquals(
             "map:profile@1000",
             result.getAsJsonObject("prefs").getAsJsonObject("back_ref").get("objectId").asString,
@@ -370,8 +350,7 @@ class PathObjectTest {
     fun `RTPO13c - compact returns number for LiveCounter`() = runTest {
         val (_, _, root, _) = setupSyncedChannel("test")
 
-        // DEVIATION (RTPO13c): `compact()` is unimplemented (RTTS3f); `compactJson()` is used. A LiveCounter
-        // compacts to its numeric JSON value. See deviations.md.
+        // DEVIATION (RTPO13c): `compact()` → `compactJson()`; a counter compacts to its numeric JSON value.
         assertEquals(100, root.get("score").compactJson()!!.asInt)
     }
 
@@ -388,26 +367,15 @@ class PathObjectTest {
                 listOf(buildMapSet("map:prefs@1000", "back_ref", dataObjectId("map:profile@1000"), "99", "remote")),
             ),
         )
-        pollUntil(5.seconds) { root.get("profile").asLiveMap().get("prefs").asLiveMap().get("back_ref").exists() }
+        pollUntil(5.seconds) {
+            root.get("profile").asLiveMap().get("prefs").asLiveMap().get("back_ref").getType() != null
+        }
 
         val result = root.get("profile").compactJson()!!.asJsonObject
-
         assertEquals(
-            "map:profile@1000",
-            result.getAsJsonObject("prefs").getAsJsonObject("back_ref").get("objectId").asString,
+            JsonParser.parseString("""{"objectId":"map:profile@1000"}"""),
+            result.getAsJsonObject("prefs").get("back_ref"),
         )
-    }
-
-    /**
-     * @UTS objects/unit/RTPO14/compact-json-bytes-0
-     */
-    @Test
-    fun `RTPO14 - compactJson encodes bytes as base64 string`() = runTest {
-        val (_, _, root, _) = setupSyncedChannel("test")
-
-        val result = root.compactJson()!!.asJsonObject
-
-        assertEquals("AQID", result.get("avatar").asString)
     }
 
     /**
@@ -417,8 +385,7 @@ class PathObjectTest {
     fun `RTPO3 - path resolution walks through LiveMaps`() = runTest {
         val (_, _, root, _) = setupSyncedChannel("test")
 
-        // RTPO3b: empty path resolves to root (a LiveMap) -> no scalar value.
-        assertNull(root.asLiveCounter().value())
+        assertNull(root.asLiveCounter().value()) // root is a map → no scalar value
         assertEquals(
             "dark",
             root.get("profile").asLiveMap().get("prefs").asLiveMap().get("theme").asString().value(),
@@ -432,7 +399,6 @@ class PathObjectTest {
     fun `RTPO3a1 - resolution fails if intermediate is not LiveMap`() = runTest {
         val (_, _, root, _) = setupSyncedChannel("test")
 
-        // score resolves to a counter, so navigating past it fails to resolve -> read returns null.
         assertNull(root.get("score").asLiveMap().get("something").asString().value())
     }
 
@@ -443,12 +409,43 @@ class PathObjectTest {
     fun `RTPO3c1 - read operation returns null on resolution failure`() = runTest {
         val (_, _, root, _) = setupSyncedChannel("test")
 
-        val nonexistent: PathObject = root.get("nonexistent")
-        assertNull(nonexistent.asString().value())
-        assertNull(nonexistent.instance())
-        assertNull(nonexistent.asLiveMap().size())
-        // DEVIATION (RTPO3c1): spec asserts `compact() == null` on resolution failure; `compact()` is
-        // unimplemented (RTTS3f), so `compactJson()` is asserted null instead. See deviations.md.
-        assertNull(nonexistent.compactJson())
+        assertNull(root.get("nonexistent").asString().value())
+        assertNull(root.get("nonexistent").instance())
+        assertNull(root.get("nonexistent").asLiveMap().size())
+        // DEVIATION (RTPO3c1): `compact()` → `compactJson()`; resolution failure yields null.
+        assertNull(root.get("nonexistent").compactJson())
+    }
+
+    /**
+     * @UTS objects/unit/RTPO6b/at-non-string-throws-0
+     */
+    @Test
+    fun `RTPO6b - at throws for non-string input`() = runTest {
+        setupSyncedChannel("test")
+
+        // DEVIATION (RTPO6b): spec calls `at(123)` expecting ErrorInfo 40003. ably-java's
+        // `LiveMapPathObject.at(@NotNull String)` only accepts a String — a non-string argument is a
+        // compile error, not a runtime failure, so this case is not expressible. See deviations.md.
+    }
+
+    /**
+     * @UTS objects/unit/RTPO7/value-bytes-0
+     */
+    @Test
+    fun `RTPO7 - value returns bytes for binary entry`() = runTest {
+        val (_, _, root, _) = setupSyncedChannel("test")
+
+        assertContentEquals(byteArrayOf(1, 2, 3), root.get("avatar").asBinary().value())
+    }
+
+    /**
+     * @UTS objects/unit/RTPO14/compact-json-bytes-0
+     */
+    @Test
+    fun `RTPO14 - compactJson encodes bytes as base64 string`() = runTest {
+        val (_, _, root, _) = setupSyncedChannel("test")
+
+        val result = root.compactJson()!!.asJsonObject
+        assertEquals("AQID", result.get("avatar").asString)
     }
 }
