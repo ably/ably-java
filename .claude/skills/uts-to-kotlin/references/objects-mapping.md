@@ -104,7 +104,7 @@ live in **`io.ably.lib.liveobjects.path.types`** (not `.path`) — import them f
 | Spec / ably-js | ably-java |
 |---|---|
 | `pathObj.path()` | `pathObj.path(): String` |
-| `pathObj.instance()` | `pathObj.instance(): Instance?` (null if path resolves to a primitive, or doesn't resolve) |
+| `pathObj.instance()` | `pathObj.instance(): Instance?` (wraps any resolved value incl. primitives per `RTPO8f`; null only when the path doesn't resolve) |
 | `pathObj.compactJson()` | `pathObj.compactJson(): JsonElement?` |
 | `pathObj.compact()` | **Not implemented in ably-java** (`RTTS3f`: typed SDKs need not implement `compact`). Use `compactJson()` for snapshot assertions; if a spec genuinely needs the non-JSON `compact()` shape, that's a deviation — flag it. |
 | `pathObj.subscribe(listener[, opts])` | `pathObj.subscribe(PathObjectListener[, PathObjectSubscriptionOptions]): Subscription` (§8) |

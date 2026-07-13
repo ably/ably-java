@@ -63,7 +63,7 @@ internal abstract class DefaultInstance(
  * the extracted (decoded) value, not the wire leaf: an Instance is identity/value-addressed and
  * O(1), so it must not re-read mutable map state.
  *
- * Spec: RTPO8c, RTINS5c, RTTS7e (an Instance is always a concrete typed sub-class)
+ * Spec: RTPO8c, RTPO8f, RTINS5c, RTTS7e (an Instance is always a concrete typed sub-class)
  */
 internal fun ResolvedValue.toInstance(channelObject: DefaultRealtimeObject): Instance? = when (this) {
   is ResolvedValue.MapRef -> DefaultLiveMapInstance(channelObject, map)

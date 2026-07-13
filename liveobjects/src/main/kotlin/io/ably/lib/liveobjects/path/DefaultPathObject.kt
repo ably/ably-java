@@ -54,12 +54,8 @@ internal open class DefaultPathObject(
   override fun instance(): Instance? {
     channelObject.throwIfInvalidAccessApiConfiguration() // RTPO8a
     val resolvedValue = resolveValueAtCurrentPath() ?: return null // RTPO8e - unresolved path -> no instance
-    return when (resolvedValue) {
-      is ResolvedValue.Leaf -> null // RTPO8d - primitives have no Instance here; only live objects do
-      // RTPO8c - wrap the resolved live object in its typed Instance (RTTS6e: primitive
-      // *PathObject sub-types inherit this and resolve to leaves, so they return null)
-      is ResolvedValue.MapRef, is ResolvedValue.CounterRef -> resolvedValue.toInstance(channelObject)
-    }
+    // RTPO8c/RTPO8f - wrap the resolved value (live object or primitive) in its typed Instance
+    return resolvedValue.toInstance(channelObject)
   }
 
   override fun compactJson(): JsonElement? {

@@ -1,6 +1,7 @@
 package io.ably.lib.uts.unit.liveobjects
 
 import com.google.gson.JsonParser
+import io.ably.lib.liveobjects.ValueType
 import io.ably.lib.uts.infra.pollUntil
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -170,13 +171,18 @@ class PathObjectTest {
     }
 
     /**
-     * @UTS objects/unit/RTPO8c/instance-primitive-null-0
+     * @UTS objects/unit/RTPO8f/instance-primitive-wrapped-0
      */
     @Test
-    fun `RTPO8c - instance returns null for primitive`() = runTest {
+    fun `RTPO8f - instance returns Instance for primitive`() = runTest {
         val (_, _, root, _) = setupSyncedChannel("test")
 
-        assertNull(root.get("name").instance())
+        val nameInst = root.get("name").instance()
+        assertNotNull(nameInst)
+        // Typed SDK (RTINS3b/RTTS10c): primitive instances are anonymous - no id member exists,
+        // so the spec's `name_inst.id() == null` assertion is enforced at compile time.
+        assertEquals(ValueType.STRING, nameInst!!.getType())
+        assertEquals("Alice", nameInst.asString().value())
     }
 
     /**

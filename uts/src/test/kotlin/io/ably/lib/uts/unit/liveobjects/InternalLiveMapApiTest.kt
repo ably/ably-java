@@ -15,7 +15,7 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Derived from UTS `objects/unit/internal_live_map_api.md` (RTLM5, RTLM10–RTLM13, RTLM20–RTLM21, RTLM24,
+ * Derived from UTS `objects/unit/internal_live_map_api.md` (RTLM5, RTLM10–RTLM12, RTLM20–RTLM21,
  * RTLMV4, RTLCV4) — the **public** LiveMap read/write surface (`get` / `size` / `entries` / `keys` /
  * `set` / `remove`). (The `internal_` filename prefix is the PR-#499 CRDT rename; this is still the
  * public-view API test. RTLM20b/c/d and RTLM21b/c/d have been relocated to RTO26 — see realtime_object.md.)
