@@ -2,16 +2,18 @@ package io.ably.lib.liveobjects.value
 
 import io.ably.lib.liveobjects.ValueType
 import io.ably.lib.liveobjects.message.WireObjectData
+import io.ably.lib.liveobjects.value.livecounter.InternalLiveCounter
+import io.ably.lib.liveobjects.value.livemap.InternalLiveMap
 
 /**
  * The result of resolving a path segment / map entry against the objects
- * graph: either a node view of a live object, or a primitive leaf carried as
- * wire ObjectData.
+ * graph: either a reference to an internal live object from the pool, or a
+ * primitive leaf carried as wire ObjectData.
  */
 internal sealed interface ResolvedValue {
-  data class MapRef(val map: LiveMap) : ResolvedValue // TODO: LiveMap will be replaced by InternalLiveMap
-  data class CounterRef(val counter: LiveCounter) : ResolvedValue // TODO: LiveCounter will be replaced by InternalLiveCounter
-  data class Leaf(val data: WireObjectData) : ResolvedValue
+  data class MapRef(val map: InternalLiveMap) : ResolvedValue // RTLM5d2f2
+  data class CounterRef(val counter: InternalLiveCounter) : ResolvedValue // RTLM5d2f2
+  data class Leaf(val data: WireObjectData) : ResolvedValue // RTLM5d2b..e
 }
 
 /**

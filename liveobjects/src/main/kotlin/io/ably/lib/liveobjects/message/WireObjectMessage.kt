@@ -1,7 +1,9 @@
 package io.ably.lib.liveobjects.message
 
 import com.google.gson.JsonElement
+import com.google.gson.JsonNull
 import com.google.gson.JsonObject
+import com.google.gson.JsonPrimitive
 import com.google.gson.annotations.JsonAdapter
 import com.google.gson.annotations.SerializedName
 import io.ably.lib.liveobjects.byteSize
@@ -296,4 +298,17 @@ internal fun WireObjectData?.isInvalid(): Boolean {
     this?.boolean == null &&
     this?.bytes == null &&
     this?.json == null
+}
+
+/**
+ * Compact-JSON form of a primitive wire leaf: primitives become JsonPrimitives, binary
+ * stays base64-encoded (RTPO14b1), embedded JSON passes through.
+ */
+internal fun WireObjectData.toCompactJsonElement(): JsonElement = when {
+  string != null -> JsonPrimitive(string)
+  number != null -> JsonPrimitive(number)
+  boolean != null -> JsonPrimitive(boolean)
+  bytes != null -> JsonPrimitive(bytes) // base64 kept encoded - RTPO14b1
+  json != null -> json!!
+  else -> JsonNull.INSTANCE // unreachable for a valid Leaf (isInvalid-filtered)
 }

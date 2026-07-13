@@ -44,21 +44,11 @@ tasks.withType<Test>().configureEach {
 tasks.register<Test>("runUtsUnitTests") {
     filter {
         includeTestsMatching("io.ably.lib.uts.unit.*")
-        // liveobjects has no SDK implementation yet, so these translate-only tests fail at
-        // runtime with "LiveObjects plugin hasn't been installed". Exclude them from the run
-        // (they still compile via compileTestKotlin).
-        // TODO: This should be removed once liveobjects implementation is in place.
-        excludeTestsMatching("io.ably.lib.uts.unit.liveobjects.*")
     }
 }
 
 tasks.register<Test>("runUtsIntegrationTests") {
     filter {
         includeTestsMatching("io.ably.lib.uts.integration.*")
-        // liveobjects has no SDK implementation yet — exclude the translate-only liveobjects
-        // tests (standard + proxy) from the run; they still compile via compileTestKotlin.
-        // TODO: This should be removed once liveobjects implementation is in place.
-        excludeTestsMatching("io.ably.lib.uts.integration.standard.liveobjects.*")
-        excludeTestsMatching("io.ably.lib.uts.integration.proxy.liveobjects.*")
     }
 }

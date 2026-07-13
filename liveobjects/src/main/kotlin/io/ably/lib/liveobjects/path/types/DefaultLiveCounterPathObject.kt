@@ -11,7 +11,7 @@ import java.util.concurrent.CompletableFuture
  * Default implementation of [LiveCounterPathObject].
  *
  * Counters are terminal nodes (no navigation), so this only adds the counter read/write
- * operations on top of [DefaultPathObject]; they are left unimplemented for now.
+ * operations on top of [DefaultPathObject].
  *
  * Spec: RTTS6b
  */
@@ -20,50 +20,34 @@ internal class DefaultLiveCounterPathObject(
   path: String,
 ) : DefaultPathObject(channelObject, path), LiveCounterPathObject {
 
-  override fun value(): Double? {
+  override fun value(): Double? { // RTTS6b
     channelObject.throwIfInvalidAccessApiConfiguration()
-    if (resolveValueAtPath(path) !is ResolvedValue.CounterRef) return null // not a LiveCounter (or unresolved) -> null
-    // TODO - return the resolved counter's value
-    TODO("Not yet implemented")
+    val counter = (resolveValueAtCurrentPath() as? ResolvedValue.CounterRef)?.counter
+      ?: return null // not a LiveCounter (or unresolved) -> null
+    return counter.value() // RTPO7c via RTLC5c
   }
 
-  override fun increment(): CompletableFuture<Void> {
-    channelObject.throwIfInvalidWriteApiConfiguration()
-    val resolvedValue = resolveValueAtPath(path) ?: throw pathNotResolvedError(path)
-    if (resolvedValue !is ResolvedValue.CounterRef) {
-      throw typeMismatchError("Cannot increment a non-LiveCounter object at path: \"$path\"")
-    }
-    // TODO - delegate the COUNTER_INC (amount 1) to the resolved LiveCounter
-    TODO("Not yet implemented")
-  }
+  // RTPO17a1 - default amount of 1; delegates to increment(Number)
+  override fun increment(): CompletableFuture<Void> = increment(1)
 
   override fun increment(amount: Number): CompletableFuture<Void> {
-    channelObject.throwIfInvalidWriteApiConfiguration()
-    val resolvedValue = resolveValueAtPath(path) ?: throw pathNotResolvedError(path)
+    channelObject.throwIfInvalidWriteApiConfiguration() // RTPO17b / RTO26
+    val resolvedValue = resolveValueAtCurrentPath() ?: throw pathNotResolvedError(path) // RTPO17c / RTPO3c2
     if (resolvedValue !is ResolvedValue.CounterRef) {
-      throw typeMismatchError("Cannot increment a non-LiveCounter object at path: \"$path\"")
+      throw typeMismatchError("Cannot increment a non-LiveCounter object at path: \"$path\"") // RTPO17e
     }
-    // TODO - delegate the COUNTER_INC to the resolved LiveCounter
-    TODO("Not yet implemented")
+    return channelObject.asyncVoidFuture { resolvedValue.counter.increment(amount) } // RTPO17d -> RTLC12
   }
 
-  override fun decrement(): CompletableFuture<Void> {
-    channelObject.throwIfInvalidWriteApiConfiguration()
-    val resolvedValue = resolveValueAtPath(path) ?: throw pathNotResolvedError(path)
-    if (resolvedValue !is ResolvedValue.CounterRef) {
-      throw typeMismatchError("Cannot decrement a non-LiveCounter object at path: \"$path\"")
-    }
-    // TODO - delegate the COUNTER_INC (negated amount 1) to the resolved LiveCounter
-    TODO("Not yet implemented")
-  }
+  // RTPO18a1 - default amount of 1; delegates to decrement(Number)
+  override fun decrement(): CompletableFuture<Void> = decrement(1)
 
   override fun decrement(amount: Number): CompletableFuture<Void> {
-    channelObject.throwIfInvalidWriteApiConfiguration()
-    val resolvedValue = resolveValueAtPath(path) ?: throw pathNotResolvedError(path)
+    channelObject.throwIfInvalidWriteApiConfiguration() // RTPO18b / RTO26
+    val resolvedValue = resolveValueAtCurrentPath() ?: throw pathNotResolvedError(path) // RTPO18c / RTPO3c2
     if (resolvedValue !is ResolvedValue.CounterRef) {
-      throw typeMismatchError("Cannot decrement a non-LiveCounter object at path: \"$path\"")
+      throw typeMismatchError("Cannot decrement a non-LiveCounter object at path: \"$path\"") // RTPO18e
     }
-    // TODO - delegate the COUNTER_INC (negated amount) to the resolved LiveCounter
-    TODO("Not yet implemented")
+    return channelObject.asyncVoidFuture { resolvedValue.counter.decrement(amount) } // RTPO18d -> RTLC13
   }
 }

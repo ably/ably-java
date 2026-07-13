@@ -8,7 +8,7 @@ import io.ably.lib.liveobjects.value.ObjectUpdate
 import io.ably.lib.util.EventEmitter
 import io.ably.lib.util.Log
 
-internal val noOpCounterUpdate = ObjectUpdate(null)
+internal val noOpCounterUpdate: ObjectUpdate = ObjectUpdate.NoOp
 
 /**
  * Interface for handling live counter changes by notifying subscribers of updates.
@@ -22,27 +22,28 @@ internal interface HandlesLiveCounterChange {
   fun notify(update: LiveCounterChangeEvent)
 }
 
-internal interface LiveCounterChangeListener : InstanceListener
-
 internal interface LiveCounterChangeEvent : InstanceSubscriptionEvent
 
 internal abstract class LiveCounterChangeCoordinator: HandlesLiveCounterChange {
   private val counterChangeEmitter = LiveCounterChangeEmitter()
 
-  fun subscribe(listener: LiveCounterChangeListener): Subscription {
+  fun subscribe(listener: InstanceListener): Subscription {
     counterChangeEmitter.on(listener)
     return onceSubscription {
       counterChangeEmitter.off(listener)
     }
   }
 
+  /** Deregisters all instance listeners - tombstone teardown. Spec: RTLO4b4c3c */
+  internal fun offAll() = counterChangeEmitter.off()
+
   override fun notify(update: LiveCounterChangeEvent) = counterChangeEmitter.emit(update)
 }
 
-private class LiveCounterChangeEmitter : EventEmitter<LiveCounterChangeEvent, LiveCounterChangeListener>() {
+private class LiveCounterChangeEmitter : EventEmitter<LiveCounterChangeEvent, InstanceListener>() {
   private val tag = "LiveCounterChangeEmitter"
 
-  override fun apply(listener: LiveCounterChangeListener?, event: LiveCounterChangeEvent, vararg args: Any?) {
+  override fun apply(listener: InstanceListener?, event: LiveCounterChangeEvent?, vararg args: Any?) {
     try {
       event?.let { listener?.onUpdated(it) }
         ?: Log.w(tag, "Null event passed to LiveCounterChange listener callback")

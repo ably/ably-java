@@ -26,9 +26,9 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * Proxy integration test against Ably Sandbox endpoint.
  *
- * Uses the programmable proxy (`uts/test/proxy/`) to inject transport-level faults while the
+ * Uses the programmable uts-proxy to inject transport-level faults while the
  * SDK communicates with the real Ably backend. See
- * `uts/test/realtime/integration/helpers/proxy.md` for proxy infrastructure details.
+ * `uts/docs/proxy.md` for proxy infrastructure details.
  *
  * Spec points: RTN22, RTC8a.
  * Unit-test counterparts: `server_initiated_reauth_test.md` (RTN22), `realtime_authorize.md` (RTC8a).

@@ -1,26 +1,23 @@
 package io.ably.lib.liveobjects.value
 
+import io.ably.lib.liveobjects.DefaultRealtimeObject
 import io.ably.lib.liveobjects.ObjectsOperationSource
+import io.ably.lib.liveobjects.ObjectsPool
+import io.ably.lib.liveobjects.ROOT_OBJECT_ID
+import io.ably.lib.liveobjects.message.ObjectMessage
 import io.ably.lib.liveobjects.message.WireObjectMessage
 import io.ably.lib.liveobjects.message.WireObjectOperation
 import io.ably.lib.liveobjects.message.WireObjectState
+import io.ably.lib.liveobjects.message.toPublicMessage
 import io.ably.lib.liveobjects.objectError
-import io.ably.lib.liveobjects.value.livecounter.noOpCounterUpdate
-import io.ably.lib.liveobjects.value.livemap.noOpMapUpdate
+import io.ably.lib.liveobjects.value.livemap.InternalLiveMap
 import io.ably.lib.util.Clock
 import io.ably.lib.util.Log
-import io.ably.lib.util.SystemClock
 
 internal enum class ObjectType(val value: String) {
   Map("map"),
   Counter("counter")
 }
-
-// Spec: RTLO4b4b
-// TODO - Check what to do about `ObjectUpdate` field, whether we really need to keep it or not
-internal data class ObjectUpdate(val data: Any?)
-
-internal val ObjectUpdate.noOp get() = this.data == null
 
 /**
  * Provides common functionality and base implementation for LiveMap and LiveCounter.
@@ -30,12 +27,16 @@ internal val ObjectUpdate.noOp get() = this.data == null
  * This should also be included in logging
  */
 internal abstract class BaseRealtimeObject(
-  internal val objectId: String, // // RTLO3a
+  internal val objectId: String, // RTLO3a
   internal val objectType: ObjectType,
-  internal val clock: Clock = SystemClock.INSTANCE,
+  internal val realtimeObject: DefaultRealtimeObject,
 ) {
 
   protected open val tag = "BaseRealtimeObject"
+
+  internal val clock: Clock get() = realtimeObject.clock
+
+  private val objectsPool: ObjectsPool get() = realtimeObject.objectsPool
 
   internal val siteTimeserials = mutableMapOf<String, String>() // RTLO3b
 
@@ -45,6 +46,61 @@ internal abstract class BaseRealtimeObject(
   internal var isTombstoned = false // Accessed from public API for LiveMap/LiveCounter
 
   private var tombstonedAt: Long? = null
+
+  /**
+   * Reverse references: parent InternalLiveMap objectId -> set of keys at which that map
+   * references this object. Keyed by objectId per RTLO3f (RTLO3f1 permits direct references;
+   * ids avoid map-to-map reference cycles and survive pool replacement). Only mutated and
+   * traversed on the sequential scope, so a plain mutable map is safe.
+   * Spec: RTLO3f, RTLO3f2
+   */
+  internal val parentReferences = mutableMapOf<String, MutableSet<String>>()
+
+  /** Records that [parent] references this object at [key]. Spec: RTLO4g */
+  internal fun addParentReference(parent: InternalLiveMap, key: String) {
+    parentReferences.getOrPut(parent.objectId) { mutableSetOf() }.add(key) // RTLO4g1, RTLO4g2
+  }
+
+  /** Removes the recorded reference from [parent] at [key]. Spec: RTLO4h */
+  internal fun removeParentReference(parent: InternalLiveMap, key: String) {
+    val keys = parentReferences[parent.objectId] ?: return // RTLO4h1
+    keys.remove(key) // RTLO4h2
+    if (keys.isEmpty()) {
+      parentReferences.remove(parent.objectId) // RTLO4h3
+    }
+  }
+
+  /** Spec: RTO5c10a */
+  internal fun clearParentReferences() = parentReferences.clear()
+
+  /**
+   * All key-paths from the root InternalLiveMap to this object: one per simple path in the
+   * parent-reference graph, cycle-safe, order unspecified. Iterative DFS walking upward via
+   * [parentReferences], resolving parent ids through the pool (stale ids are skipped).
+   * Spec: RTLO4f (RTLO4f1..f4)
+   */
+  internal fun getFullPaths(): List<List<String>> {
+    val paths = mutableListOf<List<String>>()
+    // (object, path-so-far, visited objectIds on this branch)
+    val stack = ArrayDeque<Triple<BaseRealtimeObject, List<String>, Set<String>>>()
+    stack.addLast(Triple(this, emptyList(), emptySet()))
+    while (stack.isNotEmpty()) {
+      val (obj, currentPath, visited) = stack.removeLast()
+      if (obj.objectId in visited) continue // RTLO4f2 - simple paths only, skip cycles
+      val newVisited = visited + obj.objectId
+      if (obj.objectId == ROOT_OBJECT_ID) {
+        paths.add(currentPath) // RTLO4f2 - the empty path when this object is root itself
+        continue
+      }
+      for ((parentId, keys) in obj.parentReferences) {
+        val parent = objectsPool.get(parentId) ?: continue // stale reference - parent left the pool
+        for (key in keys) {
+          stack.addLast(Triple(parent, listOf(key) + currentPath, newVisited))
+        }
+      }
+    }
+    return paths // RTLO4f3 - each simple path exactly once
+  }
 
   /**
    * This is invoked by ObjectMessage having updated data with parent `ProtocolMessageAction` as `object_sync`
@@ -62,10 +118,7 @@ internal abstract class BaseRealtimeObject(
 
     if (isTombstoned) {
       // this object is tombstoned. this is a terminal state which can't be overridden. skip the rest of object state message processing
-      if (objectType == ObjectType.Map) {
-        return noOpMapUpdate
-      }
-      return noOpCounterUpdate
+      return ObjectUpdate.NoOp // RTLM6e1, RTLC6e1
     }
     return applyObjectState(wireObjectState, wireObjectMessage) // RTLM6, RTLC6
   }
@@ -127,17 +180,27 @@ internal abstract class BaseRealtimeObject(
   }
 
   /**
-   * Marks the object as tombstoned.
+   * Marks the object as tombstoned. The returned update carries `tombstone = true` and the
+   * source message (RTLO4e5..e8); the caller emits it via notifyUpdated.
    */
-  internal fun tombstone(serialTimestamp: Long?): ObjectUpdate {
+  internal fun tombstone(serialTimestamp: Long?, message: WireObjectMessage?): ObjectUpdate {
     if (serialTimestamp == null) {
-      Log.w(tag, "Tombstoning object $objectId without serial timestamp, using local timestamp instead")
+      Log.w(tag, "Tombstoning object $objectId without serial timestamp, using local timestamp instead") // RTLO6b1
     }
-    isTombstoned = true
-    tombstonedAt = serialTimestamp?: clock.currentTimeMillis()
-    val update = clearData()
-    // TODO - Emit object lifecycle event for deletion
-    return update
+    isTombstoned = true // RTLO4e2
+    tombstonedAt = serialTimestamp ?: clock.currentTimeMillis() // RTLO4e3, RTLO6a, RTLO6b
+    // RTLO4e5..e7 - stamp tombstone + source message on the diff update. Tombstoning an
+    // already-empty object yields an empty diff, but the update must still be emitted (the
+    // tombstone flag drives listener teardown per RTLO4b4c3c; ably-js diffs are never noop),
+    // so synthesize an empty typed update in that case.
+    return when (val update = clearData()) { // RTLO4e4
+      is ObjectUpdate.MapUpdate -> update.copy(tombstone = true, objectMessage = message)
+      is ObjectUpdate.CounterUpdate -> update.copy(tombstone = true, objectMessage = message)
+      ObjectUpdate.NoOp -> when (objectType) {
+        ObjectType.Map -> ObjectUpdate.MapUpdate(emptyMap(), message, tombstone = true)
+        ObjectType.Counter -> ObjectUpdate.CounterUpdate(0.0, message, tombstone = true)
+      }
+    } // RTLO4e8
   }
 
   /**
@@ -203,11 +266,54 @@ internal abstract class BaseRealtimeObject(
   abstract fun clearData(): ObjectUpdate
 
   /**
-   * Notifies subscribers about changes made to this object. Propagates updates through the
-   * appropriate manager after converting the generic update map to type-specific update objects.
+   * Notifies subscribers about a change to this object: instance listeners first
+   * (RTLO4b4c3a), then path-based subscriptions via the bubbling dispatch (RTLO4b4c3b ->
+   * RTO24b). Tombstone updates additionally deregister all instance listeners afterwards
+   * (RTLO4b4c3c); path subscriptions are unaffected (RTLO4b4c3c1).
+   *
    * Spec: RTLO4b4c
    */
-  abstract fun notifyUpdated(update: ObjectUpdate)
+  internal fun notifyUpdated(update: ObjectUpdate) {
+    if (update.noOp) {
+      return // RTLO4b4c1
+    }
+    Log.v(tag, "Object $objectId updated: $update")
+    val publicMessage = update.objectMessage
+      ?.takeIf { it.operation != null } // sync messages never surface publicly (RTPO19e2/RTINS16e2)
+      ?.toPublicMessage(realtimeObject.channelName) // PAOM3
+    notifyInstanceSubscriptions(update, publicMessage) // RTLO4b4c3a
+    notifyPathSubscriptions(update, publicMessage) // RTLO4b4c3b
+    if (update.tombstone) {
+      deregisterInstanceListeners() // RTLO4b4c3c
+    }
+  }
+
+  /** Emits the update to this object's instance listeners as an InstanceSubscriptionEvent. */
+  protected abstract fun notifyInstanceSubscriptions(update: ObjectUpdate, message: ObjectMessage?)
+
+  /** Deregisters all instance listeners - tombstone teardown (RTLO4b4c3c). */
+  protected abstract fun deregisterInstanceListeners()
+
+  /**
+   * Path-based subscription dispatch: one notifyPathEvent per path-to-this-object, with the
+   * object's own path as the most-preferred candidate and, for map updates, one deeper
+   * candidate per changed key.
+   *
+   * Spec: RTO24b (RTO24b1, RTO24b2, RTO24b2a1, RTO24b2a2)
+   */
+  private fun notifyPathSubscriptions(update: ObjectUpdate, message: ObjectMessage?) {
+    val pathsToThis = getFullPaths() // RTO24b1
+    if (pathsToThis.isEmpty()) {
+      return // orphaned object (not reachable from root) - no path events
+    }
+    for (pathToThis in pathsToThis) { // RTO24b2
+      val candidates = mutableListOf(pathToThis) // RTO24b2a1 - most preferred first
+      if (update is ObjectUpdate.MapUpdate) {
+        update.update.keys.forEach { candidates.add(pathToThis + it) } // RTO24b2a2
+      }
+      realtimeObject.pathObjectSubscriptionRegister.notifyPathEvent(candidates, message)
+    }
+  }
 
   /**
    * Called during garbage collection intervals to clean up expired entries.

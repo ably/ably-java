@@ -2,28 +2,23 @@ package io.ably.lib.liveobjects.value.livecounter
 
 import io.ably.lib.liveobjects.*
 import io.ably.lib.liveobjects.DefaultRealtimeObject
-import io.ably.lib.liveobjects.adapter.AblyClientAdapter
+import io.ably.lib.liveobjects.instance.DefaultInstanceSubscriptionEvent
+import io.ably.lib.liveobjects.instance.InstanceListener
+import io.ably.lib.liveobjects.instance.types.DefaultLiveCounterInstance
 import io.ably.lib.liveobjects.invalidInputError
 import io.ably.lib.liveobjects.message.*
-import io.ably.lib.liveobjects.message.WireCounterInc
-import io.ably.lib.liveobjects.message.WireObjectMessage
-import io.ably.lib.liveobjects.message.WireObjectOperation
-import io.ably.lib.liveobjects.message.WireObjectOperationAction
-import io.ably.lib.liveobjects.message.WireObjectState
 import io.ably.lib.liveobjects.value.BaseRealtimeObject
 import io.ably.lib.liveobjects.value.ObjectType
 import io.ably.lib.liveobjects.value.ObjectUpdate
-import io.ably.lib.liveobjects.value.noOp
 import java.util.concurrent.atomic.AtomicReference
-import io.ably.lib.util.Log
 
 /**
  * @spec RTLC1/RTLC2 - LiveCounter implementation extends BaseRealtimeObject
  */
 internal class InternalLiveCounter private constructor(
   objectId: String,
-  private val realtimeObject: DefaultRealtimeObject,
-) : BaseRealtimeObject(objectId, ObjectType.Counter, realtimeObject.clock) {
+  realtimeObject: DefaultRealtimeObject,
+) : BaseRealtimeObject(objectId, ObjectType.Counter, realtimeObject) {
 
   override val tag = "LiveCounter"
 
@@ -38,18 +33,17 @@ internal class InternalLiveCounter private constructor(
    */
   private val liveCounterManager = LiveCounterManager(this)
 
-  private val channelName = realtimeObject.channelName
-  private val adapter: AblyClientAdapter get() = realtimeObject.adapter
-
   internal suspend fun increment(amount: Number) = incrementAsync(amount.toDouble())
 
+  // RTLC13c - negating the amount lets increment's validation and publish path cover decrement
   internal suspend fun decrement(amount: Number) = incrementAsync(-amount.toDouble())
 
   internal fun value(): Double {
     return data.get()
   }
 
-  internal fun subscribe(listener: LiveCounterChangeListener): Subscription {
+  /** Identity-based subscription to this counter's updates. Spec: RTINS16d, RTLO4b */
+  internal fun subscribe(listener: InstanceListener): Subscription {
     return liveCounterManager.subscribe(listener)
   }
 
@@ -75,28 +69,26 @@ internal class InternalLiveCounter private constructor(
   }
 
   override fun applyObjectState(wireObjectState: WireObjectState, message: WireObjectMessage): ObjectUpdate {
-    return liveCounterManager.applyState(wireObjectState, message.serialTimestamp)
+    return liveCounterManager.applyState(wireObjectState, message)
   }
 
   override fun applyObjectOperation(operation: WireObjectOperation, message: WireObjectMessage): Boolean {
-    return liveCounterManager.applyOperation(operation, message.serialTimestamp)
+    return liveCounterManager.applyOperation(operation, message)
   }
 
   override fun clearData(): ObjectUpdate {
     return liveCounterManager.calculateUpdateFromDataDiff(data.get(), 0.0).apply { this@InternalLiveCounter.data.set(0.0) }
   }
 
-  override fun notifyUpdated(update: ObjectUpdate) {
-    if (update.noOp) {
-      return
-    }
-    Log.v(tag, "Object $objectId updated: $update")
-
-    // TODO - Emit a proper LiveCounterChangeEvent once the Instance/ObjectMessage subscription
-    //  pipeline is wired up. ObjectUpdate is not a LiveCounterChangeEvent, so casting it (as was
-    //  done previously) always throws ClassCastException; emission is deferred until then.
-    liveCounterManager.notify(update as LiveCounterChangeEvent)
+  override fun notifyInstanceSubscriptions(update: ObjectUpdate, message: ObjectMessage?) {
+    // RTINS16e1, RTINS16e2 - the event wraps a fresh instance bound to this counter (the spec
+    // requires "an Instance wrapping the underlying LiveObject", not a specific wrapper identity)
+    liveCounterManager.notify(
+      DefaultInstanceSubscriptionEvent(DefaultLiveCounterInstance(realtimeObject, this), message)
+    )
   }
+
+  override fun deregisterInstanceListeners() = liveCounterManager.offAll() // RTLO4b4c3c
 
   override fun onGCInterval(gcGracePeriod: Long) {
     // Nothing to GC for a counter object
@@ -110,14 +102,6 @@ internal class InternalLiveCounter private constructor(
      */
     internal fun zeroValue(objectId: String, realtimeObjects: DefaultRealtimeObject): InternalLiveCounter {
       return InternalLiveCounter(objectId, realtimeObjects)
-    }
-
-    /**
-     * Creates initial value payload for counter creation.
-     * Spec: RTLCV4b
-     */
-    internal fun initialValue(count: Number): WireCounterCreate {
-      return WireCounterCreate(count = count.toDouble())
     }
   }
 }

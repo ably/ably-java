@@ -7,7 +7,6 @@ import io.ably.lib.liveobjects.connectionManager
 import io.ably.lib.liveobjects.sendAsync
 import io.ably.lib.realtime.Channel
 import io.ably.lib.realtime.ChannelState
-import io.ably.lib.realtime.ChannelStateListener
 import io.ably.lib.realtime.CompletionListener
 import io.ably.lib.realtime.ConnectionEvent
 import io.ably.lib.realtime.ConnectionStateListener
@@ -275,46 +274,91 @@ class HelpersTest {
   }
 
   @Test
-  fun testEnsureAttachedWaitsForAttachingThenAttached() = runTest {
+  fun testEnsureAttachedWhenSuspendedReturns() = runTest {
+    // RTL33a - SUSPENDED is already usable; no attach performed
     val adapter = mockk<AblyClientAdapter>(relaxed = true)
     val channel = mockk<Channel>(relaxed = true)
     every { adapter.getChannel("ch") } returns channel
-    channel.state = ChannelState.attaching
+    channel.state = ChannelState.suspended
 
-    every { channel.once(any<ChannelStateListener>()) } answers {
-      val listener = firstArg<ChannelStateListener>()
-      val stateChange = mockk<ChannelStateListener.ChannelStateChange>(relaxed = true) {
-        setPrivateField("current", ChannelState.attached)
-      }
-      listener.onChannelStateChanged(stateChange)
+    adapter.ensureAttached("ch")
+    verify(exactly = 0) { channel.attach(any()) }
+  }
+
+  @Test
+  fun testEnsureAttachedFromDetachedAttaches() = runTest {
+    // RTL33b - DETACHED triggers an implicit attach
+    val adapter = mockk<AblyClientAdapter>(relaxed = true)
+    val channel = mockk<Channel>(relaxed = true)
+    every { adapter.getChannel("ch") } returns channel
+    channel.state = ChannelState.detached
+
+    val attachCalled = slot<CompletionListener>()
+    every { channel.attach(capture(attachCalled)) } answers {
+      attachCalled.captured.onSuccess()
     }
 
     adapter.ensureAttached("ch")
-    verify(exactly = 1) { channel.once(any<ChannelStateListener>()) }
+    verify(exactly = 1) { channel.attach(any()) }
   }
 
   @Test
-  fun testEnsureAttachedAttachingButReceivesNonAttachedEmitsError() = runTest {
+  fun testEnsureAttachedFromDetachingAttaches() = runTest {
+    // RTL33b - DETACHING triggers an implicit attach
+    val adapter = mockk<AblyClientAdapter>(relaxed = true)
+    val channel = mockk<Channel>(relaxed = true)
+    every { adapter.getChannel("ch") } returns channel
+    channel.state = ChannelState.detaching
+
+    val attachCalled = slot<CompletionListener>()
+    every { channel.attach(capture(attachCalled)) } answers {
+      attachCalled.captured.onSuccess()
+    }
+
+    adapter.ensureAttached("ch")
+    verify(exactly = 1) { channel.attach(any()) }
+  }
+
+  @Test
+  fun testEnsureAttachedFromAttachingAttaches() = runTest {
+    // RTL33b - ATTACHING triggers attach; Channel#attach resolves the in-flight case (RTL4h)
     val adapter = mockk<AblyClientAdapter>(relaxed = true)
     val channel = mockk<Channel>(relaxed = true)
     every { adapter.getChannel("ch") } returns channel
     channel.state = ChannelState.attaching
-    every { channel.once(any<ChannelStateListener>()) } answers {
-      val listener = firstArg<ChannelStateListener>()
-      val stateChange = mockk<ChannelStateListener.ChannelStateChange>(relaxed = true) {
-        setPrivateField("current", ChannelState.suspended)
-        setPrivateField("reason", clientError("Not attached").errorInfo)
-      }
-      listener.onChannelStateChanged(stateChange)
+
+    val attachCalled = slot<CompletionListener>()
+    every { channel.attach(capture(attachCalled)) } answers {
+      attachCalled.captured.onSuccess()
     }
-    val ex = assertFailsWith<AblyException> { adapter.ensureAttached("ch") }
-    assertEquals(ObjectErrorCode.ChannelStateError.code, ex.errorInfo.code)
-    assertTrue(ex.errorInfo.message.contains("Not attached"))
-    verify(exactly = 1) { channel.once(any<ChannelStateListener>()) }
+
+    adapter.ensureAttached("ch")
+    verify(exactly = 1) { channel.attach(any()) }
   }
 
   @Test
-  fun testEnsureAttachedThrowsForInvalidState() = runTest {
+  fun testEnsureAttachedPropagatesAttachFailure() = runTest {
+    // RTL33b1 - the ErrorInfo that failed the implicit attach is propagated unchanged
+    val adapter = mockk<AblyClientAdapter>(relaxed = true)
+    val channel = mockk<Channel>(relaxed = true)
+    every { adapter.getChannel("ch") } returns channel
+    channel.state = ChannelState.detached
+
+    val attachCalled = slot<CompletionListener>()
+    every { channel.attach(capture(attachCalled)) } answers {
+      attachCalled.captured.onError(clientError("attach failed").errorInfo)
+    }
+
+    val ex = assertFailsWith<AblyException> { adapter.ensureAttached("ch") }
+    // RTL33b1 - propagated unchanged: original code kept, not rewrapped as ChannelStateError (90001)
+    assertEquals(ObjectErrorCode.BadRequest.code, ex.errorInfo.code)
+    assertTrue(ex.errorInfo.message.contains("attach failed"))
+    verify(exactly = 1) { channel.attach(any()) }
+  }
+
+  @Test
+  fun testEnsureAttachedThrowsForFailedState() = runTest {
+    // RTL33c - FAILED throws with code 90001 and statusCode 400
     val adapter = mockk<AblyClientAdapter>(relaxed = true)
     val channel = mockk<Channel>(relaxed = true)
     every { adapter.getChannel("ch") } returns channel
@@ -322,6 +366,8 @@ class HelpersTest {
 
     val ex = assertFailsWith<AblyException> { adapter.ensureAttached("ch") }
     assertEquals(ObjectErrorCode.ChannelStateError.code, ex.errorInfo.code)
+    assertEquals(ObjectHttpStatusCode.BadRequest.code, ex.errorInfo.statusCode)
+    verify(exactly = 0) { channel.attach(any()) }
   }
 
   // throwIfInvalidAccessApiConfiguration

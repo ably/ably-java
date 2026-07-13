@@ -59,6 +59,19 @@ suspend fun pollUntil(
   }
 }
 
+/**
+ * Runs [block] under a wall-clock [timeout] on a real-thread dispatcher.
+ *
+ * Inside `runTest`, a bare `withTimeout` measures virtual (kotlinx.coroutines.test) time, which
+ * fast-forwards while the test coroutine idles — so a timeout wrapping a real network operation
+ * fires immediately. Use this instead for integration tests awaiting real backend work, e.g.
+ * `withRealTimeout(15.seconds) { channel.`object`.get().await() }`.
+ */
+suspend fun <T> withRealTimeout(timeout: Duration, block: suspend () -> T): T =
+  withContext(Dispatchers.Default.limitedParallelism(1)) {
+    withTimeout(timeout) { block() }
+  }
+
 suspend fun awaitChannelState(
   channel: Channel,
   target: ChannelState,

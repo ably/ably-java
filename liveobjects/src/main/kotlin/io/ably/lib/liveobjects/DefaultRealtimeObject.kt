@@ -1,21 +1,13 @@
 package io.ably.lib.liveobjects
 
 import io.ably.lib.liveobjects.adapter.AblyClientAdapter
-import io.ably.lib.liveobjects.message.WireCounterCreateWithObjectId
-import io.ably.lib.liveobjects.message.WireMapCreateWithObjectId
 import io.ably.lib.liveobjects.message.WireObjectMessage
-import io.ably.lib.liveobjects.message.WireObjectOperation
-import io.ably.lib.liveobjects.message.WireObjectOperationAction
+import io.ably.lib.liveobjects.path.PathObjectSubscriptionRegister
+import io.ably.lib.liveobjects.path.types.DefaultLiveMapPathObject
 import io.ably.lib.liveobjects.path.types.LiveMapPathObject
-import io.ably.lib.liveobjects.serialization.gson
 import io.ably.lib.liveobjects.state.ObjectStateChange
 import io.ably.lib.liveobjects.state.ObjectStateEvent
-import io.ably.lib.liveobjects.value.LiveCounter
-import io.ably.lib.liveobjects.value.LiveMap
-import io.ably.lib.liveobjects.value.LiveMapValue
 import io.ably.lib.liveobjects.value.ObjectType
-import io.ably.lib.liveobjects.value.livecounter.InternalLiveCounter
-import io.ably.lib.liveobjects.value.livemap.InternalLiveMap
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.types.AblyException
 import io.ably.lib.types.ProtocolMessage
@@ -25,6 +17,7 @@ import io.ably.lib.util.Log
 import io.ably.lib.util.SystemClock
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
+import kotlinx.coroutines.future.future
 import kotlinx.coroutines.flow.MutableSharedFlow
 import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
@@ -33,8 +26,8 @@ import java.util.concurrent.CompletableFuture
  * Default implementation of [RealtimeObject], the entry point to the strongly-typed,
  * path-based LiveObjects API for a single channel.
  *
- * This is currently a skeleton: the path-based read and subscribe operations are not yet
- * implemented. The method bodies will be filled in as the path-based API is built out.
+ * [get] returns the root of the path-addressed view once the channel is attached and the
+ * initial sync has completed; path subscriptions are managed by [pathObjectSubscriptionRegister].
  *
  * Spec: RTO23
  */
@@ -63,6 +56,12 @@ internal class DefaultRealtimeObject(
   private val objectsManager = ObjectsManager(this)
 
   /**
+   * Registry for PathObject subscriptions and path-event dispatch.
+   * @spec RTO24a
+   */
+  internal val pathObjectSubscriptionRegister = PathObjectSubscriptionRegister(this)
+
+  /**
    *  Coroutine scope for running sequential operations on a single thread, used to avoid concurrency issues.
    */
   private val sequentialScope =
@@ -79,9 +78,23 @@ internal class DefaultRealtimeObject(
     incomingObjectsHandler = initializeHandlerForIncomingObjectMessages()
   }
 
+  /**
+   * Runs [block] on the sequential scope and exposes it as a CompletableFuture. Failures
+   * complete the future exceptionally with the original AblyException.
+   */
+  internal fun <T> asyncFuture(block: suspend () -> T): CompletableFuture<T> =
+    sequentialScope.future { block() }
+
+  /**
+   * Runs a mutating [block] on the sequential scope, exposed as a CompletableFuture<Void>.
+   * Used by the path/instance write APIs.
+   */
+  internal fun asyncVoidFuture(block: suspend () -> Unit): CompletableFuture<Void> =
+    asyncFuture(block).thenApply { null }
+
   override fun get(): CompletableFuture<LiveMapPathObject> {
-    throwIfInvalidAccessApiConfiguration()
-    TODO("Not yet implemented, this should call getRootAsync")
+    throwIfInvalidAccessApiConfiguration() // RTO23a
+    return asyncFuture { getRootAsync() }
   }
 
   override fun on(event: ObjectStateEvent, listener: ObjectStateChange.Listener): Subscription {
@@ -99,90 +112,20 @@ internal class DefaultRealtimeObject(
     objectsManager.offAll()
   }
 
-  private suspend fun getRootAsync(): LiveMap = withContext(sequentialScope.coroutineContext) {
-    adapter.ensureAttached(channelName)
-    objectsManager.ensureSynced(state)
-    objectsPool.get(ROOT_OBJECT_ID) as LiveMap
-  }
-
-  private suspend fun createMapAsync(entries: MutableMap<String, LiveMapValue>): LiveMap {
-    throwIfInvalidWriteApiConfiguration() // RTO26
-
-    if (entries.keys.any { it.isEmpty() }) { // RTLMV4b
-      throw invalidInputError("Map keys should not be empty")
-    }
-
-    // RTLMV4e - Create initial value operation
-    val initialMapValue = InternalLiveMap.initialValue(entries)
-
-    // RTLMV4f - Create initial value JSON string
-    val initialValueJSONString = gson.toJson(initialMapValue)
-
-    // RTO14 - Create object ID from initial value
-    val (objectId, nonce) = getObjectIdStringWithNonce(ObjectType.Map, initialValueJSONString)
-
-    // Create ObjectMessage with the operation
-    val msg = WireObjectMessage(
-      operation = WireObjectOperation(
-        action = WireObjectOperationAction.MapCreate,
-        objectId = objectId,
-        mapCreateWithObjectId = WireMapCreateWithObjectId(
-          nonce = nonce,
-          initialValue = initialValueJSONString,
-          derivedFrom = initialMapValue,
-        ),
-      )
-    )
-
-    // RTLMV3 - publish and apply locally on ACK
-    publishAndApply(arrayOf(msg))
-
-    // RTLMV3 - Return existing object if found after apply
-    return objectsPool.get(objectId) as? LiveMap
-      ?: throw serverError("createMap: MAP_CREATE was not applied as expected; objectId=$objectId") // RTLMV3
-  }
-
-  private suspend fun createCounterAsync(initialValue: Number): LiveCounter {
-    throwIfInvalidWriteApiConfiguration() // RTO26
-
-    // Validate input parameter
-    if (initialValue.toDouble().isNaN() || initialValue.toDouble().isInfinite()) {
-      throw invalidInputError("Counter value should be a valid number")
-    }
-
-    // RTLCV4b
-    val initialCounterValue = InternalLiveCounter.initialValue(initialValue)
-    // RTLCV4c - Create initial value operation
-    val initialValueJSONString = gson.toJson(initialCounterValue)
-
-    // RTO14 - Create object ID from initial value
-    val (objectId, nonce) = getObjectIdStringWithNonce(ObjectType.Counter, initialValueJSONString)
-
-    // Create ObjectMessage with the operation
-    val msg = WireObjectMessage(
-      operation = WireObjectOperation(
-        action = WireObjectOperationAction.CounterCreate,
-        objectId = objectId,
-        counterCreateWithObjectId = WireCounterCreateWithObjectId(
-          nonce = nonce,
-          initialValue = initialValueJSONString,
-          derivedFrom = initialCounterValue,
-        ),
-      )
-    )
-
-    // RTLCV3 - publish and apply locally on ACK
-    publishAndApply(arrayOf(msg))
-
-    // RTLCV3 - Return existing object if found after apply
-    return objectsPool.get(objectId) as? LiveCounter
-      ?: throw serverError("createCounter: COUNTER_CREATE was not applied as expected; objectId=$objectId") // RTLCV3
+  private suspend fun getRootAsync(): LiveMapPathObject {
+    adapter.ensureAttached(channelName) // RTO23e
+    objectsManager.ensureSynced(state) // RTO23c
+    // RTO23d - a PathObject with an empty path, rooted at the channel's root InternalLiveMap;
+    // the root reference (RTPO2b) is realised as a pool lookup at resolution time, which is
+    // equivalent because the pool never replaces the root instance (RTO4b2, RTO5c2a).
+    // RTTS6d - the static type is LiveMapPathObject.
+    return DefaultLiveMapPathObject(this, "")
   }
 
   /**
    * Spec: RTO14
    */
-  private suspend fun getObjectIdStringWithNonce(objectType: ObjectType, initialValue: String): Pair<String, String> {
+  internal suspend fun getObjectIdStringWithNonce(objectType: ObjectType, initialValue: String): Pair<String, String> {
     val nonce = generateNonce()
     val msTimestamp = ServerTime.getCurrentTime(adapter) // RTO16 - Get server time for nonce generation
     return Pair(ObjectId.fromInitialValue(objectType, initialValue, nonce, msTimestamp).toString(), nonce)
@@ -302,13 +245,11 @@ internal class DefaultRealtimeObject(
 
           objectsManager.clearBufferedObjectOperations() // RTO4d - clear unconditionally on ATTACHED
 
-          // RTO4a
-          val fromInitializedState = this@DefaultRealtimeObject.state == ObjectsState.Initialized
-          if (hasObjects || fromInitializedState) {
-            // should always start a new sync sequence if we're in the initialized state, no matter the HAS_OBJECTS flag value.
-            // this guarantees we emit both "syncing" -> "synced" events in that order.
-            objectsManager.startNewSync(null)
-          }
+          // RTO4c - always transition to SYNCING, regardless of the HAS_OBJECTS flag (CV-1:
+          // matches the spec and current ably-js; the previous hasObjects/initialized
+          // conditional was removed upstream in ably-js commit e280bff1, so a re-attach with
+          // HAS_OBJECTS=0 from the Synced state now emits SYNCING -> SYNCED as required)
+          objectsManager.startNewSync(null)
 
           // RTO4b
           if (!hasObjects) {
@@ -356,6 +297,7 @@ internal class DefaultRealtimeObject(
     incomingObjectsHandler.cancel(disposeReason) // objectsEventBus automatically garbage collected when collector is cancelled
     objectsPool.dispose()
     objectsManager.dispose()
+    pathObjectSubscriptionRegister.dispose()
     // Don't cancel sequentialScope (needed in getRoot method), just cancel ongoing coroutines
     sequentialScope.coroutineContext.cancelChildren(disposeReason)
   }

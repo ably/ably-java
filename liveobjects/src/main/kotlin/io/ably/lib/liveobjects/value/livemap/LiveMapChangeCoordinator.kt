@@ -8,7 +8,10 @@ import io.ably.lib.liveobjects.value.ObjectUpdate
 import io.ably.lib.util.EventEmitter
 import io.ably.lib.util.Log
 
-internal val noOpMapUpdate = ObjectUpdate(null)
+internal val noOpMapUpdate: ObjectUpdate = ObjectUpdate.NoOp
+
+/** Change type for a LiveMap key diff. Spec: RTLM18b */
+internal enum class MapChange { Updated, Removed }
 
 /**
  * Interface for handling live map changes by notifying subscribers of updates.
@@ -22,27 +25,28 @@ internal interface HandlesLiveMapChange {
   fun notify(update: LiveMapChangeEvent)
 }
 
-internal interface LiveMapChangeListener : InstanceListener
-
 internal interface LiveMapChangeEvent : InstanceSubscriptionEvent
 
 internal abstract class LiveMapChangeCoordinator: HandlesLiveMapChange {
   private val mapChangeEmitter = LiveMapChangeEmitter()
 
-  fun subscribe(listener: LiveMapChangeListener): Subscription {
+  fun subscribe(listener: InstanceListener): Subscription {
     mapChangeEmitter.on(listener)
     return onceSubscription {
       mapChangeEmitter.off(listener)
     }
   }
 
+  /** Deregisters all instance listeners - tombstone teardown. Spec: RTLO4b4c3c */
+  internal fun offAll() = mapChangeEmitter.off()
+
   override fun notify(update: LiveMapChangeEvent) = mapChangeEmitter.emit(update)
 }
 
-private class LiveMapChangeEmitter : EventEmitter<LiveMapChangeEvent, LiveMapChangeListener>() {
+private class LiveMapChangeEmitter : EventEmitter<LiveMapChangeEvent, InstanceListener>() {
   private val tag = "LiveMapChangeEmitter"
 
-  override fun apply(listener: LiveMapChangeListener?, event: LiveMapChangeEvent?, vararg args: Any?) {
+  override fun apply(listener: InstanceListener?, event: LiveMapChangeEvent?, vararg args: Any?) {
     try {
       event?.let { listener?.onUpdated(it) }
         ?: Log.w(tag, "Null event passed to LiveMapChange listener callback")

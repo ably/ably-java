@@ -1,15 +1,9 @@
 package io.ably.lib.liveobjects.value.livemap
 
 import io.ably.lib.liveobjects.message.*
-import io.ably.lib.liveobjects.message.WireMapSet
-import io.ably.lib.liveobjects.message.WireObjectOperation
-import io.ably.lib.liveobjects.message.WireObjectOperationAction
-import io.ably.lib.liveobjects.message.WireObjectState
 import io.ably.lib.liveobjects.objectError
 import io.ably.lib.liveobjects.value.ObjectUpdate
-import io.ably.lib.liveobjects.value.noOp
 import io.ably.lib.util.Log
-import kotlin.collections.iterator
 
 internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChangeCoordinator() {
 
@@ -20,50 +14,58 @@ internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChan
   /**
    * @spec RTLM6 - Overrides object data with state from sync
    */
-  internal fun applyState(wireObjectState: WireObjectState, serialTimestamp: Long?): ObjectUpdate {
-    val previousData = liveMap.data.toMap()
-
+  internal fun applyState(wireObjectState: WireObjectState, message: WireObjectMessage): ObjectUpdate {
     if (wireObjectState.tombstone) {
-      liveMap.tombstone(serialTimestamp)
-    } else {
-      // override data for this object with data from the object state
-      liveMap.createOperationIsMerged = false // RTLM6b
-      liveMap.data.clear()
-
-      liveMap.clearTimeserial = wireObjectState.map?.clearTimeserial  // RTLM6i
-
-      wireObjectState.map?.entries?.forEach { (key, entry) ->
-        liveMap.data[key] = LiveMapEntry(
-          isTombstoned = entry.tombstone ?: false,
-          tombstonedAt = if (entry.tombstone == true) entry.serialTimestamp
-            ?: liveMap.clock.currentTimeMillis() else null,
-          timeserial = entry.timeserial,
-          data = entry.data
-        )
-      } // RTLM6c
-
-      // RTLM6d
-      wireObjectState.createOp?.let { createOp ->
-        mergeInitialDataFromCreateOperation(createOp)
-      }
+      // RTLM6f, RTLM6f2 - tombstone update returned as-is (carries tombstone flag + message)
+      return liveMap.tombstone(message.serialTimestamp, message)
     }
 
-    return calculateUpdateFromDataDiff(previousData, liveMap.data.toMap())
+    val previousData = liveMap.data.toMap() // RTLM6g - only the override branch needs it
+
+    // override data for this object with data from the object state.
+    // Parent references are deliberately not maintained per-entry here: applyState only runs
+    // during sync, and ObjectsManager rebuilds all parent references once the sync sequence
+    // ends (RTO5c10). Any future non-sync caller of applyObjectSync must rebuild them too.
+    liveMap.createOperationIsMerged = false // RTLM6b
+    liveMap.data.clear()
+
+    liveMap.clearTimeserial = wireObjectState.map?.clearTimeserial  // RTLM6i
+
+    wireObjectState.map?.entries?.forEach { (key, entry) ->
+      liveMap.data[key] = LiveMapEntry(
+        isTombstoned = entry.tombstone ?: false,
+        tombstonedAt = if (entry.tombstone == true) entry.serialTimestamp
+          ?: liveMap.clock.currentTimeMillis() else null, // RTLM6c1
+        timeserial = entry.timeserial,
+        data = entry.data
+      )
+    } // RTLM6c
+
+    // RTLM6d - merge result is discarded; only the outer diff is returned
+    wireObjectState.createOp?.let { createOp ->
+      mergeInitialDataFromCreateOperation(createOp, message)
+    }
+
+    // RTLM6h - diff between previous and new data, stamped with the source message
+    return when (val diff = calculateUpdateFromDataDiff(previousData, liveMap.data.toMap())) {
+      is ObjectUpdate.MapUpdate -> diff.copy(objectMessage = message)
+      else -> diff // NoOp stays NoOp
+    }
   }
 
   /**
    * @spec RTLM15 - Applies operations to LiveMap
    */
-  internal fun applyOperation(operation: WireObjectOperation, serial: String?, serialTimestamp: Long?): Boolean {
+  internal fun applyOperation(operation: WireObjectOperation, message: WireObjectMessage): Boolean {
     return when (operation.action) {
       WireObjectOperationAction.MapCreate -> {
-        val update = applyMapCreate(operation) // RTLM15d1
+        val update = applyMapCreate(operation, message) // RTLM15d1
         liveMap.notifyUpdated(update) // RTLM15d1a
         true // RTLM15d1b
       }
       WireObjectOperationAction.MapSet -> {
         if (operation.mapSet != null) {
-          val update = applyMapSet(operation.mapSet, serial) // RTLM15d6
+          val update = applyMapSet(operation.mapSet, message.serial, message) // RTLM15d6
           liveMap.notifyUpdated(update) // RTLM15d6a
           true // RTLM15d6b
         } else {
@@ -72,7 +74,7 @@ internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChan
       }
       WireObjectOperationAction.MapRemove -> {
         if (operation.mapRemove != null) {
-          val update = applyMapRemove(operation.mapRemove, serial, serialTimestamp) // RTLM15d7
+          val update = applyMapRemove(operation.mapRemove, message.serial, message.serialTimestamp, message) // RTLM15d7
           liveMap.notifyUpdated(update) // RTLM15d7a
           true // RTLM15d7b
         } else {
@@ -80,12 +82,12 @@ internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChan
         }
       }
       WireObjectOperationAction.ObjectDelete -> {
-        val update = liveMap.tombstone(serialTimestamp)
-        liveMap.notifyUpdated(update)
+        val update = liveMap.tombstone(message.serialTimestamp, message) // RTLM15d5
+        liveMap.notifyUpdated(update) // RTLM15d5c
         true // RTLM15d5b
       }
       WireObjectOperationAction.MapClear -> {
-        val update = applyMapClear(serial) // RTLM15d8
+        val update = applyMapClear(message) // RTLM15d8
         liveMap.notifyUpdated(update) // RTLM15d8a
         true // RTLM15d8b
       }
@@ -98,8 +100,9 @@ internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChan
 
   /**
    * @spec RTLM16 - Applies map create operation
+   * @spec RTLM16a2 - [message] is the source ObjectMessage that contains the operation
    */
-  private fun applyMapCreate(operation: WireObjectOperation): ObjectUpdate {
+  private fun applyMapCreate(operation: WireObjectOperation, message: WireObjectMessage): ObjectUpdate {
     if (liveMap.createOperationIsMerged) {
       // RTLM16b
       // There can't be two different create operation for the same object id, because the object id
@@ -114,7 +117,7 @@ internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChan
 
     validateMapSemantics(getEffectiveMapCreate(operation)?.semantics) // RTLM16c
 
-    return mergeInitialDataFromCreateOperation(operation) // RTLM16d
+    return mergeInitialDataFromCreateOperation(operation, message) // RTLM16d
   }
 
   /**
@@ -123,6 +126,7 @@ internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChan
   private fun applyMapSet(
     wireMapSet: WireMapSet, // RTLM7d3
     timeSerial: String?, // RTLM7d2
+    message: WireObjectMessage, // RTLM7d4
   ): ObjectUpdate {
     // RTLM7h - skip if operation is older than the last MAP_CLEAR
     val clearSerial = liveMap.clearTimeserial
@@ -149,7 +153,7 @@ internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChan
     }
 
     // RTLM7g
-    wireMapSet.value.objectId?.let {
+    val newRefObject = wireMapSet.value.objectId?.let {
       // this MAP_SET op is setting a key to point to another object via its object id,
       // but it is possible that we don't have the corresponding object in the pool yet (for example, we haven't seen the *_CREATE op for it).
       // we don't want to return undefined from this map's .get() method even if we don't have the object,
@@ -158,6 +162,10 @@ internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChan
     }
 
     if (existingEntry != null) {
+      // RTLM7a3 - drop the parent reference held via the entry being overwritten
+      existingEntry.data?.objectId?.let { oldRefId ->
+        liveMap.objectsPool.get(oldRefId)?.removeParentReference(liveMap, wireMapSet.key) // RTLM7a3a, RTLM7a3b
+      }
       // RTLM7a2 - Replace existing entry with new one instead of mutating
       liveMap.data[wireMapSet.key] = LiveMapEntry(
         isTombstoned = false, // RTLM7a2c
@@ -173,7 +181,10 @@ internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChan
       )
     }
 
-    return ObjectUpdate(mapOf(wireMapSet.key to "updated"))
+    // RTLM7g2 - record the reverse reference for the newly referenced object
+    newRefObject?.addParentReference(liveMap, wireMapSet.key)
+
+    return ObjectUpdate.MapUpdate(mapOf(wireMapSet.key to MapChange.Updated), message) // RTLM7f
   }
 
   /**
@@ -183,6 +194,7 @@ internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChan
     wireMapRemove: WireMapRemove, // RTLM8c4
     timeSerial: String?, // RTLM8c2
     timeStamp: Long?, // RTLM8c3
+    message: WireObjectMessage, // RTLM8c5
   ): ObjectUpdate {
     // RTLM8g - skip if operation is older than the last MAP_CLEAR
     val clearSerial = liveMap.clearTimeserial
@@ -215,6 +227,10 @@ internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChan
     }
 
     if (existingEntry != null) {
+      // RTLM8a3 - drop the parent reference held via the entry being removed
+      existingEntry.data?.objectId?.let { oldRefId ->
+        liveMap.objectsPool.get(oldRefId)?.removeParentReference(liveMap, wireMapRemove.key) // RTLM8a3a, RTLM8a3b
+      }
       // RTLM8a2 - Replace existing entry with new one instead of mutating
       liveMap.data[wireMapRemove.key] = LiveMapEntry(
         isTombstoned = true, // RTLM8a2c
@@ -231,13 +247,15 @@ internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChan
       )
     }
 
-    return ObjectUpdate(mapOf(wireMapRemove.key to "removed"))
+    return ObjectUpdate.MapUpdate(mapOf(wireMapRemove.key to MapChange.Removed), message) // RTLM8e
   }
 
   /**
    * @spec RTLM24 - Applies MAP_CLEAR operation to LiveMap
+   * @spec RTLM24a2 - [message] is the source ObjectMessage that contains the operation
    */
-  private fun applyMapClear(timeSerial: String?): ObjectUpdate {
+  private fun applyMapClear(message: WireObjectMessage): ObjectUpdate {
+    val timeSerial = message.serial // RTLM24a1
     val clearSerial = liveMap.clearTimeserial
 
     // RTLM24c - skip if existing clear serial is strictly newer than incoming op serial
@@ -251,21 +269,25 @@ internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChan
       "Updating clearTimeserial; previous=$clearSerial, new=$timeSerial; objectId=$objectId")
     liveMap.clearTimeserial = timeSerial  // RTLM24d
 
-    val update = mutableMapOf<String, String>()
+    val update = mutableMapOf<String, MapChange>()
 
     // RTLM24e - remove all entries whose serial is older than (or equal to missing) the clear serial
     liveMap.data.entries.removeIf {
       val (key, entry) = it
       val entrySerial = entry.timeserial
-      if (entrySerial == null || (timeSerial != null && timeSerial > entrySerial)) {
-        update[key] = "removed"
-        true
+      if (entrySerial == null || (timeSerial != null && timeSerial > entrySerial)) { // RTLM24e1
+        // RTLM24e1c - drop the parent reference held via the cleared entry
+        entry.data?.objectId?.let { refId ->
+          liveMap.objectsPool.get(refId)?.removeParentReference(liveMap, key) // RTLM24e1c1, RTLM24e1c2
+        }
+        update[key] = MapChange.Removed // RTLM24e1b
+        true // RTLM24e1a
       } else {
         false
       }
     }
 
-    return ObjectUpdate(update)
+    return ObjectUpdate.MapUpdate(update, message) // RTLM24f
   }
 
   /**
@@ -292,56 +314,52 @@ internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChan
   private fun getEffectiveMapCreate(operation: WireObjectOperation): WireMapCreate? =
     operation.mapCreateWithObjectId?.derivedFrom ?: operation.mapCreate
 
-  private fun mergeInitialDataFromCreateOperation(operation: WireObjectOperation): ObjectUpdate {
+  private fun mergeInitialDataFromCreateOperation(operation: WireObjectOperation, message: WireObjectMessage): ObjectUpdate {
     val effectiveMapCreate = getEffectiveMapCreate(operation)
-    if (effectiveMapCreate?.entries.isNullOrEmpty()) { // no map entries in MAP_CREATE op
-      return noOpMapUpdate
+    if (effectiveMapCreate == null) {
+      // no MAP_CREATE payload - the initial value is implicitly an empty map, nothing to merge.
+      // createOperationIsMerged is intentionally NOT set (ably-js parity), so a later
+      // payload-bearing create op for this object could still merge.
+      return ObjectUpdate.MapUpdate(emptyMap(), message)
     }
 
-    val aggregatedUpdate = mutableListOf<ObjectUpdate>()
+    val aggregated = mutableMapOf<String, MapChange>()
 
     // RTLM23a
     // in order to apply MAP_CREATE op for an existing map, we should merge their underlying entries keys.
     // we can do this by iterating over entries from MAP_CREATE op and apply changes on per-key basis as if we had MAP_SET, MAP_REMOVE operations.
-    effectiveMapCreate?.entries?.forEach { (key, entry) ->
+    effectiveMapCreate.entries.forEach { (key, entry) ->
       // for a MAP_CREATE operation we must use the serial value available on an entry, instead of a serial on a message
       val opTimeserial = entry.timeserial
       val update = if (entry.tombstone == true) {
         // RTLM23a2  - entry in MAP_CREATE op is removed, try to apply MAP_REMOVE op
-        applyMapRemove(WireMapRemove(key), opTimeserial, entry.serialTimestamp)
+        applyMapRemove(WireMapRemove(key), opTimeserial, entry.serialTimestamp, message)
       } else {
         // RTLM23a1 - entry in MAP_CREATE op is not removed, try to set it via MAP_SET op
-        applyMapSet(WireMapSet(key, entry.data ?: throw objectError("MAP_SET operation without data")), opTimeserial)
+        applyMapSet(WireMapSet(key, entry.data ?: throw objectError("MAP_SET operation without data")), opTimeserial, message)
       }
 
-      // skip noop updates
-      if (update.noOp) {
-        return@forEach
+      // RTLM23c - merge per-key results, skipping noop updates
+      if (update is ObjectUpdate.MapUpdate) {
+        aggregated.putAll(update.update)
       }
-
-      aggregatedUpdate.add(update)
     }
 
     liveMap.createOperationIsMerged = true // RTLM23b
 
-    // TODO - This will need some rework as per new spec, we have commented out old code.
-    // Maybe we no more calculate the difference, so we might get rid of the code.
-    return ObjectUpdate(aggregatedUpdate)
-//    return ObjectUpdate(
-//      aggregatedUpdate.map { it.update }.fold(emptyMap()) { acc, map -> acc + map }
-//    )
+    return ObjectUpdate.MapUpdate(aggregated, objectMessage = message) // RTLM23c
   }
 
   internal fun calculateUpdateFromDataDiff(
     prevData: Map<String, LiveMapEntry>,
     newData: Map<String, LiveMapEntry>
   ): ObjectUpdate {
-    val update = mutableMapOf<String, String>()
+    val update = mutableMapOf<String, MapChange>()
 
     // Check for removed entries
     for ((key, prevEntry) in prevData) {
       if (!prevEntry.isTombstoned && !newData.containsKey(key)) {
-        update[key] = "removed"
+        update[key] = MapChange.Removed // RTLM22b1
       }
     }
 
@@ -350,7 +368,7 @@ internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChan
       if (!prevData.containsKey(key)) {
         // if property does not exist in current map, but new data has it as non-tombstoned property - got updated
         if (!newEntry.isTombstoned) {
-          update[key] = "updated"
+          update[key] = MapChange.Updated // RTLM22b2
         }
         // otherwise, if new data has this prop tombstoned - do nothing, as property didn't exist anyway
         continue
@@ -362,12 +380,12 @@ internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChan
       // compare tombstones first
       if (prevEntry.isTombstoned && !newEntry.isTombstoned) {
         // prev prop is tombstoned, but new is not. it means prop was updated to a meaningful value
-        update[key] = "updated"
+        update[key] = MapChange.Updated
         continue
       }
       if (!prevEntry.isTombstoned && newEntry.isTombstoned) {
         // prev prop is not tombstoned, but new is. it means prop was removed
-        update[key] = "removed"
+        update[key] = MapChange.Removed
         continue
       }
       if (prevEntry.isTombstoned && newEntry.isTombstoned) {
@@ -378,15 +396,15 @@ internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChan
       // both props exist and are not tombstoned, need to compare values to see if it was changed
       val valueChanged = prevEntry.data != newEntry.data
       if (valueChanged) {
-        update[key] = "updated"
+        update[key] = MapChange.Updated // RTLM22b3
         continue
       }
     }
 
     // An empty diff means nothing actually changed (e.g. clearing an already-empty root
     // map on a channel with no objects). Return the no-op update so notifyUpdated()
-    // short-circuits and no change event is emitted. Spec: RTLM/RTO4b.
-    return if (update.isEmpty()) noOpMapUpdate else ObjectUpdate(update)
+    // short-circuits and no change event is emitted. Spec: RTLM22b/RTO4b.
+    return if (update.isEmpty()) noOpMapUpdate else ObjectUpdate.MapUpdate(update)
   }
 
   internal fun validate(state: WireObjectState) {
