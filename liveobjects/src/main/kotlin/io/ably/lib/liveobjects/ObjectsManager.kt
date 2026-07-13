@@ -109,6 +109,8 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
    * usable state while waiting, [awaitSyncCompletion] throws the 92008 error and the apply fails (RTO20e1).
    */
   internal suspend fun applyAckResult(messages: List<WireObjectMessage>) {
+    // MUST run on the sequential scope: the state check + waiter registration in awaitSyncCompletion
+    // is atomic only there (same lost-wakeup hazard as ensureSynced).
     if (realtimeObjects.state != ObjectsState.Synced) {
       awaitSyncCompletion() // suspends until SYNCED (RTO20e); throws 92008 on channel state change (RTO20e1)
     }

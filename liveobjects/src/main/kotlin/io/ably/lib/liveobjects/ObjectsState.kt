@@ -90,6 +90,9 @@ internal abstract class ObjectsStateCoordinator : ObjectStateChange, HandlesObje
   }
 
   override suspend fun ensureSynced(currentState: ObjectsState) {
+    // MUST be called on the sequential scope: the state check and the once(SYNCED) registration
+    // below are atomic only because SYNCED transitions run on that same scope. Off it, a SYNCED
+    // fired between the check and once() would be lost and this would suspend forever.
     if (currentState != ObjectsState.Synced) {
       val deferred = CompletableDeferred<Unit>()
       val syncedListener = ObjectStateChange.Listener {
