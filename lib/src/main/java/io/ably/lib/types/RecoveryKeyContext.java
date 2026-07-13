@@ -2,8 +2,8 @@ package io.ably.lib.types;
 
 import com.google.gson.JsonSyntaxException;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
@@ -13,7 +13,8 @@ public class RecoveryKeyContext {
 
     private final String connectionKey;
     private final long msgSerial;
-    private final Map<String, String> channelSerials = new HashMap<>();
+    // Sorted so encode() produces deterministic, key-ordered JSON regardless of input map ordering.
+    private final Map<String, String> channelSerials = new TreeMap<>();
 
     public RecoveryKeyContext(String connectionKey, long msgSerial, Map<String, String> channelSerials) {
         this.connectionKey = connectionKey;

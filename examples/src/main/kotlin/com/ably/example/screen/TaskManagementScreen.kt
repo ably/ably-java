@@ -18,11 +18,8 @@ import androidx.compose.ui.unit.sp
 import com.ably.example.getRealtimeChannel
 import com.ably.example.observeMap
 import com.ably.example.observeRootObject
-import com.ably.example.removeCoroutine
-import com.ably.example.setCoroutine
-import io.ably.lib.objects.type.map.LiveMapValue
+import io.ably.lib.liveobjects.value.LiveMapValue
 import io.ably.lib.realtime.AblyRealtime
-import kotlinx.coroutines.launch
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -33,12 +30,10 @@ fun TaskManagementScreen(realtimeClient: AblyRealtime) {
   var editingTaskId by remember { mutableStateOf<String?>(null) }
   var editingText by remember { mutableStateOf("") }
 
-  val scope = rememberCoroutineScope()
-
   val channel = getRealtimeChannel(realtimeClient, "objects-live-map")
   val root = observeRootObject(channel)
 
-  val (taskIdToTask, liveTasks) = observeMap(channel, root, "tasks")
+  val (taskIdToTask, liveTasks) = observeMap(root, "tasks")
 
   val taskEntries = remember(taskIdToTask) {
     taskIdToTask.entries.sortedBy { it.key }
@@ -57,6 +52,8 @@ fun TaskManagementScreen(realtimeClient: AblyRealtime) {
       textAlign = TextAlign.Center,
       modifier = Modifier.fillMaxWidth()
     )
+
+    ObjectsSyncStatusRow(channel, root)
 
     Card(
       modifier = Modifier.fillMaxWidth(),
@@ -80,13 +77,15 @@ fun TaskManagementScreen(realtimeClient: AblyRealtime) {
           horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
           Button(
+            // Disabled until the tasks map is bound, so input is never cleared
+            // without the task actually being enqueued
+            enabled = liveTasks != null,
             onClick = {
               if (taskText.isNotBlank()) {
-                scope.launch {
-                  val taskId = "${System.currentTimeMillis()}_${Uuid.random().toHexString()}"
-                  liveTasks?.setCoroutine(taskId, LiveMapValue.of(taskText.trim()))
-                  taskText = ""
-                }
+                val taskId = "${System.currentTimeMillis()}_${Uuid.random().toHexString()}"
+                // Fire-and-forget: the map subscription refreshes the task list on ack
+                liveTasks?.set(taskId, LiveMapValue.of(taskText.trim()))
+                taskText = ""
               }
             },
             modifier = Modifier.weight(1f)
@@ -98,10 +97,8 @@ fun TaskManagementScreen(realtimeClient: AblyRealtime) {
 
           OutlinedButton(
             onClick = {
-              scope.launch {
-                taskIdToTask.forEach { task ->
-                  liveTasks?.removeCoroutine(task.key)
-                }
+              taskIdToTask.forEach { task ->
+                liveTasks?.remove(task.key)
               }
             },
             modifier = Modifier.weight(1f)
@@ -157,20 +154,16 @@ fun TaskManagementScreen(realtimeClient: AblyRealtime) {
                   editingText = task.value
                 },
                 onSave = {
-                  scope.launch {
-                    liveTasks?.setCoroutine(task.key, LiveMapValue.of(editingText.trim()))
-                    editingTaskId = null
-                    editingText = ""
-                  }
+                  liveTasks?.set(task.key, LiveMapValue.of(editingText.trim()))
+                  editingTaskId = null
+                  editingText = ""
                 },
                 onCancel = {
                   editingTaskId = null
                   editingText = ""
                 },
                 onDelete = {
-                  scope.launch {
-                    liveTasks?.removeCoroutine(task.key)
-                  }
+                  liveTasks?.remove(task.key)
                 }
               )
             }

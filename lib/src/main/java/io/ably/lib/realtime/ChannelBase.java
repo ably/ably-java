@@ -13,8 +13,8 @@ import io.ably.lib.http.BasePaginatedQuery;
 import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
-import io.ably.lib.objects.RealtimeObjects;
-import io.ably.lib.objects.LiveObjectsPlugin;
+import io.ably.lib.liveobjects.RealtimeObject;
+import io.ably.lib.liveobjects.LiveObjectsPlugin;
 import io.ably.lib.rest.MessageEditsMixin;
 import io.ably.lib.rest.RestAnnotations;
 import io.ably.lib.transport.ConnectionManager;
@@ -112,15 +112,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
     private volatile MessageEditsMixin messageEditsMixin;
 
-    public RealtimeObjects getObjects() throws AblyException {
-        if (liveObjectsPlugin == null) {
-            throw AblyException.fromErrorInfo(
-                new ErrorInfo("LiveObjects plugin hasn't been installed, " +
-                    "add runtimeOnly('io.ably:liveobjects:<ably-version>') to your dependency tree", 400, 40019)
-            );
-        }
-        return liveObjectsPlugin.getInstance(name);
-    }
+    public RealtimeObject object;
 
     public final RealtimeAnnotations annotations;
 
@@ -1695,7 +1687,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         this.decodingContext = new DecodingContext();
         this.liveObjectsPlugin = liveObjectsPlugin;
         if (liveObjectsPlugin != null) {
-            liveObjectsPlugin.getInstance(name); // Make objects instance ready to process sync messages
+            this.object = liveObjectsPlugin.getInstance(name);
+        } else {
+            this.object = RealtimeObject.Unavailable.INSTANCE;
         }
         this.annotations = new RealtimeAnnotations(
             this,

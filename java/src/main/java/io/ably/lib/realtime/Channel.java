@@ -1,6 +1,6 @@
 package io.ably.lib.realtime;
 
-import io.ably.lib.objects.LiveObjectsPlugin;
+import io.ably.lib.liveobjects.LiveObjectsPlugin;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelOptions;
 import org.jetbrains.annotations.Nullable;
