@@ -1,5 +1,29 @@
 # Change Log
 
+## [1.8.0](https://github.com/ably/ably-java/tree/v1.8.0)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.7.2...v1.8.0)
+
+### What's Changed
+
+- Introduce the new path-based LiveObjects API [#1214](https://github.com/ably/ably-java/pull/1214). LiveObjects data is now accessed through `channel.object`, which returns a `RealtimeObject` exposing `PathObject`s — stable references to locations within the channel object that resolve to values dynamically at runtime, instead of explicit `LiveMap`/`LiveCounter` instances. See the [PathObject documentation](https://ably.com/docs/liveobjects/concepts/path-object) for details. This feature was delivered through the following PRs:
+  - Implement the path-based LiveObjects public API interfaces [#1213](https://github.com/ably/ably-java/pull/1213)
+  - Add the path-based `RealtimeObject` and the `channel.object` accessor [#1216](https://github.com/ably/ably-java/pull/1216)
+  - Add basic implementation for the `PathObject` and `Instance` interfaces [#1217](https://github.com/ably/ably-java/pull/1217)
+  - Rename the `object` package to `liveobjects` (`io.ably.lib.liveobjects`) [#1220](https://github.com/ably/ably-java/pull/1220)
+  - Update the LiveObjects `uts-to-kotlin` skill to generate tests for the new API [#1221](https://github.com/ably/ably-java/pull/1221)
+  - Implement core `LiveObjects` functionality on the new path-based API (Kotlin) [#1223](https://github.com/ably/ably-java/pull/1223)
+  - Implement the remaining path-based API — parent references, event bubbling and related behaviour [#1224](https://github.com/ably/ably-java/pull/1224)
+  - Migrate the LiveObjects example app to the path-based API [#1225](https://github.com/ably/ably-java/pull/1225)
+
+### Breaking changes
+
+This release replaces the previous experimental instance-based LiveObjects API with the new path-based API:
+
+- The `channel.getObjects()` accessor (returning `RealtimeObjects`) has been replaced by the `channel.object` field (returning `RealtimeObject`)
+- The `io.ably.lib.objects` package has been renamed to `io.ably.lib.liveobjects`
+- Instead of obtaining and operating on explicit `LiveMap`/`LiveCounter` instances, data is accessed and mutated through `PathObject` references
+
 ## [1.7.2](https://github.com/ably/ably-java/tree/v1.7.2)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.7.1...v1.7.2)
