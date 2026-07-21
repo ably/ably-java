@@ -1,13 +1,13 @@
 ---
-description: "Translate the UTS pseudocode test specs in a whole module directory into runnable Kotlin tests in the ably-java uts module. Takes a UTS module directory (e.g. .../specification/uts/objects), validates its structure, resolves the target ably-java module, lets you pick a tier (unit/integration/proxy) and which specs, then derives a Kotlin test per spec. Usage: /uts-to-kotlin <path-to-uts-module-directory>"
+description: "Translate the UTS pseudocode test specs in a whole module directory into runnable Kotlin tests in the ably-java uts module. Takes a UTS module directory (e.g. <cloned-ably-specification-repo-path>/uts/objects), validates its structure, resolves the target ably-java module, lets you pick a tier (unit/integration/proxy) and which specs, then derives a Kotlin test per spec. Usage: /uts-to-kotlin <path-to-uts-module-directory>"
 allowed-tools: Bash, Read, Edit, Write, WebFetch
 ---
 
 Translate the UTS pseudocode test specs under the **module directory** `$ARGUMENTS` into runnable Kotlin
 tests in the ably-java `uts` module.
 
-`$ARGUMENTS` is a UTS *module* directory — a directory sitting directly under `.../specification/uts/`,
-e.g. `/Users/sachinsh/ably-specification/specification/uts/objects`. Its name (`objects`, `realtime`,
+`$ARGUMENTS` is a UTS *module* directory — a directory sitting directly under the spec repo's `uts/`,
+e.g. `<cloned-ably-specification-repo-path>/uts/objects`. Its name (`objects`, `realtime`,
 `rest`, …) is the **source module**. A module directory holds many spec files, organised into tiers
 (`unit/`, `integration/`, and `integration/proxy/`).
 
@@ -31,7 +31,9 @@ bundled script does them — that keeps selection byte-for-byte deterministic in
 to re-eyeball regexes, join paths, and hand-convert `snake_case` → `PascalCase` each run.
 
 > **If `$ARGUMENTS` is empty or blank**, stop and show: `Usage: /uts-to-kotlin <path-to-uts-module-directory>`
-> — with the example `/uts-to-kotlin /Users/sachinsh/ably-specification/specification/uts/objects`.
+> — with the example `/uts-to-kotlin <cloned-ably-specification-repo-path>/uts/objects`
+> (the path to a module directory inside a local clone of
+> [`ably/specification`](https://github.com/ably/specification)).
 
 ## Step A — Resolve the module
 

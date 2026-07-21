@@ -70,12 +70,12 @@ internal data class WireMapRemove(
 
 /** Spec: CCR2 */
 internal data class WireCounterCreate(
-  val count: Double, // CCR2a
+  val count: Double?, // CCR2a - may be absent on the wire (RTLC16d)
 )
 
 /** Spec: CIN2 */
 internal data class WireCounterInc(
-  val number: Double, // CIN2a
+  val number: Double?, // CIN2a - may be absent on the wire (RTLC9h)
 )
 
 /** Spec: ODE2 - no attributes */

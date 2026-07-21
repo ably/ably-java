@@ -59,7 +59,10 @@ internal class LiveCounterManager(private val liveCounter: InternalLiveCounter):
           liveCounter.notifyUpdated(update) // RTLC7d5a
           true // RTLC7d5b
         } else {
-          throw objectError("No payload found for ${operation.action} op for LiveCounter objectId=${objectId}")
+          // Log a warning and skip only this operation - throwing would abort every
+          // sibling operation in the same ProtocolMessage batch
+          Log.w(tag, "No payload found for ${operation.action} op for LiveCounter objectId=${objectId}, skipping")
+          false
         }
       }
       WireObjectOperationAction.ObjectDelete -> {
@@ -100,6 +103,7 @@ internal class LiveCounterManager(private val liveCounter: InternalLiveCounter):
    */
   private fun applyCounterInc(wireCounterInc: WireCounterInc, message: WireObjectMessage): ObjectUpdate {
     val amount = wireCounterInc.number
+      ?: return noOpCounterUpdate // RTLC9h - no number means a noop, not a zero increment
     val previousValue = liveCounter.data.get()
     liveCounter.data.set(previousValue + amount) // RTLC9f
     return ObjectUpdate.CounterUpdate(amount, message) // RTLC9g
@@ -121,10 +125,14 @@ internal class LiveCounterManager(private val liveCounter: InternalLiveCounter):
     // which we're going to add now.
     val count = operation.counterCreateWithObjectId?.derivedFrom?.count
       ?: operation.counterCreate?.count
-      ?: 0.0
+    // RTLC16b is unconditional and must precede the RTLC16d noop return, so that RTLC8b's
+    // duplicate-create skip engages even for a create op that carried no count
+    liveCounter.createOperationIsMerged = true // RTLC16b
+    if (count == null) {
+      return noOpCounterUpdate // RTLC16d - no count means a noop, not a zero-amount update
+    }
     val previousValue = liveCounter.data.get()
     liveCounter.data.set(previousValue + count) // RTLC16a
-    liveCounter.createOperationIsMerged = true // RTLC16b
     return ObjectUpdate.CounterUpdate(count, message) // RTLC16c
   }
 

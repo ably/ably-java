@@ -138,11 +138,13 @@ internal abstract class BaseRealtimeObject(
 
     if (!canApplyOperation(msgSiteCode, msgTimeSerial)) {
       // RTLC7b, RTLM15b
-      Log.v(
-        tag,
-        "Skipping ${wireObjectOperation.action} op: op serial $msgTimeSerial <= site serial ${siteTimeserials[msgSiteCode]}; " +
-          "objectId=$objectId"
-      )
+      if (!msgTimeSerial.isNullOrEmpty() && !msgSiteCode.isNullOrEmpty()) {
+        Log.v(
+          tag,
+          "Skipping ${wireObjectOperation.action} op: op serial $msgTimeSerial <= site serial ${siteTimeserials[msgSiteCode]}; " +
+            "objectId=$objectId"
+        )
+      }
       return false // RTLC7b / RTLM15b
     }
     // RTLC7c / RTLM15c - only update siteTimeserials for CHANNEL source
@@ -163,11 +165,11 @@ internal abstract class BaseRealtimeObject(
    * @spec RTLO4a - Serial comparison logic for LiveMap/LiveCounter operations
    */
   internal fun canApplyOperation(siteCode: String?, timeSerial: String?): Boolean {
-    if (timeSerial.isNullOrEmpty()) {
-      throw objectError("Invalid serial: $timeSerial") // RTLO4a3
-    }
-    if (siteCode.isNullOrEmpty()) {
-      throw objectError("Invalid site code: $siteCode") // RTLO4a3
+    if (timeSerial.isNullOrEmpty() || siteCode.isNullOrEmpty()) {
+      // RTLO4a3 - log a warning and refuse to apply; must not throw, as a throw would abort
+      // every sibling operation in the same ProtocolMessage batch
+      Log.w(tag, "Invalid serial values on object operation message; serial=$timeSerial, siteCode=$siteCode; objectId=$objectId")
+      return false // RTLO4a3
     }
     val existingSiteSerial = siteTimeserials[siteCode] // RTLO4a4
     return existingSiteSerial == null || timeSerial > existingSiteSerial // RTLO4a5, RTLO4a6

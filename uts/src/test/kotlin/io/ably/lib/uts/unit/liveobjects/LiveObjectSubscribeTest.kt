@@ -117,15 +117,6 @@ class LiveObjectSubscribeTest {
      */
     @Test
     fun `RTLO4b4c1 - noop update does not trigger listener`() = runTest {
-        // DEVIATION (RTLC9h / RTLO4b4c1): spec says a COUNTER_INC whose `counterInc.number` does not exist
-        // returns a noop (`update.noop == true`), so the listener must NOT fire — expected updates == 2.
-        // ably-java's `WireCounterInc.number` is a non-nullable Double (absent -> 0.0, indistinguishable
-        // from `number: 0`), and `LiveCounterManager.applyCounterInc` always returns a CounterUpdate
-        // (RTLC9g) and notifies; there is no missing-number noop branch on the operation path. So the
-        // missing-number "02" op fires an amount-0 event and the listener is invoked a 3rd time
-        // (updates == 3). Spec-correct assertion gated behind RUN_DEVIATIONS. See deviations.md.
-        if (System.getenv("RUN_DEVIATIONS") == null) return@runTest
-
         val (_, _, root, mockWs) = setupSyncedChannel("test")
         val updates = mutableListOf<InstanceSubscriptionEvent>()
         val control = mutableListOf<InstanceSubscriptionEvent>()
