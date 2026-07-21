@@ -80,47 +80,6 @@ Entries are grouped by actionability:
 
 ---
 
-# 2) Shared gap — open in BOTH SDKs (objects)
-
-*ably-js has the same documented deviation — the spec is ahead of both implementations. Optional joint fix.*
-
-## RTLC9h / RTLC16 / RTLO4b4c1 — missing-field counter ops are not treated as no-ops
-
-**Spec points:** RTLC9h, RTLC16d, RTLO4b4c1
-**What the spec requires:** A `COUNTER_INC` whose `counterInc.number` is **absent** produces a no-op
-`LiveObjectUpdate` (`update.noop == true`, RTLC9h), so a subscribed listener must NOT be invoked
-(RTLO4b4c1). For the RTLO4b4c1 stimulus (`01` real inc → `02` missing-number noop → `03` real inc), the
-listener fires exactly twice (`updates == 2`).
-**What the SDK does:** `WireCounterInc.number` is a **non-nullable `Double`**
-(`liveobjects/.../message/WireObjectMessage.kt`), so an absent `number` deserialises to `0.0` —
-indistinguishable from `number: 0`. `LiveCounterManager.applyCounterInc` unconditionally returns
-`ObjectUpdate.CounterUpdate(amount, message)` (RTLC9g) and calls `notifyUpdated`; there is **no**
-missing-number/RTLC9h noop branch on the operation path (the only counter noop, RTLC14b via
-`calculateUpdateFromDataDiff`, exists on the sync/`replaceData` path, not the op path). So the
-missing-number `02` op fires an amount-0 event and the listener is invoked a 3rd time (`updates == 3`).
-**Same family — RTLC16 (COUNTER_CREATE with absent `count`):** RTLC16d requires the create-op merge to
-return a noop when `counterCreate.count` does not exist; `LiveCounterManager.mergeInitialDataFromCreateOperation`
-returns a normal amount-0 `CounterUpdate` instead (`?: 0.0`). Same root cause: the wire types don't track
-field presence, so an absent count is indistinguishable from an explicit `0` (which per RTLC16c correctly
-yields an amount-0 update, NOT a noop).
-**ably-js status:** same deviations (documented in its `deviations.md`) — `_applyCounterInc` applies
-`op.number` unconditionally, so a missing number becomes `NaN` and an event fires; and its create-op merge
-does the identical `counterCreate?.count ?? 0`, applying an amount-0 update where RTLC16d wants a noop.
-**Workaround in tests:** `RTLO4b4c1 - noop update does not trigger listener` is gated behind
-`RUN_DEVIATIONS` (early `return@runTest`), keeping the spec-correct `assertEquals(2, updates.size)`.
-Repro: `RUN_DEVIATIONS=1 ./gradlew :uts:runUtsUnitTests --tests "*LiveObjectSubscribeTest"`.
-**Root cause / fix (SDK):** make `WireCounterInc.number` (and `WireCounterCreate.count`) nullable (or
-track field presence) and add the missing-field → noop branches (RTLC9h in `applyCounterInc`, RTLC16d in
-`mergeInitialDataFromCreateOperation`) so no event is emitted. To be fixed in both SDKs together.
-**Tests affected (LiveObjectSubscribeTest.kt):**
-- `RTLO4b4c1 - noop update does not trigger listener` (RTLO4b4c1/noop-no-trigger-0) — env-gated.
-
-> Note: the internal `LiveObjectUpdate.noop` diff flag is also not exposed on the public
-> `InstanceSubscriptionEvent` (only `getObject()`/`getMessage()`, mapping §8); the spec frames noop
-> suppression as *the listener not firing*, which is the observable the env-gated test asserts.
-
----
-
 # 3) Expected — typed-SDK / language adaptations (objects) — NOT bugs, no action
 
 *These exist only because ably-java implements the statically-typed **RTTS** variant of the objects spec

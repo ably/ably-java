@@ -103,7 +103,7 @@ Key principles (from [`integration-testing.md`](https://github.com/ably/specific
   understands **text** WebSocket frames and so can't inspect or modify binary msgpack. The tests therefore
   force JSON regardless of SDK support
   ([`integration-testing.md`](https://github.com/ably/specification/blob/main/uts/docs/integration-testing.md) §Protocol Variants,
-  [`helpers/proxy.md`](https://github.com/ably/specification/blob/main/uts/realtime/integration/helpers/proxy.md)).
+  [`docs/proxy.md`](https://github.com/ably/specification/blob/main/uts/docs/proxy.md)).
 
 ---
 
@@ -163,7 +163,7 @@ what's missing". The reference tests this guide walks through correspond to thes
   `realtime/integration/proxy/auth_reauth.md` → **`AuthReauthTest.kt`**.
 
 > There is also a fifth, *referenced* spec:
-> [`realtime/integration/helpers/proxy.md`](https://github.com/ably/specification/blob/main/uts/realtime/integration/helpers/proxy.md)
+> [`docs/proxy.md`](https://github.com/ably/specification/blob/main/uts/docs/proxy.md)
 > (in the spec repo under `uts/realtime/integration/helpers/`). It defines the proxy's control API, rule format,
 > action types, and the **protocol message action-number table** (CONNECTED=4, ATTACH=10, AUTH=17,
 > …). The Kotlin `ProxySession` is the client for exactly that API.
@@ -974,7 +974,7 @@ nothing is left implicit.
 | Translating specs, deviation patterns, decision tree | [`uts/docs/writing-derived-tests.md`](https://github.com/ably/specification/blob/main/uts/docs/writing-derived-tests.md) |
 | Integration/proxy policy, late fault injection, tiers | [`uts/docs/integration-testing.md`](https://github.com/ably/specification/blob/main/uts/docs/integration-testing.md) |
 | Coverage matrix | [`uts/docs/completion-status.md`](https://github.com/ably/specification/blob/main/uts/docs/completion-status.md) |
-| Proxy control API, rule format, action numbers | [`uts/realtime/integration/helpers/proxy.md`](https://github.com/ably/specification/blob/main/uts/realtime/integration/helpers/proxy.md) |
+| Proxy control API, rule format, action numbers | [`uts/docs/proxy.md`](https://github.com/ably/specification/blob/main/uts/docs/proxy.md) |
 | SDK seams | `lib/.../debug/DebugOptions.java`, `lib/.../util/Clock.java` |
 | Module wiring | `uts/build.gradle.kts`, `settings.gradle.kts` |
 | Unit mocks | `uts/.../uts/infra/unit/*` |

@@ -69,7 +69,10 @@ internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChan
           liveMap.notifyUpdated(update) // RTLM15d6a
           true // RTLM15d6b
         } else {
-          throw objectError("No payload found for ${operation.action} op for LiveMap objectId=${objectId}")
+          // Log a warning and skip only this operation - throwing would abort every
+          // sibling operation in the same ProtocolMessage batch
+          Log.w(tag, "No payload found for ${operation.action} op for LiveMap objectId=${objectId}, skipping")
+          false
         }
       }
       WireObjectOperationAction.MapRemove -> {
@@ -78,7 +81,8 @@ internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChan
           liveMap.notifyUpdated(update) // RTLM15d7a
           true // RTLM15d7b
         } else {
-          throw objectError("No payload found for ${operation.action} op for LiveMap objectId=${objectId}")
+          Log.w(tag, "No payload found for ${operation.action} op for LiveMap objectId=${objectId}, skipping")
+          false
         }
       }
       WireObjectOperationAction.ObjectDelete -> {
