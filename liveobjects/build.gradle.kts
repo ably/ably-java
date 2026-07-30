@@ -18,6 +18,10 @@ dependencies {
     testImplementation(project(":java"))
     testImplementation(kotlin("test"))
     testImplementation(libs.bundles.kotlin.tests)
+    // Shared UTS test infra (mock transport, FakeClock, SandboxApp) from :uts's test-fixtures
+    // variant. Compile-safe: the fixtures depend only on :java/:network-client-core, never on
+    // this module (see the invariant note in uts/build.gradle.kts).
+    testImplementation(testFixtures(project(":uts")))
 }
 
 tasks.withType<Test>().configureEach {
@@ -32,7 +36,8 @@ tasks.withType<Test>().configureEach {
 
 tasks.register<Test>("runLiveObjectsUnitTests") {
     filter {
-        includeTestsMatching("io.ably.lib.liveobjects.unit.*")
+        includeTestsMatching("io.ably.lib.liveobjects.unit.*")     // the module's own unit tests
+        includeTestsMatching("io.ably.lib.liveobjects.uts.unit.*") // UTS objects unit suite (skill-generated)
     }
 }
 

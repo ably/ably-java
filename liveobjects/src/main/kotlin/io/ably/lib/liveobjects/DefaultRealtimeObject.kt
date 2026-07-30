@@ -55,7 +55,7 @@ internal class DefaultRealtimeObject(
   /**
    * @spec RTO4 - Used for handling object messages and object sync messages
    */
-  private val objectsManager = ObjectsManager(this)
+  internal val objectsManager = ObjectsManager(this)
 
   /**
    * Registry for PathObject subscriptions and path-event dispatch.

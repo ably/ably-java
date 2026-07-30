@@ -162,7 +162,16 @@ def main():
 
     tiers_out = {}
     for tier in TIERS:
-        target_dir = f"{test_root}/{entry[tier]}" if (mapped and tier in entry) else None
+        # A tier value is either a string (relative to the global testRoot) or an object
+        # {root, path} carrying its own module root — used when a tier's tests live outside
+        # the :uts module (e.g. objects/unit -> :liveobjects's own test source set).
+        tier_val = entry.get(tier) if mapped else None
+        if isinstance(tier_val, dict):
+            target_dir = f"{tier_val['root']}/{tier_val['path']}"
+        elif tier_val:
+            target_dir = f"{test_root}/{tier_val}"
+        else:
+            target_dir = None
         tiers_out[tier] = {
             "present": src[tier].is_dir(),
             "sourceDir": str(src[tier]),

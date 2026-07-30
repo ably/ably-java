@@ -88,7 +88,8 @@ three example tests this guide walks through span all three tiers.
 Each tier folder is further organised **by module** (`realtime`, `liveobjects`, …): `unit/<module>/`,
 `integration/standard/<module>/`, and `integration/proxy/<module>/`. So a feature's tests sit together
 by SDK area — the three example tests live at `unit/realtime/`, `integration/standard/realtime/`, and
-`integration/proxy/realtime/`.
+`integration/proxy/realtime/`. (One exception: the **objects unit** tier lives in the `:liveobjects`
+module, not here — see §4.2 "Cross-module exception".)
 
 Key principles (from [`integration-testing.md`](https://github.com/ably/specification/blob/main/uts/docs/integration-testing.md)):
 
@@ -173,22 +174,35 @@ what's missing". The reference tests this guide walks through correspond to thes
 ## 4. The Java Setup: the `uts/` module
 
 The `uts/` directory is a **standalone Gradle module** (`include("uts")` in
-`settings.gradle.kts`) whose only job is to host UTS-derived tests. It contains *no production code* —
-everything lives under `uts/src/test/`.
+`settings.gradle.kts`) whose only job is to host UTS-derived tests and the shared test
+infrastructure. It contains *no production code* — the tests live under `uts/src/test/`, and the
+infrastructure lives in the module's **test-fixtures** source set, `uts/src/testFixtures/`, so
+that other Gradle modules can consume it via `testImplementation(testFixtures(project(":uts")))`
+(this module's own tests see it automatically).
 
 ### 4.1 `uts/build.gradle.kts`
 ```kotlin
-plugins { alias(libs.plugins.kotlin.jvm) }
+plugins {
+    alias(libs.plugins.kotlin.jvm)
+    `java-test-fixtures`                                 // exports src/testFixtures (the infra) as a consumable variant
+}
 
 dependencies {
+    // fixtures (the shared infra) — MUST never depend on :liveobjects (keeps consumers acyclic)
+    testFixturesApi(project(":java"))                    // types in fixture signatures
+    testFixturesApi(project(":network-client-core"))     // HttpEngine / WebSocketEngine interfaces
+    testFixturesImplementation(libs.coroutine.core)
+    testFixturesImplementation(libs.ktor.client.core)    // sandbox/proxy control HTTP
+    testFixturesImplementation(libs.ktor.client.cio)
+
     testImplementation(project(":java"))                 // the SDK under test
-    testImplementation(project(":network-client-core"))  // HttpEngine / WebSocketEngine interfaces
+    testImplementation(project(":network-client-core"))
     testImplementation(kotlin("test"))
     testImplementation("org.junit.jupiter:junit-jupiter-params")  // @ParameterizedTest / @ValueSource (version from the JUnit BOM)
     testImplementation(libs.mockk)
     testImplementation(libs.coroutine.core)              // kotlinx.coroutines
     testImplementation(libs.coroutine.test)              // runTest, virtual time
-    testImplementation(libs.ktor.client.core)            // HTTP client for proxy/sandbox control
+    testImplementation(libs.ktor.client.core)
     testImplementation(libs.ktor.client.cio)
 }
 
@@ -217,43 +231,46 @@ Takeaways:
 
 ### 4.2 Directory layout
 
-Everything lives under the `io.ably.lib.uts` package, split cleanly into **infrastructure** (`infra/`,
-no `@Test`s) and the **tests** themselves. Tests are organised **by tier, then by module**: `unit/` for
+Everything lives under the `io.ably.lib.uts` package, split cleanly into **infrastructure**
+(`infra/`, no `@Test`s — in the `testFixtures` source set) and the **tests** themselves (in the
+`test` source set). Tests are organised **by tier, then by module**: `unit/` for
 mocked-transport tests, and `integration/` for real-backend tests — the latter splitting again into
 `standard/` (direct sandbox, happy-path) and `proxy/` (sandbox through the fault-injecting proxy). Under
 each, a per-module folder (`realtime`, `liveobjects`, …) holds the actual test classes:
 
 ```text
-uts/src/test/kotlin/io/ably/lib/uts/
+uts/src/testFixtures/kotlin/io/ably/lib/uts/     # ── shared, consumable by other modules ──
+└── infra/                               # ── TEST INFRASTRUCTURE (no @Test methods) ──
+    ├── Utils.kt                         #   awaitState / awaitChannelState / pollUntil (shared)
+    │
+    ├── unit/                            #   UNIT infra (mocked transports)
+    │   ├── ClientFactories.kt           #     TestRealtimeClient / TestRestClient / ClientOptionsBuilder
+    │   ├── MockWebSocket.kt             #     fake WS transport + WebSocketMockConfig + CONNECTED_MESSAGE
+    │   ├── MockWebSocketEngineFactory.kt#     plugs the mock into the SDK's WebSocketEngine SPI
+    │   ├── MockHttpClient.kt            #     fake HTTP engine + HttpMockConfig
+    │   ├── MockHttpEngine.kt            #     plugs the mock into the SDK's HttpEngine SPI
+    │   ├── MockEvent.kt                 #     sealed log of everything on a mock transport
+    │   ├── PendingConnection.kt         #     interface: a connection attempt awaiting a response
+    │   ├── DefaultPendingConnection.kt  #     WS implementation of PendingConnection
+    │   ├── PendingRequest.kt            #     interface: an in-flight HTTP request awaiting a response
+    │   ├── DefaultPendingRequest.kt     #     HTTP implementation of PendingRequest
+    │   ├── FakeClock.kt                 #     virtual clock + virtual timers (deterministic time)
+    │   └── Utils.kt                     #     ConnectionDetails { } builder (reflective constructor)
+    │
+    └── integration/                     #   INTEGRATION infra (real backend)
+        ├── SandboxApp.kt                #     provisions/deletes a sandbox app
+        └── proxy/
+            ├── ProxyManager.kt          #       downloads/launches the uts-proxy binary
+            └── ProxySession.kt          #       proxy session: rules, actions, log + connectThroughProxy
+
+uts/src/test/kotlin/io/ably/lib/uts/             # ── the tests themselves ──
 ├── deviations.md                        # the catalogue of SDK-vs-spec divergences
 │
-├── infra/                               # ── TEST INFRASTRUCTURE (no @Test methods) ──
-│   ├── Utils.kt                         #   awaitState / awaitChannelState / pollUntil (shared)
-│   │
-│   ├── unit/                            #   UNIT infra (mocked transports)
-│   │   ├── ClientFactories.kt           #     TestRealtimeClient / TestRestClient / ClientOptionsBuilder
-│   │   ├── MockWebSocket.kt             #     fake WS transport + WebSocketMockConfig + CONNECTED_MESSAGE
-│   │   ├── MockWebSocketEngineFactory.kt#     plugs the mock into the SDK's WebSocketEngine SPI
-│   │   ├── MockHttpClient.kt            #     fake HTTP engine + HttpMockConfig
-│   │   ├── MockHttpEngine.kt            #     plugs the mock into the SDK's HttpEngine SPI
-│   │   ├── MockEvent.kt                 #     sealed log of everything on a mock transport
-│   │   ├── PendingConnection.kt         #     interface: a connection attempt awaiting a response
-│   │   ├── DefaultPendingConnection.kt  #     WS implementation of PendingConnection
-│   │   ├── PendingRequest.kt            #     interface: an in-flight HTTP request awaiting a response
-│   │   ├── DefaultPendingRequest.kt     #     HTTP implementation of PendingRequest
-│   │   ├── FakeClock.kt                 #     virtual clock + virtual timers (deterministic time)
-│   │   └── Utils.kt                     #     ConnectionDetails { } builder (reflective constructor)
-│   │
-│   └── integration/                     #   INTEGRATION infra (real backend)
-│       ├── SandboxApp.kt                #     provisions/deletes a sandbox app
-│       └── proxy/
-│           ├── ProxyManager.kt          #       downloads/launches the uts-proxy binary
-│           └── ProxySession.kt          #       proxy session: rules, actions, log + connectThroughProxy
-│
 ├── unit/                                # ── UNIT TESTS (mock transport) ── · per module
-│   ├── realtime/
-│   │   └── ConnectionRecoveryTest.kt    #   ← the UNIT test (RTN16*)
-│   └── liveobjects/                     #   (further modules as coverage grows)
+│   └── realtime/
+│       └── ConnectionRecoveryTest.kt    #   ← the UNIT test (RTN16*)
+│                                        #   NOTE: objects unit tests are NOT here — the objects
+│                                        #   unit tier lives in the :liveobjects module (see below)
 │
 └── integration/                         # ── INTEGRATION TESTS (real backend) ── · per module
     ├── standard/                        #   direct sandbox: happy-path, no fault injection
@@ -272,6 +289,15 @@ module** (`realtime`, `liveobjects`, …) so a feature's tests sit together rega
 top-level `unit/` ↔ `infra/unit/` and `integration/` ↔ `infra/integration/` pairing is what the
 `runUtsUnitTests` / `runUtsIntegrationTests` Gradle tasks key off (§13) — `runUtsIntegrationTests`
 covers **both** `integration/standard/` and `integration/proxy/`.
+
+> **Cross-module exception — objects unit tier.** The `objects` module's **unit** specs assert on
+> internal LiveObjects CRDT state (`InternalLiveMap`/`InternalLiveCounter`/`ObjectsPool`) that is only
+> visible to `:liveobjects`'s own test source set, so that tier does **not** live here — it is in
+> `liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/unit/` (package `io.ably.lib.liveobjects.uts.unit`,
+> run by `:liveobjects:runLiveObjectsUnitTests`), consuming this module's infra via the test-fixtures
+> variant. The objects **integration** and **proxy** tiers remain here under `integration/`. See
+> `.claude/skills/uts-to-kotlin/uts-package-mapping.json` (the `objects.unit` `{root, path}` entry) and
+> `MOVE_COMMON_INFRA/`.
 
 ---
 
@@ -776,6 +802,10 @@ mirror `runLiveObjectsUnitTests` / `runLiveObjectsIntegrationTests` in the `live
 # Everything (the default Test task still runs both):
 ./gradlew :uts:test
 
+# The objects UNIT tier lives in the :liveobjects module (it asserts on internal CRDT state) — run it
+# there, not via :uts. See §4.2 "Cross-module exception".
+./gradlew :liveobjects:runLiveObjectsUnitTests --tests "io.ably.lib.liveobjects.uts.unit.*"
+
 # Just one test class (works with any of the tasks above):
 ./gradlew :uts:runUtsUnitTests --tests "io.ably.lib.uts.unit.realtime.ConnectionRecoveryTest"
 ./gradlew :uts:runUtsIntegrationTests --tests "io.ably.lib.uts.integration.proxy.realtime.AuthReauthTest"
@@ -919,8 +949,9 @@ sees the control plane; the test never speaks the data plane directly.
 
 ## 16. Appendix B: Per-File API Reference
 
-A one-stop table of every Kotlin source file under `uts/src/test/` and the SDK seams they use, so
-nothing is left implicit.
+A one-stop table of every Kotlin source file under `uts/src/test/` (tests) and
+`uts/src/testFixtures/` (the `infra/` tree) and the SDK seams they use, so nothing is left
+implicit.
 
 ### B.1 Unit-test infrastructure — `io.ably.lib.uts.infra.unit`
 
@@ -977,8 +1008,8 @@ nothing is left implicit.
 | Proxy control API, rule format, action numbers | [`uts/docs/proxy.md`](https://github.com/ably/specification/blob/main/uts/docs/proxy.md) |
 | SDK seams | `lib/.../debug/DebugOptions.java`, `lib/.../util/Clock.java` |
 | Module wiring | `uts/build.gradle.kts`, `settings.gradle.kts` |
-| Unit mocks | `uts/.../uts/infra/unit/*` |
-| Integration helpers | `uts/.../uts/infra/integration/*` (+ `…/integration/proxy/*`) |
-| Async helpers | `uts/.../uts/infra/Utils.kt` (awaits), `…/uts/infra/unit/Utils.kt` (ConnectionDetails builder) |
+| Unit mocks | `uts/src/testFixtures/.../uts/infra/unit/*` |
+| Integration helpers | `uts/src/testFixtures/.../uts/infra/integration/*` (+ `…/integration/proxy/*`) |
+| Async helpers | `uts/src/testFixtures/.../uts/infra/Utils.kt` (awaits), `…/infra/unit/Utils.kt` (ConnectionDetails builder) |
 | The three example tests | `…/uts/unit/realtime/ConnectionRecoveryTest.kt`, `…/uts/integration/standard/realtime/ChannelHistoryTest.kt`, `…/uts/integration/proxy/realtime/AuthReauthTest.kt` |
 | Deviations | `uts/.../io/ably/lib/uts/deviations.md` |

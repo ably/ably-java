@@ -61,6 +61,13 @@ Phase 2** — see Step 1.
 The target dirs come from `uts-package-mapping.json` (alongside this skill); spec and ably-java module names
 don't always match (e.g. `objects` → `liveobjects`), which is why it's explicit.
 
+A tier's mapping value is either a **string** (a path relative to the global `testRoot`, i.e. inside the
+`:uts` module) or an **object** `{root, path}` carrying its own module root — used when a tier's tests live
+in another Gradle module's test source set (e.g. `objects`/`unit` →
+`liveobjects/src/test/kotlin/io/ably/lib/liveobjects` + `uts/unit`, because those specs assert on
+`:liveobjects` internals only visible to that module's own tests). The resolver handles both forms; its
+`targetDir`/`package` output is what you use either way.
+
 - **If `mapped` is `true`**: show the resolved `targetDir` for each present tier and ask the user to confirm.
   If they say the mapping is wrong, ask for the correct ably-java module base name and re-run with `--create`
   (below) to overwrite the entry, then re-resolve.
@@ -157,13 +164,27 @@ integration tests** section; **proxy** → the proxy subsections of the **Integr
 > the *what's available*; the per-file list below is the *what to open for exact signatures* before
 > writing code.
 
-Infrastructure is split by tier under `uts/src/test/kotlin/io/ably/lib/uts/infra/`:
+Infrastructure lives in `:uts`'s **test-fixtures** variant —
+`uts/src/testFixtures/kotlin/io/ably/lib/uts/infra/` — so other Gradle modules can consume it via
+`testImplementation(testFixtures(project(":uts")))`; `:uts`'s own tests see it automatically.
+Kotlin packages are `io.ably.lib.uts.infra.*` regardless of source set, so imports in generated
+tests are unaffected. It is split by tier:
 
 - `infra/Utils.kt` — shared async helpers (`awaitState`, `awaitChannelState`, `pollUntil`), package `io.ably.lib.uts.infra`.
 - `infra/unit/` — unit-test mocks/factories (`ClientFactories.kt`, `MockWebSocket.kt`, `MockHttpClient.kt`, `FakeClock.kt`, `MockEvent.kt`, the `PendingConnection`/`PendingRequest` pairs, and `Utils.kt` with the `ConnectionDetails { }` builder), package `io.ably.lib.uts.infra.unit`.
 - `infra/integration/` + `infra/integration/proxy/` — direct-sandbox + proxy helpers (`SandboxApp.kt`, `ProxyManager.kt`, `ProxySession.kt`) — see the **Integration tests** section.
 
 For a **unit** test, read all files under `infra/unit/` plus `infra/Utils.kt` before generating any code (you need exact method signatures).
+
+**Objects/unit additionally:** the suite lives in `:liveobjects`'s own test source set (Step B), so also
+read the module-local helpers at
+`liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/unit/Helpers.kt` (package
+`io.ably.lib.liveobjects.uts.unit`) — `setupSyncedChannel`, the `build_*` message builders (typed `Wire*`
+constructions, no JSON/reflection), `STANDARD_POOL_OBJECTS` and the canonical serial constants. Access
+convention for that suite: **public-tier specs use only the public API + helpers**; only the five
+internal-graph specs (`internal_live_counter`, `internal_live_map`, `object_id`, `objects_pool`,
+`parent_references`) and documented deviations may reference `io.ably.lib.liveobjects` `internal` members —
+their symbol map is `references/objects-mapping.md` §17.
 
 ## Step 4 — Generate the Kotlin test file
 
@@ -355,6 +376,11 @@ This scaffold is for the **unit** tier — it wires the mocked transport (`infra
 `ConnectionDetails`). For the **integration** (direct sandbox) and **proxy** tiers, start from the
 **Proxy integration tests** section instead (`SandboxApp` / `ProxySession` wiring), not from this template.
 
+For **objects/unit** the same scaffold applies with two differences: the package is the resolver's
+`io.ably.lib.liveobjects.uts.unit`, and channel/objects setup goes through the module-local helpers
+(`setupSyncedChannel` etc. from the same package — see Step 3) rather than raw `MockWebSocket` wiring.
+The `io.ably.lib.uts.infra.*` imports are unchanged.
+
 ```kotlin
 package <package>                              // the resolver's package for the chosen tier (Step 2)
 
@@ -409,8 +435,12 @@ class <className> {
 
 ## Step 5 — Compile
 
+Compile the module that owns the chosen tier's `targetDir` (`:uts` unless the mapping's object form says
+otherwise):
+
 ```bash
-./gradlew :uts:compileTestKotlin
+./gradlew :uts:compileTestKotlin           # tiers inside the :uts module
+./gradlew :liveobjects:compileTestKotlin   # objects/unit (targetDir under liveobjects/)
 ```
 
 Fix any compilation errors and recompile until clean. Common issues:
@@ -430,18 +460,21 @@ every failure via the decision tree below. Each test must end in exactly one of 
 - a documented **UTS spec error** — **fails fast** (the spec is wrong; fix belongs in the spec). This is the
   one acceptable red.
 
-Use the per-tier task that matches the chosen tier (both are registered in `uts/build.gradle.kts`), and the
-resolver's `package` + the spec's `className` for the `--tests` filter:
+Use the per-tier task of the module that owns the tier's `targetDir`, and the resolver's `package` + the
+spec's `className` for the `--tests` filter:
 
 ```bash
-# unit tier            → io.ably.lib.uts.unit.*
+# unit tier, tiers inside :uts   → io.ably.lib.uts.unit.*
 ./gradlew :uts:runUtsUnitTests --tests "<package>.<className>"
 
-# integration / proxy  → io.ably.lib.uts.integration.*
+# objects/unit (in :liveobjects) → io.ably.lib.liveobjects.uts.unit.*
+./gradlew :liveobjects:runLiveObjectsUnitTests --tests "<package>.<className>"
+
+# integration / proxy            → io.ably.lib.uts.integration.*
 ./gradlew :uts:runUtsIntegrationTests --tests "<package>.<className>"
 ```
 
-(`./gradlew :uts:test` still runs all tiers — unit, standard, and proxy.)
+(`./gradlew :uts:test` still runs all `:uts` tiers — unit, standard, and proxy.)
 
 Handle test failures using this decision tree (the **Required reading** doc you fetched up front has the full detail):
 
@@ -454,7 +487,7 @@ Test fails
   |     YES
   |       +-- Does test accurately translate the UTS spec?
   |             NO  → fix the test (no deviation entry needed)
-  |             YES → SDK deviation — adapt test, record in deviations file
+  |             YES → SDK deviation — env-gated skip or adapted assertion (below); record in deviations file
 ```
 
 ### Test patterns for a diagnosed failure
@@ -462,7 +495,7 @@ Test fails
 Two patterns are for an **SDK deviation** (both write the spec-correct assertions); the third,
 **spec-error fail-fast**, is for a **UTS spec error** and is not a deviation.
 
-**Env-gated skip (preferred)** — test contains spec-correct assertions but is skipped by default:
+**Env-gated skip** (preferred *for a deviation you expect to be fixed*) — test contains spec-correct assertions but is skipped by default:
 
 ```kotlin
 /**
@@ -477,7 +510,7 @@ fun `RSA4c2 - callback error connecting disconnected`() = runTest {
 }
 ```
 
-**Adapted assertion** — when you still want to assert on the SDK's actual behaviour to prevent regressions:
+**Adapted assertion** — assert the SDK's actual behaviour to prevent regressions. **Prefer this over an env-gated skip when the divergence is permanent or intentional** (a running test guards regressions; a permanently-skipped spec assertion verifies nothing):
 
 ```kotlin
 // DEVIATION: spec requires error code 40106, SDK returns 40160 — see deviations.md
@@ -502,8 +535,10 @@ fun `RTLC7c2 - LOCAL source does not write siteTimeserials`() = runTest {
 
 ### Deviations file
 
-Append to `uts/src/test/kotlin/io/ably/lib/uts/deviations.md`, using the manual's **Recording deviations**
-entry format and sections. The ably-java-specific mapping: a **UTS Spec Error** (test fails fast — fix in
+Append to the deviations file that belongs to the tier's module:
+`uts/src/test/kotlin/io/ably/lib/uts/deviations.md` for tiers inside `:uts`, or
+`liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/deviations.md` for objects/unit. Use the manual's
+**Recording deviations** entry format and sections. The ably-java-specific mapping: a **UTS Spec Error** (test fails fast — fix in
 the spec) goes under the manual's *UTS Spec Errors* section; an **SDK deviation** (env-gated/adapted — fix
 in the SDK) goes under *Failing Tests* / *Adapted Tests*.
 
@@ -668,7 +703,7 @@ Use generous timeouts (10–30s) — real network is involved. Everything else i
 
 ### Infrastructure
 
-Three helpers live under `uts/src/test/kotlin/io/ably/lib/uts/infra/integration/`. **Read the ones your tier uses before translating an integration spec** — they hold the exact method signatures. `SandboxApp` serves **both** tiers; `ProxyManager` and `ProxySession` are **proxy-only**.
+Three helpers live under `uts/src/testFixtures/kotlin/io/ably/lib/uts/infra/integration/`. **Read the ones your tier uses before translating an integration spec** — they hold the exact method signatures. `SandboxApp` serves **both** tiers; `ProxyManager` and `ProxySession` are **proxy-only**.
 
 - **`ProxyManager`** (`infra/integration/proxy/ProxyManager.kt`, package `io.ably.lib.uts.infra.integration.proxy`) — downloads/starts the shared `uts-proxy` process. Call `ProxyManager.ensureProxy()` once per suite in setup.
 - **`ProxySession`** (`infra/integration/proxy/ProxySession.kt`, same package) — one programmable session wrapping the proxy control API; also defines the `connectThroughProxy` extension and the rule-builder helpers.
