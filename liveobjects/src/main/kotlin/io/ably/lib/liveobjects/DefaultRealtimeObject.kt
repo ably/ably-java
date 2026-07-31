@@ -261,6 +261,14 @@ internal class DefaultRealtimeObject(
     }
   }
 
+  /**
+   * Dispatches channel state changes to the objects data lifecycle handlers: the
+   * [ChannelState.attached] transition is handled per RTO4 (the sync lifecycle), and every
+   * other state per RTO27.
+   *
+   * @spec RTO4 - handling of the ATTACHED transition
+   * @spec RTO27 - manage the stored objects data across non-ATTACHED transitions
+   */
   internal fun handleStateChange(state: ChannelState, hasObjects: Boolean) {
     sequentialScope.launch {
       when (state) {
@@ -302,14 +310,16 @@ internal class DefaultRealtimeObject(
             cause = errorReason?.let { AblyException.fromErrorInfo(it) }
           )
           objectsManager.failSyncWaiters(error) // RTO20e1
+          // RTO27a - on DETACHED/FAILED the actual current state of the objects data can no longer
+          // be known, so clear it without emitting update events; SUSPENDED is excluded here and
+          // retains its data unchanged per RTO27b, since the connection may still recover
           if (state != ChannelState.suspended) {
-            // do not emit data update events as the actual current state of Objects data is unknown when we're in these channel states
-            objectsPool.clearObjectsData(false)
-            objectsManager.clearSyncObjectsPool()
+            objectsPool.clearObjectsData(false) // RTO27a1
+            objectsManager.clearSyncObjectsPool() // RTO27a2
           }
         }
         else -> {
-          // No action needed for other states
+          // RTO27b - all other states (INITIALIZED, ATTACHING, DETACHING) retain the objects data unchanged
         }
       }
     }
