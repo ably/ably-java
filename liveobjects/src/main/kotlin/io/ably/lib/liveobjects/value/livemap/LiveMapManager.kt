@@ -405,9 +405,7 @@ internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChan
       }
     }
 
-    // An empty diff means nothing actually changed (e.g. clearing an already-empty root
-    // map on a channel with no objects). Return the no-op update so notifyUpdated()
-    // short-circuits and no change event is emitted. Spec: RTLM22b/RTO4b.
+    // RTLM22c - exception to RTLM22b: if the computed update has no changed keys (empty), no key changed, so return a no-op update (per RTLO4b4b) instead of a MapUpdate
     return if (update.isEmpty()) noOpMapUpdate else ObjectUpdate.MapUpdate(update)
   }
 

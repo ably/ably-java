@@ -56,6 +56,10 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
    */
   internal fun handleObjectSyncMessages(wireObjectMessages: List<WireObjectMessage>, syncChannelSerial: String?) {
     val syncTracker = ObjectsSyncTracker(syncChannelSerial)
+    if (syncTracker.isMalformed) {
+      // RTO5a6 - a malformed channelSerial (no ':' separator) is handled as absent (RTO5a5): warn and fall through so null syncId/syncCursor makes the flow apply the messages and end the sync like a single-message sync
+      Log.w(tag, "OBJECT_SYNC channelSerial is malformed (missing ':' separator); treating as absent per RTO5a6: $syncChannelSerial")
+    }
     val isNewSync = syncTracker.hasSyncStarted(currentSyncId)
     if (isNewSync) {
       // RTO5a2 - new sync sequence started
@@ -113,7 +117,8 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
     // MUST run on the sequential scope: the state check + waiter registration in awaitSyncCompletion
     // is atomic only there (same lost-wakeup hazard as ensureSynced).
     if (realtimeObjects.state != ObjectsState.Synced) {
-      awaitSyncCompletion() // suspends until SYNCED (RTO20e); throws 92008 on channel state change (RTO20e1)
+      // RTO20e1 - the publishAndApply-specific failure message prefix; get()'s wait uses its own (RTO23c1).
+      awaitSyncCompletion("the operation could not be applied locally") // suspends until SYNCED (RTO20e); throws 92008 on channel state change (RTO20e1)
     }
     applyObjectMessages(messages, ObjectsOperationSource.LOCAL) // RTO20f
   }

@@ -110,8 +110,7 @@ internal class LiveCounterManager(private val liveCounter: InternalLiveCounter):
   }
 
   internal fun calculateUpdateFromDataDiff(prevData: Double, newData: Double): ObjectUpdate {
-    // A zero delta means the value did not change (e.g. clearing an already-zero counter).
-    // Return the no-op update so notifyUpdated() short-circuits and no event is emitted. Spec: RTLC14b
+    // RTLC14c - exception to RTLC14b: if newData == prevData the delta is 0 (no change), so return a no-op update (per RTLO4b4b) instead of a LiveCounterUpdate of amount newData - prevData
     return if (newData == prevData) noOpCounterUpdate else ObjectUpdate.CounterUpdate(newData - prevData)
   }
 

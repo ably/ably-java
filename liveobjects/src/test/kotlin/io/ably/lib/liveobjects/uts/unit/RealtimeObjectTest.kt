@@ -477,6 +477,97 @@ class RealtimeObjectTest {
     }
 
     /**
+     * @UTS objects/unit/RTO23c1/fails-on-channel-detached-0
+     *
+     * RTO23c1 mirrors RTO20e1 (above): a get() parked in the RTO23c wait for SYNCED must be failed —
+     * not orphaned — with the 92008 error when the channel enters DETACHED while waiting.
+     */
+    @Test
+    fun `RTO23c1 - get fails when channel enters DETACHED during sync wait`() = runTest {
+        val (client, channel, _, mockWs) = setupSyncedChannel("test")
+
+        // Force a re-sync so the objects state is SYNCING again, then get() must park in the RTO23c wait.
+        sendAttachedAndAwaitSyncing(channel, mockWs, "sync2:cursor")
+
+        val getFuture = channel.`object`.get()
+
+        // While still SYNCING the get() cannot complete — it is parked waiting for SYNCED.
+        assertFalse(getFuture.isDone)
+
+        // A client-side detach then moves the channel to DETACHED.
+        detachClientSide(channel)
+
+        val error = assertFailsWith<AblyException> { getFuture.await() }
+
+        assertEquals(92008, error.errorInfo.code)
+        assertEquals(400, error.errorInfo.statusCode)
+
+        client.close()
+    }
+
+    /**
+     * @UTS objects/unit/RTO23c1/fails-on-channel-suspended-0
+     *
+     * RTO23c1 — the SUSPENDED case, driven directly through the objects channel-state handler
+     * (as RTO27 does) since the shared mock has no SUSPENDED trigger.
+     */
+    @Test
+    fun `RTO23c1 - get fails when channel enters SUSPENDED during sync wait`() = runTest {
+        val (client, channel, _, mockWs) = setupSyncedChannel("test")
+        val ro = channel.`object` as DefaultRealtimeObject
+
+        sendAttachedAndAwaitSyncing(channel, mockWs, "sync2:cursor")
+
+        val getFuture = channel.`object`.get()
+        assertFalse(getFuture.isDone)
+
+        // RTO27b SUSPENDED retains objects data but RTO23c1 still fails any in-flight get() sync wait.
+        ro.handleStateChange(ChannelState.suspended, false)
+        ro.asyncFuture { }.await() // flush the sequential scope
+
+        val error = assertFailsWith<AblyException> { getFuture.await() }
+
+        assertEquals(92008, error.errorInfo.code)
+        assertEquals(400, error.errorInfo.statusCode)
+
+        client.close()
+    }
+
+    /**
+     * @UTS objects/unit/RTO23c1/fails-on-channel-failed-0
+     *
+     * RTO23c1 — the FAILED case additionally asserts the `cause`: it must be set to the channel's
+     * errorReason (here the injected FAILED error) when that reason is present.
+     */
+    @Test
+    fun `RTO23c1 - get fails with cause when channel enters FAILED during sync wait`() = runTest {
+        val (client, channel, _, mockWs) = setupSyncedChannel("test")
+
+        sendAttachedAndAwaitSyncing(channel, mockWs, "sync2:cursor")
+
+        val getFuture = channel.`object`.get()
+        assertFalse(getFuture.isDone)
+
+        // A channel ERROR moves the channel to FAILED and sets its errorReason.
+        mockWs.sendToClient(
+            ProtocolMessage(ProtocolMessage.Action.error).apply {
+                this.channel = "test"
+                this.error = ErrorInfo("Channel failed", 400, 90000)
+            },
+        )
+
+        val error = assertFailsWith<AblyException> { getFuture.await() }
+
+        assertEquals(92008, error.errorInfo.code)
+        assertEquals(400, error.errorInfo.statusCode)
+        // RTO23c1 - cause is set to the channel's errorReason.
+        val cause = assertIs<AblyException>(error.cause)
+        assertEquals(90000, cause.errorInfo.code)
+
+        client.close()
+    }
+
+    /**
      * @UTS objects/unit/RTO17/sync-state-events-0
      */
     @Test

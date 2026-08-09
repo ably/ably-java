@@ -81,6 +81,10 @@ class ObjectsPoolTest {
     private fun processObjectSync(channelSerial: String, messages: List<WireObjectMessage>) =
         ro.objectsManager.handleObjectSyncMessages(messages, channelSerial)
 
+    /** RTO5a5 - an OBJECT_SYNC with no channelSerial (the single-message sync). */
+    private fun processObjectSyncNoSerial(messages: List<WireObjectMessage>) =
+        ro.objectsManager.handleObjectSyncMessages(messages, null)
+
     /** The spec's `pool.processObjectMessage(build_object_message(channel, msgs))` (§17.6). */
     private fun processObjectMessage(messages: List<WireObjectMessage>) =
         ro.objectsManager.handleObjectMessages(messages)
@@ -191,6 +195,52 @@ class ObjectsPoolTest {
 
         assertEquals(ObjectsState.Synced, ro.state)
         assertNull(ro.objectsPool.get("counter:old@1000"))
+        assertNotNull(ro.objectsPool.get("counter:new@1000"))
+    }
+
+    /**
+     * @UTS objects/unit/RTO5a6/malformed-channel-serial-treated-as-absent-0
+     *
+     * A present-but-malformed channelSerial (no `:` separator, so it cannot be split into
+     * `<sequence id>:<cursor value>`) is handled as if the channelSerial were absent (RTO5a5): its
+     * messages are applied and the sync ends (SYNCED). A warning is logged.
+     */
+    @Test
+    fun `RTO5a6 - malformed channelSerial is treated as absent, applying data and ending sync`() {
+        processAttached(hasObjects = true)
+        assertEquals(ObjectsState.Syncing, ro.state)
+
+        // "malformedserialnocolon" lacks the ':' separator, so it cannot be parsed per RTO5a1; RTO5a6
+        // says to treat it as absent (RTO5a5).
+        processObjectSync(
+            "malformedserialnocolon",
+            listOf(
+                buildObjectState("counter:new@1000", mapOf("aaa" to POOL_SERIAL), counter = counterState(99)),
+            ),
+        )
+
+        // Treated as absent (RTO5a5): the message was applied and the sync ended (SYNCED).
+        assertEquals(ObjectsState.Synced, ro.state)
+        assertNotNull(ro.objectsPool.get("counter:new@1000"))
+    }
+
+    /**
+     * @UTS objects/unit/RTO5a5/absent-channel-serial-0
+     *
+     * An OBJECT_SYNC with no channelSerial is a valid single-message sync: its data is applied and the
+     * sync ends (SYNCED). This is the baseline the RTO5a6 malformed case defers to.
+     */
+    @Test
+    fun `RTO5a5 - absent channelSerial applies data and ends sync`() {
+        processAttached(hasObjects = true)
+
+        processObjectSyncNoSerial(
+            listOf(
+                buildObjectState("counter:new@1000", mapOf("aaa" to POOL_SERIAL), counter = counterState(99)),
+            ),
+        )
+
+        assertEquals(ObjectsState.Synced, ro.state)
         assertNotNull(ro.objectsPool.get("counter:new@1000"))
     }
 
