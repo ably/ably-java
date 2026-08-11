@@ -406,6 +406,34 @@ class InternalLiveMapTest {
     }
 
     /**
+     * @UTS objects/unit/RTLO5/tombstone-empty-map-emits-update-0
+     */
+    @Test
+    fun `RTLO5 - OBJECT_DELETE on a map with no non-tombstoned entries still emits a non-noop tombstone update`() {
+        // Uses a non-root map: an OBJECT_DELETE targeting root is rejected per RTLO4e10.
+        // RTLM22c: every entry is already tombstoned, so the tombstone diff (RTLM22b considers only
+        // non-tombstoned entries) has no changed keys - but the empty-diff noop exception must NOT be
+        // applied for a tombstone diff; the empty update is still delivered to drive the RTLO4b4c3c
+        // listener teardown. Complements object-delete-tombstones-map-0 (live entries).
+        val map = InternalLiveMap.zeroValue("map:test@1000", ro)
+        map.data["name"] = LiveMapEntry(isTombstoned = true, tombstonedAt = 1_600_000_000_000L, timeserial = "01", data = dataString("Alice"))
+        map.data["age"] = LiveMapEntry(isTombstoned = true, tombstonedAt = 1_600_000_000_000L, timeserial = "01", data = dataNumber(30))
+        map.siteTimeserials["site1"] = "00"
+
+        val msg = buildObjectDelete("map:test@1000", "01", "site1", 1_700_000_000_000L)
+        val update = map.applyObject(msg, ObjectsOperationSource.CHANNEL)
+
+        assertTrue(map.isTombstoned) // map.isTombstone == true
+        assertTrue(map.data.isEmpty()) // map.data == {}
+        // update.noop == false: a typed MapUpdate (RTLO4e5/RTLM22c carve-out), not a NoOp
+        val mapUpdate = assertIs<ObjectUpdate.MapUpdate>(update)
+        assertFalse(mapUpdate.noOp) // update.noop == false
+        assertTrue(mapUpdate.tombstone) // update.tombstone == true (RTLO4e6)
+        assertEquals(emptyMap<String, MapChange>(), mapUpdate.update) // update.update == {}
+        assertEquals(msg, mapUpdate.objectMessage) // update.objectMessage == msg (RTLO4e7)
+    }
+
+    /**
      * @UTS objects/unit/RTLO4e10/object-delete-root-noop-0
      */
     @Test
@@ -607,6 +635,28 @@ class InternalLiveMapTest {
         assertFalse("unchanged" in mapUpdate.update)
         assertFalse("was_dead" in mapUpdate.update)
         assertFalse("now_dead" in mapUpdate.update)
+    }
+
+    /**
+     * @UTS objects/unit/RTLM22c/empty-diff-is-noop-0
+     */
+    @Test
+    fun `RTLM22c - empty diff is a no-op`() {
+        // RTLM22c: as an exception to RTLM22b, the non-tombstoned entries before and after are
+        // identical under the RTLM22b comparison (same key `name`, same `data`; only `timeserial`
+        // differs, which is not compared), so no key changed and the diff returns a no-op update
+        // (RTLO4b4b), never delivered to subscribers (RTLO4b4c1).
+        val map = InternalLiveMap.zeroValue("root", ro)
+        map.data["name"] = LiveMapEntry(timeserial = "01", data = dataString("alice"))
+
+        val stateMsg = buildObjectState(
+            "root", mapOf("site1" to "02"),
+            map = mapState(entries = mapOf("name" to mapEntry(dataString("alice"), timeserial = "02"))),
+        )
+        val update = map.applyObjectSync(stateMsg)
+
+        assertIs<ObjectUpdate.NoOp>(update) // update.noop == true
+        assertEquals(dataString("alice"), map.data["name"]?.data)
     }
 
     /**

@@ -263,6 +263,70 @@ class LiveObjectSubscribeTest {
     }
 
     /**
+     * @UTS objects/unit/RTLO4b4c3c/tombstone-zero-value-counter-tears-down-0
+     */
+    @Test
+    fun `RTLO4b4c3c - tombstone update on an already-zero counter still fires listeners then deregisters`() = runTest {
+        val (client, _, root, mockWs) = setupSyncedChannel("test")
+        val updatesA = mutableListOf<InstanceSubscriptionEvent>()
+        val updatesB = mutableListOf<InstanceSubscriptionEvent>()
+        val control = mutableListOf<InstanceSubscriptionEvent>()
+        val instance = assertNotNull(root.get("score").instance()).asLiveCounter()
+
+        // Drive the counter (100 in the standard pool) down to 0 BEFORE registering the listeners
+        // under test, so they observe only the tombstone. poll_until(value() == 0) is the quiescence
+        // barrier that the increment has been applied before we subscribe, so the "-100" update is
+        // not seen by them.
+        mockWs.sendToClient(
+            buildObjectMessage("test", listOf(buildCounterInc("counter:score@1000", -100, "40", "remote"))),
+        )
+        pollUntil(5.seconds) { root.get("score").asLiveCounter().value() == 0.0 }
+
+        instance.subscribe(InstanceListener { event -> updatesA.add(event) })
+        instance.subscribe(InstanceListener { event -> updatesB.add(event) })
+
+        // OBJECT_DELETE tombstones the already-zero counter (zero-delta diff, RTLC14c → NOT a
+        // no-op). Await ALL involved listeners on this dispatch before asserting either count
+        // (negative-assertion quiescence, multi-listener case).
+        mockWs.sendToClient(
+            buildObjectMessage("test", listOf(buildObjectDelete("counter:score@1000", "50", "remote"))),
+        )
+        pollUntil(5.seconds) { updatesA.size >= 1 }
+        pollUntil(5.seconds) { updatesB.size >= 1 }
+
+        // Both listeners received the tombstone update even though the counter data did not change
+        // (0 → 0).
+        assertEquals(1, updatesA.size)
+        assertEquals(ObjectOperationAction.OBJECT_DELETE, assertNotNull(updatesA[0].message).operation.action)
+        assertEquals(1, updatesB.size)
+        assertEquals(ObjectOperationAction.OBJECT_DELETE, assertNotNull(updatesB[0].message).operation.action)
+
+        // Prove deregistration. As in the populated teardown case, a tombstoned object ignores
+        // further ops (RTLC7e), so use a SEPARATE LIVE object as the control: an update on
+        // map:profile@1000 dispatched AFTER the message under test. Messages are processed in
+        // order, so once the control fires, the follow-up "51" has also been processed.
+        val controlInst = assertNotNull(root.get("profile").instance()).asLiveMap()
+        controlInst.subscribe(InstanceListener { event -> control.add(event) })
+        mockWs.sendToClient(
+            buildObjectMessage("test", listOf(buildCounterInc("counter:score@1000", 3, "51", "remote"))),
+        )
+        mockWs.sendToClient(
+            buildObjectMessage(
+                "test",
+                listOf(buildMapSet("map:profile@1000", "quiescence_probe", dataString("x"), "52", "remote")),
+            ),
+        )
+        pollUntil(5.seconds) { control.size >= 1 }
+
+        // Control delivered, so any still-registered original listener would also have run: the
+        // tombstone deregistered them per RTLO4b4c3c.
+        assertEquals(1, updatesA.size)
+        assertEquals(1, updatesB.size)
+
+        client.close()
+    }
+
+    /**
      * @UTS objects/unit/RTLO4b4d/update-has-object-message-0
      */
     @Test

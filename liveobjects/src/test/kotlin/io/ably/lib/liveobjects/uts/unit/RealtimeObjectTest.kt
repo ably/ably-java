@@ -397,6 +397,46 @@ class RealtimeObjectTest {
     }
 
     /**
+     * @UTS objects/unit/RTO20d4/empty-synthetic-list-skips-sync-wait-0
+     */
+    @Test
+    fun `RTO20d4 - empty synthetic list skips the RTO20e sync wait`() = runTest {
+        val mockWs = buildMockWebSocket(
+            connected = connectedMessage(),
+            onAttach = attachedWithSync(),
+            onObject = { mock, msg ->
+                // build_ack_message(msg.msgSerial, [null]) - the single serial is null, so per
+                // RTO20d1 every synthetic ObjectMessage is skipped and the synthetic list is empty.
+                mock.sendToClient(
+                    ProtocolMessage(ProtocolMessage.Action.ack).apply {
+                        msgSerial = msg.msgSerial
+                        count = 1
+                        res = arrayOf(PublishResult(arrayOfNulls<String>(1)))
+                    },
+                )
+            },
+        )
+        val client = newClient(mockWs)
+        val channel = client.objectsChannel("test")
+        val root = channel.`object`.get().await()
+
+        // Move the objects sync state back to SYNCING so a normal publishAndApply would park in the
+        // RTO20e wait for SYNCED (cf. the RTO20e waits-for-synced case). No sync-completing message
+        // is ever sent: if the RTO20e wait were performed this future would never resolve.
+        sendAttachedAndAwaitSyncing(channel, mockWs, "sync2:cursor")
+
+        // The synthetic list is empty, so there is nothing to apply locally and publishAndApply
+        // completes without the RTO20e wait.
+        root.get("score").asLiveCounter().increment(10).await()
+
+        // Resolution despite the channel never reaching SYNCED proves the RTO20e wait was skipped;
+        // nothing was applied locally, so the local value is unchanged.
+        assertEquals(100.0, root.get("score").asLiveCounter().value())
+
+        client.close()
+    }
+
+    /**
      * @UTS objects/unit/RTO20e/waits-for-synced-0
      */
     @Test

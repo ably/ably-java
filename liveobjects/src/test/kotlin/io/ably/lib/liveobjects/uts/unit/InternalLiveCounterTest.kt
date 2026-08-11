@@ -316,6 +316,31 @@ class InternalLiveCounterTest {
     }
 
     /**
+     * @UTS objects/unit/RTLO5/tombstone-zero-value-counter-emits-update-0
+     */
+    @Test
+    fun `RTLO5 - OBJECT_DELETE on an already-zero counter still emits a non-noop tombstone update`() {
+        // RTLC14c: the tombstone diff (previousData 0, newData 0) is a zero delta, but the zero-delta
+        // noop exception must NOT be applied for a tombstone diff - the update is still delivered to
+        // drive the RTLO4b4c3c listener teardown. Complements object-delete-tombstones-0 (populated).
+        val counter = InternalLiveCounter.zeroValue("counter:abc@1000", ro)
+        counter.data.set(0.0)
+        counter.siteTimeserials["site1"] = "00"
+
+        val msg = buildObjectDelete("counter:abc@1000", "01", "site1", 1_700_000_000_000L)
+        val update = counter.applyObject(msg, ObjectsOperationSource.CHANNEL)
+
+        assertTrue(counter.isTombstoned) // counter.isTombstone == true
+        assertEquals(0.0, counter.data.get()) // counter.data == 0
+        // update.noop == false: a typed CounterUpdate (RTLO4e5/RTLC14c carve-out), not a NoOp
+        val counterUpdate = assertIs<ObjectUpdate.CounterUpdate>(update)
+        assertFalse(counterUpdate.noOp) // update.noop == false
+        assertTrue(counterUpdate.tombstone) // update.tombstone == true (RTLO4e6)
+        assertEquals(0.0, counterUpdate.amount) // update.update.amount == 0
+        assertEquals(msg, counterUpdate.objectMessage) // update.objectMessage == msg (RTLO4e7)
+    }
+
+    /**
      * @UTS objects/unit/RTLC7e/tombstoned-reject-ops-0
      */
     @Test
@@ -490,6 +515,24 @@ class InternalLiveCounterTest {
         val counterUpdate = assertIs<ObjectUpdate.CounterUpdate>(update)
         assertEquals(55.0, counterUpdate.amount)
         assertEquals(stateMsg, counterUpdate.objectMessage)
+    }
+
+    /**
+     * @UTS objects/unit/RTLC14c/zero-delta-diff-is-noop-0
+     */
+    @Test
+    fun `RTLC14c - zero-delta diff is a no-op`() {
+        // RTLC14c: as an exception to RTLC14b, when newData equals previousData the computed delta
+        // is 0, so the diff returns a no-op update (RTLO4b4b) - never delivered to subscribers
+        // (RTLO4b4c1); at the internal tier the flake-free proxy for "no event fires" is the no-op.
+        val counter = InternalLiveCounter.zeroValue("counter:abc@1000", ro)
+        counter.data.set(100.0)
+
+        val stateMsg = buildObjectState("counter:abc@1000", mapOf("site1" to "01"), counter = counterState(100))
+        val update = counter.applyObjectSync(stateMsg)
+
+        assertIs<ObjectUpdate.NoOp>(update) // update.noop == true
+        assertEquals(100.0, counter.data.get())
     }
 
     /**

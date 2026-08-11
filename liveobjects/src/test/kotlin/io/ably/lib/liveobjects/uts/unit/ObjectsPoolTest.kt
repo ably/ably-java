@@ -67,13 +67,13 @@ class ObjectsPoolTest {
      * asynchronously on the sequential scope, so these tests replay its attached branch synchronously:
      * RTO4d clear buffer, RTO4c start a new sync, and for HAS_OBJECTS=0 the RTO4b immediate completion.
      */
-    private fun processAttached(hasObjects: Boolean) {
-        ro.objectsManager.clearBufferedObjectOperations() // RTO4d
-        ro.objectsManager.startNewSync(null) // RTO4c
+    private fun processAttached(hasObjects: Boolean, target: DefaultRealtimeObject = ro) {
+        target.objectsManager.clearBufferedObjectOperations() // RTO4d
+        target.objectsManager.startNewSync(null) // RTO4c
         if (!hasObjects) {
-            ro.objectsPool.resetToInitialPool(true) // RTO4b1, RTO4b2, RTO4b2a
-            ro.objectsManager.clearSyncObjectsPool() // RTO4b3
-            ro.objectsManager.endSync() // RTO4b4
+            target.objectsPool.resetToInitialPool(true) // RTO4b1, RTO4b2, RTO4b2a
+            target.objectsManager.clearSyncObjectsPool() // RTO4b3
+            target.objectsManager.endSync() // RTO4b4
         }
     }
 
@@ -140,6 +140,50 @@ class ObjectsPoolTest {
         // exposed on the subscription event - the cleared root data above covers it.
         // RTO4b2a - the update is emitted without populating objectMessage
         assertNull(updates[0].message)
+    }
+
+    /**
+     * @UTS objects/unit/RTO4b2a/reset-of-empty-root-emits-no-update-0
+     */
+    @Test
+    fun `RTO4b2a - ATTACHED without HAS_OBJECTS on an already-empty root emits no update`() {
+        // Complements RTO4b/attached-no-objects-synced-0 (populated root). Here root is already
+        // empty, so the RTO4b2 reset removes no keys: the LiveMapUpdate has no changed keys and, per
+        // RTLM22c/RTLO4b4b, collapses to a no-op that must NOT be delivered to root subscribers.
+        ro.objectsPool.set("counter:abc@1000", InternalLiveCounter.zeroValue("counter:abc@1000", ro))
+        // root is already empty (zero-value InternalLiveMap per RTLM4c) - nothing to seed.
+        assertTrue(rootMap().data.isEmpty())
+
+        val updates = subscribeRootEvents()
+        processAttached(hasObjects = false)
+
+        assertEquals(ObjectsState.Synced, ro.state)
+        assertNull(ro.objectsPool.get("counter:abc@1000")) // RTO4b1: non-root objects are still removed
+        assertNotNull(ro.objectsPool.get("root"))
+        assertTrue(rootMap().data.isEmpty())
+        // RTO4b2a: no keys were removed, so the empty update collapses to a no-op and is not delivered.
+        assertEquals(0, updates.size)
+
+        // Liveness control: prove the subscription wiring is live — a reset that DOES remove a key
+        // still emits, so updates.size == 0 above reflects the empty-root collapse and not a dead
+        // subscription. Mirrors RTO4b/attached-no-objects-synced-0 on a SECOND pool. Emission at the
+        // ObjectsPool tier is synchronous (see that case), so no polling is required.
+        val ro2 = DefaultRealtimeObject("test", getMockAblyClientAdapter())
+        try {
+            val root2 = ro2.objectsPool.get(ROOT_OBJECT_ID) as InternalLiveMap
+            root2.data["name"] = LiveMapEntry(timeserial = "01", data = dataString("Alice"))
+            val control = mutableListOf<InstanceSubscriptionEvent>()
+            root2.subscribe(InstanceListener { event -> control.add(event) })
+
+            processAttached(hasObjects = false, target = ro2)
+
+            assertTrue(control.size >= 1)
+            // DEVIATION S-1 (see deviations.md): control[0].update == { "name": "removed" } is not
+            // exposed on the subscription event — the cleared root2 data below covers the removal.
+            assertTrue(root2.data.isEmpty())
+        } finally {
+            ro2.objectsPool.dispose() // DEVIATION S-4: dispose the second pool's GC coroutine
+        }
     }
 
     /**
