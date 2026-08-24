@@ -1,4 +1,4 @@
-package io.ably.lib.uts.integration.standard.liveobjects
+package io.ably.lib.liveobjects.uts.integration
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement

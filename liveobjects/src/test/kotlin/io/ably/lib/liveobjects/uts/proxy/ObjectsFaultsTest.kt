@@ -1,4 +1,4 @@
-package io.ably.lib.uts.integration.proxy.liveobjects
+package io.ably.lib.liveobjects.uts.proxy
 
 import io.ably.lib.liveobjects.path.PathObject
 import io.ably.lib.liveobjects.value.LiveMapValue

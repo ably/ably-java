@@ -2,12 +2,13 @@
 
 Deviations from the Ably spec identified during UTS test translation. Each entry records the spec point, what the spec requires, what the SDK actually does, and which test contains the deviation gate.
 
-**Scope:** this file now holds deviations for the tiers hosted in the `:uts` module — **realtime/rest
-(all tiers) and objects integration/proxy**. The **objects unit** tier moved to `:liveobjects`'s own
-test source set; its deviations (the typed-SDK / language adaptations and the intentional RTO18d entry
-that formerly lived here under groups 3 & 4) are in
-`liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/deviations.md`. See "Objects unit-tier
-deviations" at the bottom.
+**Scope:** this file now lives alongside the realtime UTS suites in the `:java` module
+(`lib/src/test/kotlin/io/ably/lib/uts/`) and holds deviations for the **realtime/rest tiers** it
+hosts. All **objects** tiers (unit, integration and proxy) moved to `:liveobjects`'s own test source
+set alongside the tests they document; their deviations (the typed-SDK / language adaptations, the
+intentional RTO18d entry, and any objects integration/proxy entries) are in
+`liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/deviations.md`. For the shared UTS infra these
+suites consume, the tier smoke examples, and the `RUN_DEVIATIONS` mechanism, see `uts/README.md`.
 
 Entries are grouped by actionability (shared taxonomy across both files; only groups with entries in
 this file appear as sections below):
@@ -89,9 +90,10 @@ this file appear as sections below):
 ---
 
 
-# Objects unit-tier deviations — moved
+# Objects deviations — moved
 
-The objects **unit** suite (and its typed-SDK / language-adaptation deviation records, i.e. the former
-groups 3 & 4 as they applied to objects) lives in `:liveobjects`'s own test source set:
+All objects tiers (**unit, integration and proxy**) live in `:liveobjects`'s own test source set,
+and their deviation records (the typed-SDK / language adaptations, the former groups 3 & 4 as they
+applied to objects, and any objects integration/proxy entries) are in
 `liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/deviations.md`. This file keeps only the
-deviations for the tiers hosted in `:uts` (realtime/rest, and objects integration/proxy).
+deviations for the realtime/rest tiers hosted in `:java`.

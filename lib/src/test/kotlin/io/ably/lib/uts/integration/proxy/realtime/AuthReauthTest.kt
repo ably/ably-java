@@ -120,7 +120,7 @@ class AuthReauthTest {
                 it.type == "ws_frame" &&
                     it.direction == "client_to_server" &&
                     it.message?.get("action")?.asInt == 17 &&
-                    it.message.get("auth")?.isJsonNull == false
+                    it.message?.get("auth")?.isJsonNull == false
             }
 
             assertTrue(

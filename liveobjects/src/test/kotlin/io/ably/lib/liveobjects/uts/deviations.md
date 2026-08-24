@@ -1,9 +1,15 @@
-# Deviations — UTS objects unit suite (`io.ably.lib.liveobjects.uts.unit`)
+# Deviations — UTS objects suites (`io.ably.lib.liveobjects.uts.*`)
 
+> **Scope:** this file holds deviations for **all three objects tiers** now hosted in `:liveobjects` —
+> objects **unit** (`io.ably.lib.liveobjects.uts.unit`), **integration**
+> (`io.ably.lib.liveobjects.uts.integration`) and **proxy** (`io.ably.lib.liveobjects.uts.proxy`).
+> The integration/proxy tiers moved here from `:uts` in Phase 3 alongside the tests they document.
+>
 > Records every place a generated test deviates from its UTS spec, using the manual's
-> **Recording deviations** entry format. Structural deviation vocabulary for this suite:
+> **Recording deviations** entry format. Structural deviation vocabulary for these suites:
 > S-1…S-4 in `.claude/skills/uts-to-kotlin/references/objects-mapping.md` §17.9.
-> (`:uts`-hosted tiers keep their own file at `uts/src/test/kotlin/io/ably/lib/uts/deviations.md`.)
+> (The realtime/rest tiers keep their own file, `:java`-hosted, at
+> `lib/src/test/kotlin/io/ably/lib/uts/deviations.md`.)
 
 ## UTS Spec Errors
 
