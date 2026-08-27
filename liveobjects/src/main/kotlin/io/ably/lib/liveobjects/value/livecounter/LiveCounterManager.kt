@@ -46,33 +46,33 @@ internal class LiveCounterManager(private val liveCounter: InternalLiveCounter):
    * @spec RTLC7 - Applies operations to LiveCounter
    * @spec RTLC7f1 - [message] is the source ObjectMessage that contains the operation
    */
-  internal fun applyOperation(operation: WireObjectOperation, message: WireObjectMessage): Boolean {
+  internal fun applyOperation(operation: WireObjectOperation, message: WireObjectMessage): ObjectUpdate {
     return when (operation.action) {
       WireObjectOperationAction.CounterCreate -> {
         val update = applyCounterCreate(operation, message) // RTLC7d1
         liveCounter.notifyUpdated(update) // RTLC7d1a
-        true // RTLC7d1b
+        update // RTLC7d1b - RTLC9g: return the LiveCounterUpdate
       }
       WireObjectOperationAction.CounterInc -> {
         if (operation.counterInc != null) {
           val update = applyCounterInc(operation.counterInc, message) // RTLC7d5
           liveCounter.notifyUpdated(update) // RTLC7d5a
-          true // RTLC7d5b
+          update // RTLC7d5b - RTLC9g: return the LiveCounterUpdate
         } else {
           // Log a warning and skip only this operation - throwing would abort every
           // sibling operation in the same ProtocolMessage batch
           Log.w(tag, "No payload found for ${operation.action} op for LiveCounter objectId=${objectId}, skipping")
-          false
+          ObjectUpdate.NoOp
         }
       }
       WireObjectOperationAction.ObjectDelete -> {
         val update = liveCounter.tombstone(message.serialTimestamp, message) // RTLC7d4
         liveCounter.notifyUpdated(update) // RTLC7d4c
-        true // RTLC7d4b
+        update // RTLC7d4b - RTLC9g: return the LiveCounterUpdate
       }
       else -> {
         Log.w(tag, "Invalid ${operation.action} op for LiveCounter objectId=${objectId}") // RTLC7d3
-        false
+        ObjectUpdate.NoOp
       }
     }
   }
@@ -110,8 +110,7 @@ internal class LiveCounterManager(private val liveCounter: InternalLiveCounter):
   }
 
   internal fun calculateUpdateFromDataDiff(prevData: Double, newData: Double): ObjectUpdate {
-    // A zero delta means the value did not change (e.g. clearing an already-zero counter).
-    // Return the no-op update so notifyUpdated() short-circuits and no event is emitted. Spec: RTLC14b
+    // RTLC14c - exception to RTLC14b: if newData == prevData the delta is 0 (no change), so return a no-op update (per RTLO4b4b) instead of a LiveCounterUpdate of amount newData - prevData
     return if (newData == prevData) noOpCounterUpdate else ObjectUpdate.CounterUpdate(newData - prevData)
   }
 
