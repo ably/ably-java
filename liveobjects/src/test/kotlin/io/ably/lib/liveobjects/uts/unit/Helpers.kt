@@ -252,7 +252,8 @@ internal fun buildPublicObjectMessage(objectMessage: WireObjectMessage, channelN
     objectMessage.toPublicMessage(channelName)
 
 // `provision_objects_via_rest(...)` is intentionally not here — it's REST fixture provisioning for
-// *integration* tests and belongs with the :uts integration tier.
+// *integration* tests and lives with this module's integration tier
+// (io.ably.lib.liveobjects.uts.integration.Helpers).
 
 // ---------------------------------------------------------------------------
 // STANDARD_POOL_OBJECTS — the fixed tree shared by all objects unit specs

@@ -636,6 +636,11 @@ class PathObjectSubscribeTest {
         mockWs.sendToClient(
             buildObjectMessage("test", listOf(buildMapSet("root", "alias", dataObjectId("counter:score@1000"), "98", "remote"))),
         )
+        // Await the seed's observable effect before subscribing — the SDK applies inbound messages
+        // asynchronously, so without this the MAP_SET dispatch races the subscribes below and the
+        // alias listener can also see the seed event (2 instead of 1). Same pattern as the depth
+        // tests in this file.
+        pollUntil(5.seconds) { root.get("alias").exists() }
 
         root.get("score").subscribe(PathObjectListener { event -> eventsScore.add(event) })
         root.get("alias").subscribe(PathObjectListener { event -> eventsAlias.add(event) })

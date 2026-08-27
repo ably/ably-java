@@ -1,10 +1,11 @@
 ---
-description: "Translate the UTS pseudocode test specs in a whole module directory into runnable Kotlin tests in the ably-java uts module. Takes a UTS module directory (e.g. <cloned-ably-specification-repo-path>/uts/objects), validates its structure, resolves the target ably-java module, lets you pick a tier (unit/integration/proxy) and which specs, then derives a Kotlin test per spec. Usage: /uts-to-kotlin <path-to-uts-module-directory>"
+description: "Translate the UTS pseudocode test specs in a whole module directory into runnable Kotlin tests in the owning ably-java module (:java for realtime/rest, :liveobjects for objects; :uts hosts the shared infra + smoke examples). Takes a UTS module directory (e.g. <cloned-ably-specification-repo-path>/uts/objects), validates its structure, resolves the target ably-java module, lets you pick a tier (unit/integration/proxy) and which specs, then derives a Kotlin test per spec. Usage: /uts-to-kotlin <path-to-uts-module-directory>"
 allowed-tools: Bash, Read, Edit, Write, WebFetch
 ---
 
 Translate the UTS pseudocode test specs under the **module directory** `$ARGUMENTS` into runnable Kotlin
-tests in the ably-java `uts` module.
+tests in the owning ably-java module (`:java` for realtime/rest, `:liveobjects` for objects; `:uts` hosts
+the shared infra + smoke examples).
 
 `$ARGUMENTS` is a UTS *module* directory — a directory sitting directly under the spec repo's `uts/`,
 e.g. `<cloned-ably-specification-repo-path>/uts/objects`. Its name (`objects`, `realtime`,
@@ -46,9 +47,10 @@ python3 .claude/skills/uts-to-kotlin/scripts/resolve_uts.py "<module-dir>"
 
 It prints one JSON object. **If `ok` is `false`, relay `message` to the user and stop** — error codes:
 `NOT_A_UTS_MODULE_PATH` (not a `.../uts/<module>` directory), `DIR_NOT_FOUND`, `NO_TIER_DIRS` (no `unit/`
-or `integration/`). On success it gives `sourceModule`, `mapped`, `testRoot`, `translationNotes`, and a
+or `integration/`). On success it gives `sourceModule`, `mapped`, `translationNotes`, and a
 `tiers` object with one entry per tier (`unit` / `integration` / `proxy`), each carrying `present`,
-`sourceDir`, `targetDir`, `package`, and `specs` (a list of `{file, className}`). Everything downstream
+`sourceDir`, `targetDir`, `package`, `module` (the owning Gradle module — `:java` / `:liveobjects` /
+`:uts`), and `specs` (a list of `{file, className}`). Everything downstream
 reads from this output — treat it as the single source of truth and don't recompute paths or names by hand.
 
 `translationNotes` is the path to a per-module ably-js → ably-java type/interface map when the module
@@ -61,12 +63,15 @@ Phase 2** — see Step 1.
 The target dirs come from `uts-package-mapping.json` (alongside this skill); spec and ably-java module names
 don't always match (e.g. `objects` → `liveobjects`), which is why it's explicit.
 
-A tier's mapping value is either a **string** (a path relative to the global `testRoot`, i.e. inside the
-`:uts` module) or an **object** `{root, path}` carrying its own module root — used when a tier's tests live
-in another Gradle module's test source set (e.g. `objects`/`unit` →
-`liveobjects/src/test/kotlin/io/ably/lib/liveobjects` + `uts/unit`, because those specs assert on
-`:liveobjects` internals only visible to that module's own tests). The resolver handles both forms; its
-`targetDir`/`package` output is what you use either way.
+Each tier's mapping value is **one repo-root-relative path** (never a machine-absolute `/Users/...` path).
+The resolver derives everything from it: `targetDir` is the path, `package` is the path after
+`src/test/kotlin/` with `/` → `.`, and `module` is the owning Gradle module from the path's first segment
+(`lib/` → `:java`, `liveobjects/` → `:liveobjects`, `uts/` → `:uts`). Use the resolver's `targetDir` /
+`package` / `module` output directly — don't recompute. The `objects` entry is **hand-maintained**: its
+tiers live in `:liveobjects`'s own test source set (its specs assert on `:liveobjects` internals only
+visible to that module's own tests) under `liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/{unit,
+integration,proxy}` — a sibling layout that differs from the `--create` template below, so `--create` never
+regenerates it.
 
 - **If `mapped` is `true`**: show the resolved `targetDir` for each present tier and ask the user to confirm.
   If they say the mapping is wrong, ask for the correct ably-java module base name and re-run with `--create`
@@ -79,9 +84,13 @@ in another Gradle module's test source set (e.g. `objects`/`unit` →
   python3 .claude/skills/uts-to-kotlin/scripts/resolve_uts.py "<module-dir>" --create <target>
   ```
 
-  This adds `unit/<target>`, `integration/standard/<target>`, and `integration/proxy/<target>` under
-  `packages` and re-prints the resolved output. (`<target>` must be a simple module base name — letters,
-  digits, underscore; the script returns `BAD_TARGET_NAME` otherwise, so just ask again.)
+  This adds full `lib/`-rooted (`:java`) paths under `packages` —
+  `lib/src/test/kotlin/io/ably/lib/uts/unit/<target>`, `.../integration/standard/<target>`, and
+  `.../integration/proxy/<target>` — and re-prints the resolved output. **`--create` only scaffolds
+  `:java`-hosted modules;** a module whose tiers live in another Gradle module (like `objects` →
+  `:liveobjects`, a sibling `uts/{unit,integration,proxy}` layout) still needs a hand-edit afterwards.
+  (`<target>` must be a simple module base name — letters, digits, underscore; the script returns
+  `BAD_TARGET_NAME` otherwise, so just ask again.)
 
 ## Step C — Choose the tier
 
@@ -163,12 +172,18 @@ integration tests** section; **proxy** → the proxy subsections of the **Integr
 > and a file-map of every infra helper with its public surface (Appendix B). Skim it for the *why* and
 > the *what's available*; the per-file list below is the *what to open for exact signatures* before
 > writing code.
+>
+> README §9–§11's walkthroughs use the `:uts` infra smoke tests (`UnitInfraSmokeTest` /
+> `IntegrationInfraSmokeTest` / `ProxyInfraSmokeTest`) as examples — treat them as the **structural**
+> template only (client wiring, guarded awaits, teardown). They are deliberately NOT spec-derived: no
+> `@UTS` marker, several teaching points folded into each method. Every derived test still needs one
+> `@Test` with a `@UTS <id>` KDoc per spec Test ID — never copy the smokes' marker-less
+> multi-point-per-method shape.
 
-Infrastructure lives in `:uts`'s **test-fixtures** variant —
-`uts/src/testFixtures/kotlin/io/ably/lib/uts/infra/` — so other Gradle modules can consume it via
-`testImplementation(testFixtures(project(":uts")))`; `:uts`'s own tests see it automatically.
-Kotlin packages are `io.ably.lib.uts.infra.*` regardless of source set, so imports in generated
-tests are unaffected. It is split by tier:
+Infrastructure lives in `:uts`'s **main** source set —
+`uts/src/main/kotlin/io/ably/lib/uts/infra/` — so other Gradle modules can consume it via
+`testImplementation(project(":uts"))`. Kotlin packages are `io.ably.lib.uts.infra.*`, so imports in
+generated tests are unaffected. It is split by tier:
 
 - `infra/Utils.kt` — shared async helpers (`awaitState`, `awaitChannelState`, `pollUntil`), package `io.ably.lib.uts.infra`.
 - `infra/unit/` — unit-test mocks/factories (`ClientFactories.kt`, `MockWebSocket.kt`, `MockHttpClient.kt`, `FakeClock.kt`, `MockEvent.kt`, the `PendingConnection`/`PendingRequest` pairs, and `Utils.kt` with the `ConnectionDetails { }` builder), package `io.ably.lib.uts.infra.unit`.
@@ -176,8 +191,9 @@ tests are unaffected. It is split by tier:
 
 For a **unit** test, read all files under `infra/unit/` plus `infra/Utils.kt` before generating any code (you need exact method signatures).
 
-**Objects/unit additionally:** the suite lives in `:liveobjects`'s own test source set (Step B), so also
-read the module-local helpers at
+**Module-local helpers.** Every module's tiers live in that module's own test source set (the resolver's
+`targetDir` / `module`), so also read any module-local helpers alongside the target — they sit in the
+tier's `targetDir`. For **objects/unit** (module `:liveobjects`) that's
 `liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/unit/Helpers.kt` (package
 `io.ably.lib.liveobjects.uts.unit`) — `setupSyncedChannel`, the `build_*` message builders (typed `Wire*`
 constructions, no JSON/reflection), `STANDARD_POOL_OBJECTS` and the canonical serial constants. Access
@@ -376,10 +392,11 @@ This scaffold is for the **unit** tier — it wires the mocked transport (`infra
 `ConnectionDetails`). For the **integration** (direct sandbox) and **proxy** tiers, start from the
 **Proxy integration tests** section instead (`SandboxApp` / `ProxySession` wiring), not from this template.
 
-For **objects/unit** the same scaffold applies with two differences: the package is the resolver's
-`io.ably.lib.liveobjects.uts.unit`, and channel/objects setup goes through the module-local helpers
-(`setupSyncedChannel` etc. from the same package — see Step 3) rather than raw `MockWebSocket` wiring.
-The `io.ably.lib.uts.infra.*` imports are unchanged.
+The `package` is always the resolver's `package` for the chosen tier (Step 2), and the
+`io.ably.lib.uts.infra.*` imports stay valid whatever module the tier lands in. For **objects/unit** the
+same scaffold applies with the resolver's `io.ably.lib.liveobjects.uts.unit` package, and channel/objects
+setup goes through the module-local helpers (`setupSyncedChannel` etc. from the same package — see Step 3)
+rather than raw `MockWebSocket` wiring.
 
 ```kotlin
 package <package>                              // the resolver's package for the chosen tier (Step 2)
@@ -435,13 +452,14 @@ class <className> {
 
 ## Step 5 — Compile
 
-Compile the module that owns the chosen tier's `targetDir` (`:uts` unless the mapping's object form says
-otherwise):
+Compile the module the resolver reports for the chosen tier (its `module` field — Step A):
 
 ```bash
-./gradlew :uts:compileTestKotlin           # tiers inside the :uts module
-./gradlew :liveobjects:compileTestKotlin   # objects/unit (targetDir under liveobjects/)
+./gradlew :java:compileTestKotlin          # realtime / rest tiers (module :java)
+./gradlew :liveobjects:compileTestKotlin   # objects tiers (module :liveobjects)
 ```
+
+(`:uts` is no longer a spec-test compile target — it holds only the shared infra + smoke tests.)
 
 Fix any compilation errors and recompile until clean. Common issues:
 - Missing imports
@@ -460,21 +478,24 @@ every failure via the decision tree below. Each test must end in exactly one of 
 - a documented **UTS spec error** — **fails fast** (the spec is wrong; fix belongs in the spec). This is the
   one acceptable red.
 
-Use the per-tier task of the module that owns the tier's `targetDir`, and the resolver's `package` + the
-spec's `className` for the `--tests` filter:
+Use the per-tier task of the module the resolver reports for the tier (its `module` field), and the
+resolver's `package` + the spec's `className` for the `--tests` filter:
 
 ```bash
-# unit tier, tiers inside :uts   → io.ably.lib.uts.unit.*
-./gradlew :uts:runUtsUnitTests --tests "<package>.<className>"
+# realtime / rest unit (module :java)               → io.ably.lib.uts.unit.*
+./gradlew :java:runUtsUnitTests --tests "<package>.<className>"
 
-# objects/unit (in :liveobjects) → io.ably.lib.liveobjects.uts.unit.*
+# realtime / rest integration + proxy (module :java) → io.ably.lib.uts.integration.*
+./gradlew :java:runUtsIntegrationTests --tests "<package>.<className>"
+
+# objects unit (module :liveobjects)                → io.ably.lib.liveobjects.uts.unit.*
 ./gradlew :liveobjects:runLiveObjectsUnitTests --tests "<package>.<className>"
 
-# integration / proxy            → io.ably.lib.uts.integration.*
-./gradlew :uts:runUtsIntegrationTests --tests "<package>.<className>"
+# objects integration + proxy (module :liveobjects) → io.ably.lib.liveobjects.uts.{integration,proxy}.*
+./gradlew :liveobjects:runLiveObjectsIntegrationTests --tests "<package>.<className>"
 ```
 
-(`./gradlew :uts:test` still runs all `:uts` tiers — unit, standard, and proxy.)
+(`./gradlew :uts:test` now runs only the infra smoke tests — see `uts/README.md`.)
 
 Handle test failures using this decision tree (the **Required reading** doc you fetched up front has the full detail):
 
@@ -536,7 +557,7 @@ fun `RTLC7c2 - LOCAL source does not write siteTimeserials`() = runTest {
 ### Deviations file
 
 Append to the deviations file that belongs to the tier's module:
-`uts/src/test/kotlin/io/ably/lib/uts/deviations.md` for tiers inside `:uts`, or
+`lib/src/test/kotlin/io/ably/lib/uts/deviations.md` for realtime/rest tiers (module `:java`), or
 `liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/deviations.md` for objects/unit. Use the manual's
 **Recording deviations** entry format and sections. The ably-java-specific mapping: a **UTS Spec Error** (test fails fast — fix in
 the spec) goes under the manual's *UTS Spec Errors* section; an **SDK deviation** (env-gated/adapted — fix
@@ -624,7 +645,7 @@ For each test case, verify:
 Deviations are discovered by running, so this check applies in evaluate mode. For any place where the
 generated test diverges from the spec pseudocode (adapted assertion, env-gated skip, or omitted step):
 - [ ] A `// DEVIATION:` comment explains why
-- [ ] The deviation is recorded in `uts/src/test/kotlin/io/ably/lib/uts/deviations.md`
+- [ ] The deviation is recorded in `lib/src/test/kotlin/io/ably/lib/uts/deviations.md`
 
 If you find gaps during this review, fix them, then **re-run the audit script** until `missingInKotlin` /
 `orphanInKotlin` are empty and every `perTest` entry reconciles, and re-run Step 5 (compile) — and, in
@@ -703,7 +724,7 @@ Use generous timeouts (10–30s) — real network is involved. Everything else i
 
 ### Infrastructure
 
-Three helpers live under `uts/src/testFixtures/kotlin/io/ably/lib/uts/infra/integration/`. **Read the ones your tier uses before translating an integration spec** — they hold the exact method signatures. `SandboxApp` serves **both** tiers; `ProxyManager` and `ProxySession` are **proxy-only**.
+Three helpers live under `uts/src/main/kotlin/io/ably/lib/uts/infra/integration/`. **Read the ones your tier uses before translating an integration spec** — they hold the exact method signatures. `SandboxApp` serves **both** tiers; `ProxyManager` and `ProxySession` are **proxy-only**.
 
 - **`ProxyManager`** (`infra/integration/proxy/ProxyManager.kt`, package `io.ably.lib.uts.infra.integration.proxy`) — downloads/starts the shared `uts-proxy` process. Call `ProxyManager.ensureProxy()` once per suite in setup.
 - **`ProxySession`** (`infra/integration/proxy/ProxySession.kt`, same package) — one programmable session wrapping the proxy control API; also defines the `connectThroughProxy` extension and the rule-builder helpers.

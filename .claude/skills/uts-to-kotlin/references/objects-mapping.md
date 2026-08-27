@@ -401,8 +401,9 @@ delivered to subscription listeners) map to ably-java interfaces with getters (p
 > obtain an `ObjectMessage` from a subscription event (`event.getMessage()`, §8); there is no public
 > factory. The spec's explicit construction-from-wire (`PublicObjectMessage.fromObjectMessage(source,
 > channel)` / `PublicObjectOperation.fromObjectOperation(op)`, `PAOM3`/`PAOOP3`, in
-> `public_object_message.md`) is `internal` to `:liveobjects` — but the unit helpers expose it **by
-> reflection** as `buildPublicObjectMessage(wireJson, channelName)` (§13). So `public_object_message.md` is
+> `public_object_message.md`) is `internal` to `:liveobjects` — but the unit helpers expose it as
+> `buildPublicObjectMessage(wireMessage, channelName)` (§13), a direct `toPublicMessage` call (no reflection,
+> since `:liveobjects`'s internals are visible to its own tests). So `public_object_message.md` is
 > translatable: build the source with the op builders (`buildMapSet(...)`, `buildCounterInc(...)`, …) and
 > assert the public getters on the result.
 
@@ -507,7 +508,7 @@ Several **unit** specs assert on the **internal CRDT graph**, not the public API
 - the internal-state assertions in `internal_live_counter.md` / `internal_live_map.md` (`.data`,
   `.siteTimeserials`, `.createOperationIsMerged`, `.isTombstone`, `applyOperation`, `replaceData`) —
   internal; their public-facing read/write counterparts live in `internal_live_counter_api.md` /
-  `internal_live_map_api.md` (which *are* translated in `:uts`).
+  `internal_live_map_api.md` (which *are* translated in `:liveobjects`).
 - `value_types.md` — the *public* `LiveMap.create` / `LiveCounter.create` surface maps via §6, but the
   evaluation half (`COUNTER_CREATE` / `MAP_CREATE` `ObjectMessage` generation, nonce/`initialValue`/
   `objectId` derivation, the `*WithObjectId` wire forms) is internal/wire-level.
@@ -515,16 +516,16 @@ Several **unit** specs assert on the **internal CRDT graph**, not the public API
   is public and maps via §2/§12, but `publish` / `publishAndApply` (`RTO15`/`RTO20`, marked `internal` in the
   IDL) and the OBJECT/ACK wire assertions are internal.
 - `public_object_message.md` — **translatable** via the `buildPublicObjectMessage` helper (below), which
-  reflectively performs the `PAOM3`/`PAOOP3` construction (`WireObjectMessage` → `DefaultObjectMessage`)
+  performs the `PAOM3`/`PAOOP3` construction (`WireObjectMessage` → `DefaultObjectMessage`)
   that is otherwise `internal`. Build the source with the op builders and assert the public getters (§11).
 
 In ably-java these are **not public**. They live in the `:liveobjects` module as `Internal*` / `Default*` / `Wire*` /
 `ResolvedValue` / `Leaf` / `MapRef` / `CounterRef` classes (package `io.ably.lib.liveobjects.*`,
-implementation source set), visible only to that module's own tests. Because of this, **the entire
-objects unit tier translates into `:liveobjects`'s own test source set** —
-`liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/unit/` (the resolver's Step B object-form
-mapping) — while `:uts` hosts the objects **integration** and **proxy** tiers (public API +
-`testRuntimeOnly(project(":liveobjects"))` for the plugin at runtime). Consequences when translating:
+implementation source set), visible only to that module's own tests. Because of this, **all objects tiers
+translate into `:liveobjects`'s own test source set** —
+`liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/{unit,integration,proxy}/` — so the unit tier
+sees module internals directly, and the integration/proxy tiers reach the plugin through the same module.
+Consequences when translating:
 
 - **Public-tier unit specs** (`path_object*.md`, `instance.md`, `live_object_subscribe.md`,
   `public_object_message.md`, `internal_live_counter_api.md`, `internal_live_map_api.md`, and the
@@ -548,7 +549,7 @@ mapping) — while `:uts` hosts the objects **integration** and **proxy** tiers 
 Every objects unit spec opens with `setup_synced_channel` and constructs protocol/object messages with the
 `build_*` helpers. These are implemented in
 `liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/unit/Helpers.kt` (package
-`io.ably.lib.liveobjects.uts.unit`; transport bootstrap via the shared `io.ably.lib.uts.infra.*` fixtures,
+`io.ably.lib.liveobjects.uts.unit`; transport bootstrap via the shared `io.ably.lib.uts.infra.*` infra helpers,
 message construction via the typed `Wire*` DTOs — §17.10) — **call them; don't hand-roll the mock setup or
 message wire forms.**
 
@@ -596,10 +597,11 @@ wire `action` / `semantics` are integer enum codes — the builders emit the cod
 Some objects **integration** specs (tier `integration/standard`) seed object state over REST *before* the
 realtime client connects, via the spec's `## REST Fixture Provisioning` helper `provision_objects_via_rest`.
 Its ably-java translation lives in
-`uts/src/test/kotlin/io/ably/lib/uts/integration/standard/liveobjects/Helpers.kt` (package
-`io.ably.lib.uts.integration.standard.liveobjects`) — **call it; don't hand-roll the REST request or payload
-JSON.** (Currently only `objects/integration/RTPO15` uses it.) Unlike the unit helpers (§13), this needs no
-reflection and no `:liveobjects` dependency — it compiles and runs against `:java`'s public `AblyRest`.
+`liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/integration/Helpers.kt` (package
+`io.ably.lib.liveobjects.uts.integration`) — **call it; don't hand-roll the REST request or payload
+JSON.** (Currently only `objects/integration/RTPO15` uses it.) It lives inside `:liveobjects`'s own tests
+now (like the whole objects suite), but still uses only the public `AblyRest` — the "public API only for
+REST provisioning" convention survives even though the module's internals are visible.
 
 | Spec helper / operation shape | integration `Helpers.kt` |
 |---|---|
@@ -707,7 +709,7 @@ This section maps the **5 internal-graph unit specs** — `internal_live_counter
 `internal_live_map.md`, `object_id.md`, `objects_pool.md`, `parent_references.md` (they assert on
 internal CRDT state, so they cannot translate against the public API — background in
 `JAVA_LIVEOBJECTS_INTERNAL_METHODS_ACCESS_REPORT.md` at the repo root) — onto the internal engine.
-Unlike §1–§12 these do **not** translate into the `:uts` module: they go into
+Like the rest of the objects suite, they go into
 **`liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/unit/`** (package
 `io.ably.lib.liveobjects.uts.unit`, task `:liveobjects:runLiveObjectsUnitTests`), where the test
 compilation is associated with `main`, so every `internal` declaration is directly visible — no
