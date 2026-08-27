@@ -565,6 +565,7 @@ message wire forms.**
 | `captured_messages` (outgoing OBJECT publishes — RTLC12/RTLM20/RTO15 wire asserts) | `mockWs.capturedObjectMessages(): List<ProtocolMessage>` |
 | inline ObjectData / map-entry / state fragments | `dataString` / `dataNumber` / `dataBoolean` / `dataObjectId` / `dataBytes` / `dataJson`, `mapEntry`, `mapState`, `counterState`, `mapCreateOp`, `counterCreateOp` |
 | Canonical Constants: `POOL_SERIAL`, `ack_serial(m, i)`, `remote_serial(i)`, `below_ack_serial(i)` | `POOL_SERIAL` (`"t:0"`), `ackSerial(msgSerial, i)`, `remoteSerial(i)`, `belowAckSerial(i)` — use these, never hand-rolled `"t:N"` literals (serials are compared as strings, so ad-hoc values silently sort wrong) |
+| `process_pending_events()` | `` (channel.`object` as DefaultRealtimeObject).asyncFuture { }.await() `` — flushes the objects sequential scope (single-lane FIFO); the empty block cannot run until previously dispatched work has completed or suspended at its wait point |
 
 `mock_ws.send_to_client(...)` is the existing `mockWs.sendToClient(...)` (§ mock API in the main skill). The
 wire `action` / `semantics` are integer enum codes — the builders emit the codes for you.

@@ -474,6 +474,10 @@ class RealtimeObjectTest {
 
         // The publish and its ACK complete against the mock; publishAndApply parks in the RTO20e
         // wait for SYNCED.
+
+        // process_pending_events(): flush the sequential scope so increment()'s publishAndApply
+        // has parked in the RTO20e sync wait before the injected DETACHED.
+        (channel.`object` as DefaultRealtimeObject).asyncFuture { }.await()
         assertFalse(incFuture.isDone)
 
         // A client-side detach then moves the channel to DETACHED.
@@ -499,6 +503,10 @@ class RealtimeObjectTest {
 
         // The publish and its ACK complete against the mock; publishAndApply parks in the RTO20e
         // wait for SYNCED.
+
+        // process_pending_events(): flush the sequential scope so increment()'s publishAndApply
+        // has parked in the RTO20e sync wait before the injected ERROR->FAILED.
+        (channel.`object` as DefaultRealtimeObject).asyncFuture { }.await()
         assertFalse(incFuture.isDone)
 
         // Then the channel ERROR moves the channel to FAILED.
@@ -531,6 +539,10 @@ class RealtimeObjectTest {
 
         val getFuture = channel.`object`.get()
 
+        // process_pending_events(): flush the sequential scope so get() has parked its sync waiter
+        // before the injected DETACHED.
+        (channel.`object` as DefaultRealtimeObject).asyncFuture { }.await()
+
         // While still SYNCING the get() cannot complete — it is parked waiting for SYNCED.
         assertFalse(getFuture.isDone)
 
@@ -559,6 +571,10 @@ class RealtimeObjectTest {
         sendAttachedAndAwaitSyncing(channel, mockWs, "sync2:cursor")
 
         val getFuture = channel.`object`.get()
+
+        // process_pending_events(): flush the sequential scope so get() has parked its sync waiter
+        // before the injected SUSPENDED.
+        ro.asyncFuture { }.await()
         assertFalse(getFuture.isDone)
 
         // RTO27b SUSPENDED retains objects data but RTO23c1 still fails any in-flight get() sync wait.
@@ -586,6 +602,10 @@ class RealtimeObjectTest {
         sendAttachedAndAwaitSyncing(channel, mockWs, "sync2:cursor")
 
         val getFuture = channel.`object`.get()
+
+        // process_pending_events(): flush the sequential scope so get() has parked its sync waiter
+        // before the injected ERROR->FAILED.
+        (channel.`object` as DefaultRealtimeObject).asyncFuture { }.await()
         assertFalse(getFuture.isDone)
 
         // A channel ERROR moves the channel to FAILED and sets its errorReason.
