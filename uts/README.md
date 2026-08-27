@@ -170,7 +170,7 @@ what's missing". The reference tests this guide walks through correspond to thes
 
 > There is also a fifth, *referenced* spec:
 > [`docs/proxy.md`](https://github.com/ably/specification/blob/main/uts/docs/proxy.md)
-> (in the spec repo under `uts/realtime/integration/helpers/`). It defines the proxy's control API, rule format,
+> (in the spec repo under `uts/docs/`). It defines the proxy's control API, rule format,
 > action types, and the **protocol message action-number table** (CONNECTED=4, ATTACH=10, AUTH=17,
 > …). The Kotlin `ProxySession` is the client for exactly that API.
 
@@ -325,6 +325,16 @@ additionally reach `:liveobjects`-internal CRDT state (`InternalLiveMap`/`Intern
 `ObjectsPool`), which is why they live in `:liveobjects`'s own test source set — including the objects
 **unit** tier, whose internal-graph specs cannot be expressed from outside that module. See
 `.claude/skills/uts-to-kotlin/uts-package-mapping.json` and `MOVE_COMMON_INFRA/`.
+
+> **Future work — publishing `:uts` for out-of-repo consumers.** Promoting the infra into `:uts`'s
+> own main source set (rather than a separate `:test-support` module) leaves it *publishable later
+> without restructuring* — but publishing is a deliberate commitment, not a default. The trigger is a
+> consumer outside this repo, in practice the **Chat SDK**: if Chat lands in-repo it just consumes
+> `testImplementation(project(":uts"))` like every other module and nothing changes; if Chat is a
+> separate repo, decide *deliberately* between publishing `:uts` as a versioned artifact, source-copying
+> the infra, or a shared git submodule. Publishing turns test infra into a maintained artifact with a
+> release cadence and compatibility expectations, so that choice (and the release-train / API-hygiene
+> checklist it implies) stays gated and unscheduled until the trigger fires.
 
 ---
 
