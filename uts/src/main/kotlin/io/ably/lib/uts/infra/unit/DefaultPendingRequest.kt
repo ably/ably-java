@@ -4,6 +4,7 @@ import io.ably.lib.network.FailedConnectionException
 import io.ably.lib.network.HttpBody
 import io.ably.lib.network.HttpRequest
 import io.ably.lib.network.HttpResponse
+import io.ably.lib.util.Serialisation
 import kotlin.time.Duration
 import kotlinx.coroutines.CompletableDeferred
 import java.net.SocketTimeoutException
@@ -20,14 +21,15 @@ internal class DefaultPendingRequest(
     override fun respondWith(status: Int, body: Any, headers: Map<String, String>) {
         val bytes = when (body) {
             is ByteArray -> body
-            else -> body.toString().toByteArray(Charsets.UTF_8)
+            is String -> body.toByteArray(Charsets.UTF_8)
+            else -> Serialisation.gson.toJson(body).toByteArray(Charsets.UTF_8)
         }
         deferred.complete(
             HttpResponse.builder()
                 .code(status)
                 .message("")
                 .body(HttpBody("application/json", bytes))
-                .headers(emptyMap())
+                .headers(headers.mapValues { listOf(it.value) })
                 .build()
         )
     }

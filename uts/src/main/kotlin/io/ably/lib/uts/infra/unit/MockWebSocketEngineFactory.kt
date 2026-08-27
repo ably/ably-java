@@ -55,7 +55,10 @@ internal class MockWebSocketClient(
       onClientClose(code, reason)
       listener.onClose(code, reason)   // drive the SDK
     }
-    override fun cancel(code: Int, reason: String) { onClientClose(code, reason) }
+    override fun cancel(code: Int, reason: String) {
+      onClientClose(code, reason)
+      listener.onClose(code, reason)   // drive the SDK
+    }
     override fun send(message: ByteArray) { onBinaryFrame(message) }
     override fun send(message: String) { onTextFrame(message) }
 }

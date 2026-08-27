@@ -46,9 +46,9 @@ class MockWebSocket(config: WebSocketMockConfig = WebSocketMockConfig()) {
     /** Snapshot of all events recorded since construction (or last [reset]). */
     val events: List<MockEvent> get() = _events.toList()
 
-    private var _pendingConnections = Channel<PendingConnection>(Channel.UNLIMITED)
-    private var _messagesFromClient = Channel<ProtocolMessage>(Channel.UNLIMITED)
-    private var _clientCloseEvents = Channel<MockEvent.ClientClose>(Channel.UNLIMITED)
+    @Volatile private var _pendingConnections = Channel<PendingConnection>(Channel.UNLIMITED)
+    @Volatile private var _messagesFromClient = Channel<ProtocolMessage>(Channel.UNLIMITED)
+    @Volatile private var _clientCloseEvents = Channel<MockEvent.ClientClose>(Channel.UNLIMITED)
 
     @Volatile private var activeListener: WebSocketListener? = null
 

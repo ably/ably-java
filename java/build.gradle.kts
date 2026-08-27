@@ -40,7 +40,9 @@ dependencies {
 }
 
 // kotlin-stdlib guardrail (invariant I5): the Kotlin plugin auto-adds kotlin-stdlib to the module's
-// main dependency scope, which would leak into :java's published POM/runtime. :java is Kotlin-free at
+// main dependency scope, which would leak into :java's published POM/runtime. The leak comes from the
+// PLUGIN, NOT from the testImplementation(project(":uts")) dependency — test scopes never enter the
+// POM (verified: removing the :uts dep leaves the leak identical). :java is Kotlin-free at
 // runtime, so strip it from the main artifact scopes. kotlin-stdlib still reaches the TEST classpath
 // transitively (via :uts's kotlin-test-junit5), so the UTS Kotlin suites compile and run.
 // Verified empirically on Kotlin 2.1.10: the plugin adds stdlib lazily (it does not appear in any

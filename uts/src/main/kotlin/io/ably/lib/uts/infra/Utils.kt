@@ -28,11 +28,18 @@ suspend fun awaitState(
   withContext(Dispatchers.Default.limitedParallelism(1)) {
     withTimeout(timeout) {
       suspendCancellableCoroutine { cont ->
-        val listener = ConnectionStateListener { change ->
-          if (change.current == target && cont.isActive) cont.resume(Unit)
+        lateinit var listener: ConnectionStateListener
+        listener = ConnectionStateListener { change ->
+          if (change.current == target && cont.isActive) {
+            client.connection.off(listener)
+            cont.resume(Unit)
+          }
         }
         client.connection.on(listener)
-        if (client.connection.state == target && cont.isActive) cont.resume(Unit)
+        if (client.connection.state == target && cont.isActive) {
+          client.connection.off(listener)
+          cont.resume(Unit)
+        }
         cont.invokeOnCancellation { client.connection.off(listener) }
       }
     }
@@ -80,11 +87,18 @@ suspend fun awaitChannelState(
   withContext(Dispatchers.Default.limitedParallelism(1)) {
     withTimeout(timeout) {
       suspendCancellableCoroutine { cont ->
-        val listener = ChannelStateListener { change ->
-          if (change.current == target && cont.isActive) cont.resume(Unit)
+        lateinit var listener: ChannelStateListener
+        listener = ChannelStateListener { change ->
+          if (change.current == target && cont.isActive) {
+            channel.off(listener)
+            cont.resume(Unit)
+          }
         }
         channel.on(listener)
-        if (channel.state == target && cont.isActive) cont.resume(Unit)
+        if (channel.state == target && cont.isActive) {
+          channel.off(listener)
+          cont.resume(Unit)
+        }
         cont.invokeOnCancellation { channel.off(listener) }
       }
     }

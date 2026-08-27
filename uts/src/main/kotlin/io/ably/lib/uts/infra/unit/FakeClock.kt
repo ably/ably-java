@@ -4,6 +4,7 @@ import io.ably.lib.util.Clock
 import io.ably.lib.util.AblyTimer
 import io.ably.lib.util.TimerInstance
 import java.util.TimerTask
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration
 
 /**
@@ -14,7 +15,10 @@ import kotlin.time.Duration
  */
 class FakeClock(initialTimeMs: Long = 0L) : Clock {
     @Volatile private var time = initialTimeMs
-    private val timers = mutableMapOf<String, FakeAblyTimer>()
+    // SDK transport/channel threads call newTimer/schedule/cancel concurrently with the test thread's
+    // advance(), so the timer registry and each timer's task list must be thread-safe (a plain
+    // HashMap/ArrayList here races into ConcurrentModificationException / lost tasks on a loaded runner).
+    private val timers = ConcurrentHashMap<String, FakeAblyTimer>()
     private val waiters = mutableListOf<Waiter>()
 
     override fun currentTimeMillis() = time
@@ -38,7 +42,14 @@ class FakeClock(initialTimeMs: Long = 0L) : Clock {
     /** Advance virtual time by [ms] milliseconds, firing any timers that become due. */
     fun advance(ms: Long) {
         time += ms
-        timers.values.forEach { it.fireDue(time) }
+        // Run to quiescence (the spec run to quiescence Guarantee): re-scan all timers —
+        // snapshotting each round so a timer registered mid-advance is picked up — until a full pass
+        // fires nothing, so cascades due within the interval (a zero-delay reschedule, or a timer
+        // created by fired work) also run. The map{}.any{} form is deliberately non-short-circuiting:
+        // every timer gets a fireDue pass each round before we decide whether to loop again.
+        do {
+            val firedAny = timers.values.toList().map { it.fireDue(time) }.any { it }
+        } while (firedAny)
         val due = synchronized(waiters) {
             waiters.filter { it.fireAt <= time }.also {
                 waiters.removeIf { it.fireAt <= time }
@@ -59,25 +70,42 @@ class FakeClock(initialTimeMs: Long = 0L) : Clock {
     fun pendingTaskCount(timerName: String) = timers[timerName]?.pendingCount ?: 0
 
     inner class FakeAblyTimer(val name: String) : AblyTimer {
+        // Guarded by `synchronized(pending)`: schedule/cancel run on SDK threads while fireDue runs on
+        // the advancing test thread.
         private val pending = mutableListOf<Scheduled>()
-        val pendingCount get() = pending.size
+        val pendingCount get() = synchronized(pending) { pending.size }
 
         override fun schedule(task: TimerTask, delayMs: Long): TimerInstance {
             val s = Scheduled(task, time + delayMs)
-            pending += s
-            pending.sortBy { it.fireAt }
-            return TimerInstance { task.cancel(); pending -= s }
+            synchronized(pending) {
+                pending += s
+                pending.sortBy { it.fireAt }
+            }
+            return TimerInstance {
+                task.cancel()
+                synchronized(pending) { pending -= s }
+            }
         }
 
         override fun cancel() {
-            pending.forEach { it.task.cancel() }
-            pending.clear()
+            synchronized(pending) {
+                pending.forEach { it.task.cancel() }
+                pending.clear()
+            }
         }
 
-        fun fireDue(now: Long) {
-            val due = pending.filter { it.fireAt <= now }
-            pending -= due.toSet()
+        /** Fires all tasks now due; returns whether it fired anything (drives advance's quiescence loop). */
+        fun fireDue(now: Long): Boolean {
+            // Select + remove under the lock, then run tasks OUTSIDE it: a task may re-enter
+            // schedule/cancel (e.g. the activity timer rescheduling itself), which would otherwise
+            // deadlock or race.
+            val due = synchronized(pending) {
+                val d = pending.filter { it.fireAt <= now }
+                pending -= d.toSet()
+                d
+            }
             due.forEach { it.task.run() }
+            return due.isNotEmpty()
         }
     }
 

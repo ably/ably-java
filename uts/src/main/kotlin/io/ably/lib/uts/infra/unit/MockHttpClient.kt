@@ -26,8 +26,8 @@ class HttpMockConfig {
  * Fake HTTP engine for SDK unit tests. Install via [installOn] or `TestRestClient`/`TestRealtimeClient`.
  */
 class MockHttpClient(private val config: HttpMockConfig = HttpMockConfig()) {
-    private var _pendingConnections = Channel<PendingConnection>(Channel.UNLIMITED)
-    private var _pendingRequests = Channel<PendingRequest>(Channel.UNLIMITED)
+    @Volatile private var _pendingConnections = Channel<PendingConnection>(Channel.UNLIMITED)
+    @Volatile private var _pendingRequests = Channel<PendingRequest>(Channel.UNLIMITED)
 
     val engine: HttpEngine = MockHttpEngine(
         onConnect = { conn ->

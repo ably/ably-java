@@ -32,6 +32,8 @@ internal class DefaultPendingConnection(
         // Async delivery per spec: the library must store the WS reference before processing CONNECTED.
         val encoded = Serialisation.gson.toJson(message)
         deliveryExecutor.submit { listener.onMessage(encoded) }
+        // One-shot delivery: release the daemon thread once the single message is queued.
+        deliveryExecutor.shutdown()
     }
 
     override fun respondWithRefused() = listener.onError(IOException("Connection refused to $host:$port"))

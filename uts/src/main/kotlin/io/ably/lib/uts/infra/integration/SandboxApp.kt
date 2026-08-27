@@ -93,7 +93,11 @@ class SandboxApp private constructor(
         contentType(ContentType.Application.Json)
         setBody(loadAppCreationJson().toString())
       }
-      val body = JsonParser.parseString(response.bodyAsText()).asJsonObject
+      val responseBody = response.bodyAsText()
+      check(response.status.isSuccess()) {
+        "sandbox app provisioning failed: HTTP ${response.status} — $responseBody"
+      }
+      val body = JsonParser.parseString(responseBody).asJsonObject
       val keys = body["keys"].asJsonArray.map { it.asJsonObject["keyStr"].asString }
       return SandboxApp(
         appId = body["appId"].asString,

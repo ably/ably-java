@@ -12,6 +12,7 @@ import io.ably.lib.uts.infra.pollUntil
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.test.*
 import kotlin.time.Duration.Companion.seconds
 
@@ -322,10 +323,12 @@ class ConnectionRecoveryTest {
    */
   @Test
   fun `RTN16f1 - Malformed recoveryKey logs error and connects normally`() = runTest {
-    var capturedQueryParams: Map<String, String>? = null
+    // Written on the SDK transport thread and read from the coroutine dispatcher, so use an
+    // AtomicReference to publish it safely across threads (avoids a visibility race).
+    val capturedQueryParams = AtomicReference<Map<String, String>?>(null)
     val mock = MockWebSocket {
       onConnectionAttempt = { conn ->
-        capturedQueryParams = conn.queryParams
+        capturedQueryParams.set(conn.queryParams)
         conn.respondWithSuccess(ProtocolMessage().apply {
           action = ProtocolMessage.Action.connected
           connectionId = "fresh-conn"
@@ -349,8 +352,8 @@ class ConnectionRecoveryTest {
     assertEquals(ConnectionState.connected, client.connection.state)
     assertEquals("fresh-conn", client.connection.id)
     assertEquals("fresh-key", client.connection.key)
-    assertNull(capturedQueryParams!!["recover"])
-    assertNull(capturedQueryParams!!["resume"])
+    assertNull(capturedQueryParams.get()!!["recover"])
+    assertNull(capturedQueryParams.get()!!["resume"])
     assertEquals(1, mock.events.filterIsInstance<MockEvent.ConnectionAttempt>().size)
 
     client.close()

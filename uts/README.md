@@ -214,18 +214,18 @@ dependencies {
     // :liveobjects.
     api(project(":java"))                    // the SDK + its types (DebugOptions, ProtocolMessage, …)
     api(project(":network-client-core"))     // HttpEngine / WebSocketEngine SPIs the mocks implement
-    implementation(libs.coroutine.core)
-    implementation(libs.ktor.client.core)    // sandbox/proxy control HTTP
+    implementation(libs.ktor.client.core)    // proxy infra uses ktor internally — must NOT leak to consumers
     implementation(libs.ktor.client.cio)
 
-    // :uts's own tests — the tier smoke tests. No :liveobjects edge (I1).
-    testImplementation(kotlin("test"))
-    testImplementation(platform(libs.junit.bom))
-    testImplementation(libs.junit.jupiter.params)   // @ParameterizedTest / @ValueSource
-    testImplementation(libs.coroutine.core)
-    testImplementation(libs.coroutine.test)         // runTest, virtual time
-    testImplementation(libs.ktor.client.core)
-    testImplementation(libs.ktor.client.cio)
+    // The UTS test toolkit — exported (api) so any module consuming the infra via
+    // testImplementation(project(":uts")) transitively gets JUnit 5, the kotlin.test Jupiter binding,
+    // and coroutines (runTest etc.). :uts's own smoke tests inherit it from main's api — nothing to declare.
+    api(platform(libs.junit.bom))
+    api(libs.junit.jupiter)
+    api(libs.junit.jupiter.params)                  // @ParameterizedTest / @ValueSource
+    api(kotlin("test-junit5"))
+    api(libs.coroutine.core)
+    api(libs.coroutine.test)                        // runTest, virtual time
 }
 
 tasks.withType<Test>().configureEach {
@@ -462,9 +462,16 @@ responses back — all without a socket.
 
 ### 6.4 `FakeClock` — deterministic time
 `FakeClock` implements the SDK's `Clock`. Time is frozen until you call `advance(ms)`; on each
-advance it fires any due virtual timers **synchronously**, and wakes any `waitOn` sleepers. This is
+advance it fires any due virtual timers **synchronously**, and wakes any `waitOn` sleepers. `advance`
+runs due work **to quiescence** — it re-scans until a full pass fires nothing, so cascades due within
+the advanced interval (a zero-delay reschedule, or a timer created by fired work) also run in that same
+`advance` (the spec run-to-quiescence Guarantee; see §9.3). This is
 how the unit test drives reconnection backoff and `connectionStateTtl` expiry **without real
-sleeping**:
+sleeping**. Caveat: `waitOn(target, timeout)` still performs a real `target.wait(timeout)`, so a
+sleeper also wakes once `timeout` ms of wall-clock elapse — `advance()` makes it wake *sooner*, but is
+not a hard gate (the **advisory** model of the spec's `mock_websocket.md` §Fake-time semantics).
+Drive transitions by owning the resulting attempt (`awaitConnectionAttempt()`), never
+by asserting a wait has *not* yet returned.
 ```kotlin
 val fakeClock = FakeClock()
 val client = TestRealtimeClient { enableFakeTimers(fakeClock); … }
@@ -595,7 +602,8 @@ future unit-tier UTS test should take.
 > (`lib/src/test/kotlin/io/ably/lib/uts/unit/realtime/`, e.g. `ConnectionRecoveryTest`) and
 > `:liveobjects` — see §13.
 
-It has **two** `@Test` methods; between them they exercise every teaching point of §5–§8.
+It has **three** `@Test` methods: two end-to-end transport tests (§9.1, §9.2) that between them exercise
+every teaching point of §5–§8, plus a focused `FakeClock` run-to-quiescence acceptance test (§9.3).
 
 ### 9.1 `unit infra drives the full mock-WebSocket connection lifecycle` — await style throughout
 One long **await-style** test that walks the SDK through the whole transport lifecycle:
@@ -632,12 +640,15 @@ One long **await-style** test that walks the SDK through the whole transport lif
    ```
 3. **Publish**, asserting the full MESSAGE frame (`action`, `channel`, `messages[0].name`/`data`) again
    via `awaitNextMessageFromClient()`.
-4. **Disconnect + negative check.** `simulateDisconnect()`, await DISCONNECTED, then assert **no**
-   reconnect has happened yet — exactly one `ConnectionAttempt` is recorded — because the retry is
-   blocked in `FakeClock.waitOn` until the clock advances.
+4. **Disconnect.** `simulateDisconnect()`, await DISCONNECTED, and assert the drop was recorded. Note
+   we do **not** snapshot the `ConnectionAttempt` count here: `FakeClock.waitOn(target, timeout)` does a
+   real `target.wait(timeout)`, so the disconnected-retry fires on its own after ~`disconnectedRetryTimeout`
+   ms of wall-clock even without an `advance()`. `advance()` only wins that race sooner — it is not a
+   hard gate — so a "still exactly one attempt" assertion would be racy on a loaded runner. Ownership
+   of attempt #2 belongs to the next step, which gates on it deterministically.
 5. **FakeClock-driven reconnect.** A coroutine loops `fakeClock.advance(2.seconds)` then answers the
-   next attempt with a short-TTL CONNECTED; the test awaits CONNECTED again and asserts a second
-   `ConnectionAttempt`.
+   next attempt (received via the buffered `awaitConnectionAttempt()`, so it cannot be missed) with a
+   short-TTL CONNECTED; the test awaits CONNECTED again and asserts a second `ConnectionAttempt`.
 6. **Refuse → SUSPENDED (the centrepiece).** After another `simulateDisconnect()`, a `refuseJob`
    coroutine advances the clock and `respondWithRefused()`s every reconnection attempt until the short
    `connectionStateTtl` (800 ms, from the short-lived CONNECTED) expires and the client gives up to
@@ -687,6 +698,14 @@ It asserts the request was a `GET /token` and that the SDK reached CONNECTED wit
 frames, `events` / `awaitNextMessageFromClient` for inspecting client output, and the full HTTP-mock
 connect→request two-phase flow. The `RUN_DEVIATIONS` env-gated deviation pattern is **not** here (the
 smoke tests carry no deviations) — that teaching lives in §12.
+
+### 9.3 `FakeClock advance runs cascaded work to quiescence in one call` — the run-to-quiescence Guarantee
+A focused, SDK-free test that pins the `FakeClock` contract §6.4 depends on: a single `advance(ms)` runs
+**all** work due within the advanced interval, including cascades. It schedules a task that reschedules
+itself at zero delay and a task that creates a brand-new timer mid-advance, then asserts one `advance`
+fires the whole cascade (not just the first pass). This is the infra-level guarantee the reconnect/backoff
+walkthroughs in §9.1 rely on; it exercises `FakeClock` directly because the Guarantee is about `advance`
+alone reaching quiescence.
 
 ---
 
@@ -1110,7 +1129,7 @@ implicit.
 | File | Key public surface | Role |
 |------|--------------------|------|
 | `infra/Utils.kt` | `awaitState(client,target,timeout=5s)`, `awaitChannelState(channel,target,timeout=5s)`, `pollUntil(timeout=15s,interval=100ms){ }` | Shared wall-clock coroutine waits (package `io.ably.lib.uts.infra`); listener registered before state check. |
-| `unit/UnitInfraSmokeTest.kt` | 2 `@Test`s: full mock-WS lifecycle (await style), token-auth via mock HTTP (callback WS) | Unit-tier infra acceptance (`io.ably.lib.uts.unit`) — MockWebSocket/MockHttpClient/FakeClock end-to-end. **No** `@UTS`. |
+| `unit/UnitInfraSmokeTest.kt` | 3 `@Test`s: full mock-WS lifecycle (await style), token-auth via mock HTTP (callback WS), FakeClock run-to-quiescence | Unit-tier infra acceptance (`io.ably.lib.uts.unit`) — MockWebSocket/MockHttpClient/FakeClock end-to-end. **No** `@UTS`. |
 | `integration/standard/IntegrationInfraSmokeTest.kt` | 1 `@ParameterizedTest` × {JSON, msgpack} | Direct-sandbox infra acceptance (`io.ably.lib.uts.integration.standard`) — SandboxApp + realtime/REST round-trip, awaited publish + `pollUntil` on `history()`. **No** `@UTS`. |
 | `integration/proxy/ProxyInfraSmokeTest.kt` | 2 `@Test`s: late imperative disconnect, declarative ws-frame rule | Proxy infra acceptance (`io.ably.lib.uts.integration.proxy`) — ProxyManager + ProxySession, both fault-injection styles, proxy-log asserts. **No** `@UTS`. |
 

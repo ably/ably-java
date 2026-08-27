@@ -401,8 +401,9 @@ delivered to subscription listeners) map to ably-java interfaces with getters (p
 > obtain an `ObjectMessage` from a subscription event (`event.getMessage()`, §8); there is no public
 > factory. The spec's explicit construction-from-wire (`PublicObjectMessage.fromObjectMessage(source,
 > channel)` / `PublicObjectOperation.fromObjectOperation(op)`, `PAOM3`/`PAOOP3`, in
-> `public_object_message.md`) is `internal` to `:liveobjects` — but the unit helpers expose it **by
-> reflection** as `buildPublicObjectMessage(wireJson, channelName)` (§13). So `public_object_message.md` is
+> `public_object_message.md`) is `internal` to `:liveobjects` — but the unit helpers expose it as
+> `buildPublicObjectMessage(wireMessage, channelName)` (§13), a direct `toPublicMessage` call (no reflection,
+> since `:liveobjects`'s internals are visible to its own tests). So `public_object_message.md` is
 > translatable: build the source with the op builders (`buildMapSet(...)`, `buildCounterInc(...)`, …) and
 > assert the public getters on the result.
 
@@ -515,7 +516,7 @@ Several **unit** specs assert on the **internal CRDT graph**, not the public API
   is public and maps via §2/§12, but `publish` / `publishAndApply` (`RTO15`/`RTO20`, marked `internal` in the
   IDL) and the OBJECT/ACK wire assertions are internal.
 - `public_object_message.md` — **translatable** via the `buildPublicObjectMessage` helper (below), which
-  reflectively performs the `PAOM3`/`PAOOP3` construction (`WireObjectMessage` → `DefaultObjectMessage`)
+  performs the `PAOM3`/`PAOOP3` construction (`WireObjectMessage` → `DefaultObjectMessage`)
   that is otherwise `internal`. Build the source with the op builders and assert the public getters (§11).
 
 In ably-java these are **not public**. They live in the `:liveobjects` module as `Internal*` / `Default*` / `Wire*` /

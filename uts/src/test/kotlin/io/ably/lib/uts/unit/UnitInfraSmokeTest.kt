@@ -107,20 +107,23 @@ class UnitInfraSmokeTest {
             assertEquals("event", publishFrame.messages[0].name)
             assertEquals("payload", publishFrame.messages[0].data)
 
-            // 5. Disconnect + negative check: no reconnect until the clock advances. Event count is
-            // the honest probe (the retry blocks in FakeClock.waitOn, not a named timer).
+            // 5. Disconnect: we reach DISCONNECTED and the drop is recorded. We deliberately do NOT
+            // snapshot the ConnectionAttempt count here. FakeClock.waitOn(target, timeout) performs a
+            // real `target.wait(timeout)`, so the disconnected-retry (~disconnectedRetryTimeout ms of
+            // wall-clock, with backoff/jitter) eventually fires on its own even without an advance() —
+            // on a loaded CI runner it can beat this line, making a "still exactly 1 attempt"
+            // assertion inherently racy. advance() only wins the race sooner; it is not a hard gate.
+            // Ownership of attempt #2 therefore belongs to step 6, which gates on it deterministically
+            // via awaitConnectionAttempt() (buffered, so it cannot be missed).
             mock.simulateDisconnect()
             awaitState(client, ConnectionState.disconnected)
-            assertEquals(1, mock.events.filterIsInstance<MockEvent.ConnectionAttempt>().size)
+            assertTrue(mock.events.any { it is MockEvent.Disconnected })
 
             // 6. FakeClock-driven reconnect: the advance demonstrably drives the transition. Respond
             // with a short-TTL CONNECTED so the SUSPENDED branch below suspends quickly.
             val reconnectJob = launch {
-                repeat(20) {
-                    fakeClock.advance(2.seconds)
-                    mock.awaitConnectionAttempt().respondWithSuccess(shortLivedConnected())
-                    return@launch
-                }
+                fakeClock.advance(2.seconds)
+                mock.awaitConnectionAttempt().respondWithSuccess(shortLivedConnected())
             }
             awaitState(client, ConnectionState.connected)
             reconnectJob.join()
@@ -191,6 +194,52 @@ class UnitInfraSmokeTest {
         } finally {
             client.close()
         }
+    }
+
+    /**
+     * Infra acceptance for the [FakeClock] run-to-quiescence Guarantee: a single [FakeClock.advance]
+     * runs *all* work due within the advanced interval, including cascades — work scheduled by fired
+     * work (a zero-delay reschedule) and a timer created mid-advance. Exercises [FakeClock] directly
+     * (no SDK), which is what the Guarantee is about: `advance` alone must reach quiescence.
+     */
+    @Test
+    fun `FakeClock advance runs cascaded work to quiescence in one call`() {
+        val fakeClock = FakeClock()
+
+        var rescheduleRuns = 0
+        var newTimerTaskRan = false
+
+        val timer = fakeClock.newTimer("cascade")
+        // A task that reschedules ITSELF at zero delay a fixed number of times: each reschedule is due
+        // immediately at the current (already-advanced) virtual time, so a single-pass advance would
+        // fire only the first. Quiescence requires re-scanning until nothing more fires.
+        lateinit var task: () -> Unit
+        task = {
+            rescheduleRuns++
+            if (rescheduleRuns < 3) {
+                timer.schedule(object : java.util.TimerTask() {
+                    override fun run() = task()
+                }, 0L)
+            }
+        }
+        timer.schedule(object : java.util.TimerTask() {
+            override fun run() {
+                task()
+                // Also create a BRAND-NEW timer mid-advance whose task is due within the interval — it
+                // must be picked up by a later re-scan round (advance snapshots timers each round).
+                val laterTimer = fakeClock.newTimer("cascade-created-mid-advance")
+                laterTimer.schedule(object : java.util.TimerTask() {
+                    override fun run() { newTimerTaskRan = true }
+                }, 0L)
+            }
+        }, 10L)
+
+        // ONE advance across the 10ms due point must run the initial task, both self-reschedules, and
+        // the task on the timer created mid-advance.
+        fakeClock.advance(10L)
+
+        assertEquals(3, rescheduleRuns, "zero-delay reschedules should all fire within one advance")
+        assertTrue(newTimerTaskRan, "a timer created mid-advance and due in-interval should fire in the same advance")
     }
 
     /** A CONNECTED with a short connectionStateTtl so a subsequent disconnect suspends quickly. */
