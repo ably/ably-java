@@ -24,11 +24,14 @@ internal class DefaultPendingRequest(
             is String -> body.toByteArray(Charsets.UTF_8)
             else -> Serialisation.gson.toJson(body).toByteArray(Charsets.UTF_8)
         }
+        // Derive the body content-type from a case-insensitive Content-Type header, defaulting to json.
+        val contentType = headers.entries.firstOrNull { it.key.equals("Content-Type", ignoreCase = true) }
+            ?.value ?: "application/json"
         deferred.complete(
             HttpResponse.builder()
                 .code(status)
                 .message("")
-                .body(HttpBody("application/json", bytes))
+                .body(HttpBody(contentType, bytes))
                 .headers(headers.mapValues { listOf(it.value) })
                 .build()
         )

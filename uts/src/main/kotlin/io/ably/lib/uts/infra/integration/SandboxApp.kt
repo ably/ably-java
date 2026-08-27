@@ -10,6 +10,7 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import java.util.*
+import kotlinx.coroutines.CancellationException
 
 private val client = HttpClient(CIO) {
   install(HttpRequestRetry) {
@@ -108,7 +109,8 @@ class SandboxApp private constructor(
   }
 
   /**
-   * Deletes the provisioned app. Errors are ignored so teardown never masks a test failure.
+   * Deletes the provisioned app. Errors are ignored so teardown never masks a test failure;
+   * [CancellationException] is rethrown so cooperative cancellation is preserved.
    */
   suspend fun delete() {
     runCatching {
@@ -116,6 +118,6 @@ class SandboxApp private constructor(
       client.delete("$sandboxBaseUrl/apps/$appId") {
         header(HttpHeaders.Authorization, "Basic $basic")
       }
-    }
+    }.onFailure { if (it is CancellationException) throw it }
   }
 }

@@ -31,7 +31,9 @@ internal class DefaultPendingConnection(
         onConnected(listener)
         // Async delivery per spec: the library must store the WS reference before processing CONNECTED.
         val encoded = Serialisation.gson.toJson(message)
-        deliveryExecutor.submit { listener.onMessage(encoded) }
+        // Use execute so a thrown delivery exception reaches the thread's uncaught handler
+        // instead of being swallowed in a discarded Future.
+        deliveryExecutor.execute { listener.onMessage(encoded) }
         // One-shot delivery: release the daemon thread once the single message is queued.
         deliveryExecutor.shutdown()
     }

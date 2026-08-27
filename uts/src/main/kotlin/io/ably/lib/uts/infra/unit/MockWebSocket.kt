@@ -98,6 +98,8 @@ class MockWebSocket(config: WebSocketMockConfig = WebSocketMockConfig()) {
         onClientClose = { code, reason ->
             val event = MockEvent.ClientClose(code, reason)
             _events.add(event)
+            // Match the other close paths: null the listener so post-close sendToClient fails fast.
+            activeListener = null
             _clientCloseEvents.trySend(event)
         },
     )
