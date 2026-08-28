@@ -645,7 +645,7 @@ For each test case, verify:
 Deviations are discovered by running, so this check applies in evaluate mode. For any place where the
 generated test diverges from the spec pseudocode (adapted assertion, env-gated skip, or omitted step):
 - [ ] A `// DEVIATION:` comment explains why
-- [ ] The deviation is recorded in `lib/src/test/kotlin/io/ably/lib/uts/deviations.md`
+- [ ] The deviation is recorded in the tier's module deviations file (see "Deviations file" above: `lib/src/test/kotlin/io/ably/lib/uts/deviations.md` for realtime/rest tiers, `liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/deviations.md` for objects tiers)
 
 If you find gaps during this review, fix them, then **re-run the audit script** until `missingInKotlin` /
 `orphanInKotlin` are empty and every `perTest` entry reconciles, and re-run Step 5 (compile) — and, in

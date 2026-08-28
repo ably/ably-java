@@ -29,10 +29,10 @@ import kotlin.test.assertTrue
  * mock's recorded `MessageFromClient` event log as the spec's `captured_messages` — see
  * [capturedObjectMessages].
  *
- * Note: evaluating a `LiveCounter`/`LiveMap` value type generates its objectId from server
- * time (RTO16), which the SDK fetches once per JVM via REST `GET /time` — the mock transport
- * does not intercept HTTP, so the first `*_CREATE` test in a run performs that single
- * unauthenticated request against the real endpoint.
+ * Note: evaluating a LiveCounter/LiveMap value type derives its objectId from server time
+ * (RTO16), which the SDK fetches via REST GET /time. The shared setupSyncedChannel installs a
+ * MockHttpClient (Helpers.kt) that answers /time locally, so these unit tests stay hermetic —
+ * no real network request is made, per the UTS unit-tier no-network contract.
  */
 class InternalLiveMapApiTest {
 

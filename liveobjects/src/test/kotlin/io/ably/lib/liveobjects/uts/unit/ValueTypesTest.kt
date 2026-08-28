@@ -50,8 +50,8 @@ class ValueTypesTest {
 
     @AfterTest
     fun tearDown() {
-        unmockkAll()
         ro.objectsPool.dispose()
+        unmockkAll()
     }
 
     /**

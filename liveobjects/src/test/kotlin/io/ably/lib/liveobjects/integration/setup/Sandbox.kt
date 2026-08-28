@@ -15,14 +15,17 @@ import kotlinx.coroutines.CompletableDeferred
  * canonical `test-app-setup.json` app spec); this type just carries the fields the local
  * client-factory extensions need.
  */
-class Sandbox private constructor(val appId: String, val apiKey: String) {
+class Sandbox private constructor(private val app: SandboxApp, val appId: String, val apiKey: String) {
   companion object {
     internal suspend fun createInstance(): Sandbox {
       val app = SandboxApp.create()
       // defaultKey is the full-capability "appId.keyId:keySecret" key (index 0 of the app spec)
-      return Sandbox(appId = app.appId, apiKey = app.defaultKey)
+      return Sandbox(app = app, appId = app.appId, apiKey = app.defaultKey)
     }
   }
+
+  /** Best-effort teardown of the provisioned sandbox app (see [SandboxApp.delete]). */
+  internal suspend fun delete() = app.delete()
 }
 
 internal fun Sandbox.createRealtimeClient(options: ClientOptions.() -> Unit): AblyRealtime {

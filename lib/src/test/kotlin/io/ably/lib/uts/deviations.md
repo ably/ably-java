@@ -1,24 +1,19 @@
-# SDK Deviations
+# Deviations — UTS realtime/rest suites (`io.ably.lib.uts.*`)
 
-Deviations from the Ably spec identified during UTS test translation. Each entry records the spec point, what the spec requires, what the SDK actually does, and which test contains the deviation gate.
-
-**Scope:** this file now lives alongside the realtime UTS suites in the `:java` module
-(`lib/src/test/kotlin/io/ably/lib/uts/`) and holds deviations for the **realtime/rest tiers** it
-hosts. All **objects** tiers (unit, integration and proxy) moved to `:liveobjects`'s own test source
-set alongside the tests they document; their deviations (the typed-SDK / language adaptations, the
-intentional RTO18d entry, and any objects integration/proxy entries) are in
-`liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/deviations.md`. For the shared UTS infra these
-suites consume, the tier smoke examples, and the `RUN_DEVIATIONS` mechanism, see `uts/README.md`.
-
-Entries are grouped by actionability (shared taxonomy across both files; only groups with entries in
-this file appear as sections below):
-
-| Group | Meaning | Action |
-|---|---|---|
-| **1) Genuine SDK bugs — open** | runtime behaviour differs from the spec; ably-js is compliant | fix the SDK |
-| **2) Shared gap — open in both SDKs** | ably-java and ably-js deviate the same way | optional joint fix (spec is ahead of both) |
-| **3) Expected — typed-SDK / language adaptations** | not bugs: RTTS API partitioning, compile-time guarantees, internal-wire visibility | none — correct as documented |
-| **4) Intentional deviation** | deliberate SDK design choice; the spec point itself is questioned | none unless the spec is revised |
+> **Scope:** this file lives alongside the realtime/rest UTS suites in the `:java` module
+> (`lib/src/test/kotlin/io/ably/lib/uts/`) and holds deviations for the **realtime/rest tiers** it
+> hosts. All **objects** tiers (unit, integration and proxy) moved to `:liveobjects`'s own test source
+> set alongside the tests they document; their deviations (the typed-SDK / language adaptations, the
+> intentional RTO18d entry, and any objects integration/proxy entries) are in
+> `liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/deviations.md`. For the shared UTS infra these
+> suites consume, the tier smoke examples, and the `RUN_DEVIATIONS` mechanism, see `uts/README.md`.
+>
+> Records every place a generated test deviates from its UTS spec, using the manual's **Recording
+> deviations** entry format: each entry records the spec point, what the spec requires, what the SDK
+> actually does, and which test carries the deviation gate. Every deviation recorded here is a
+> **genuine SDK bug** (open; ably-js is compliant — fix the SDK), stated per entry under **Status**; the
+> other actionability groups of the shared taxonomy (shared cross-SDK gap, typed-SDK / language
+> adaptations, intentional design divergence) only have entries in the objects file.
 
 > **Recently fixed and removed from this file:** RTO23e (`get()` now re-attaches a DETACHED channel —
 > mode-only check + ensure-active-channel) and RTO20e/RTO20e1 (event-driven `once(SYNCED)` waiters +
@@ -32,16 +27,48 @@ this file appear as sections below):
 
 ---
 
-# 1) Genuine SDK bugs — open (realtime module)
+## UTS Spec Errors
 
-*Runtime behaviour differs from the spec and ably-js is compliant — real bugs, pending an SDK fix.*
+*(none)*
+
+## Failing Tests
+
+*SDK non-compliance where the spec-correct assertion is present but skipped (env-gated behind `RUN_DEVIATIONS`). These are the primary output — each maps to a potential issue to file.*
 
 > ⚠ **RTL13b / RTL13c:** the channel-state UTS tests these two entries cite are **not currently part of the
 > uts suite** (no `RTL13*` tests or gates exist in `unit/realtime/` — only `ConnectionRecoveryTest.kt` is
 > translated). The entries are retained as confirmed SDK gaps (cross-checked against ably-js in
 > `ABLY-JS-JAVA-DEVIATIONS-COMPARISON.md`); re-verify them when the channels module translation lands.
+> (RTL13b is recorded under **Adapted Tests** — it adapts the test setup rather than env-gating an assertion.)
 
-## RTL13b — ATTACHING → SUSPENDED via `realtimeRequestTimeout` not implemented
+### RTL13c — channelRetryTimeout not cancelled when connection leaves CONNECTED
+
+**Spec point:** RTL13c  
+**What the spec requires:** When the connection is no longer CONNECTED, any pending automatic channel reattach timer (channelRetryTimeout) must be cancelled. The channel should remain SUSPENDED without attempting to reattach until the connection is restored.  
+**What the SDK does:** The channelRetryTimeout fires regardless of connection state. When it fires while disconnected, the channel transitions to ATTACHING even though there is no active connection, and no ATTACH message can be sent.  
+**Tests affected:**
+- `RTL13c - automatic retry cancelled when connection is no longer CONNECTED` (RTL13c/retry-cancelled-disconnected-0) — the assertions `assertEquals(attachCountAfterDisconnect, attachCount)` and `assertEquals(ChannelState.suspended, channel.state)` are gated behind `RUN_DEVIATIONS`.
+
+**Status:** Open SDK bug — ably-js is compliant; fix the SDK.
+
+### RTN16f — msgSerial not initialised from recovery key on connect
+
+**Spec point:** RTN16f  
+**What the spec requires:** When instantiated with the `recover` option, the SDK initialises its internal `msgSerial` counter to the value stored in the recovery key, so the first published message carries that serial.  
+**What the SDK does:** `ConnectionManager.onConnected()` resets `msgSerial` to 0 whenever `connection.id` is null on the fresh client (line 1316), even when the `recover` option is set. The recovered serial is discarded.  
+**Workaround in tests:** The spec-correct assertion (`assertEquals(42L, msgSerial)`) is gated behind `RUN_DEVIATIONS`. A regression guard assertion (`assertEquals(0L, msgSerial)`) runs by default to catch any unintentional change to the SDK's actual behaviour.  
+**Tests affected:**
+- `RTN16f - recover option initializes msgSerial from recoveryKey` (RTN16f/recover-initializes-msgserial-0) — `assertEquals(42L, ...)` gated; `assertEquals(0L, ...)` added as regression guard.
+
+**Status:** Open SDK bug — ably-js is compliant; fix the SDK.
+
+## Adapted Tests
+
+*SDK non-compliance where the test asserts the SDK's actual behaviour (or adapts its setup/stimulus to the SDK's reality) instead of using the spec's unreachable path. It passes, guards against regressions, and documents the deviation.*
+
+> ⚠ Not currently part of the uts suite — see the shared **RTL13b / RTL13c** caveat under **Failing Tests**.
+
+### RTL13b — ATTACHING → SUSPENDED via realtimeRequestTimeout not implemented
 
 **Spec point:** RTL13b  
 **What the spec requires:** If a channel's reattach request (triggered by RTL13a) does not receive a response within `realtimeRequestTimeout`, the channel must transition from ATTACHING to SUSPENDED and schedule a retry after `channelRetryTimeout`.  
@@ -53,19 +80,9 @@ this file appear as sections below):
 - `RTL13b - repeated failures cycle SUSPENDED to ATTACHING indefinitely` (RTL13b/repeated-failure-cycle-2) — mock sends DETACHED instead of withholding response
 - `RTL13c - automatic retry cancelled when connection is no longer CONNECTED` (RTL13c/retry-cancelled-disconnected-0) — setup path changed
 
----
+**Status:** Open SDK bug — ably-js is compliant; fix the SDK.
 
-## RTL13c — channelRetryTimeout not cancelled when connection leaves CONNECTED
-
-**Spec point:** RTL13c  
-**What the spec requires:** When the connection is no longer CONNECTED, any pending automatic channel reattach timer (channelRetryTimeout) must be cancelled. The channel should remain SUSPENDED without attempting to reattach until the connection is restored.  
-**What the SDK does:** The channelRetryTimeout fires regardless of connection state. When it fires while disconnected, the channel transitions to ATTACHING even though there is no active connection, and no ATTACH message can be sent.  
-**Tests affected:**
-- `RTL13c - automatic retry cancelled when connection is no longer CONNECTED` (RTL13c/retry-cancelled-disconnected-0) — the assertions `assertEquals(attachCountAfterDisconnect, attachCount)` and `assertEquals(ChannelState.suspended, channel.state)` are gated behind `RUN_DEVIATIONS`.
-
----
-
-## RTN16g2 — Fatal ERROR must be sent without closing the transport
+### RTN16g2 — the spec's fatal-ERROR-plus-close trigger can't drive this SDK to FAILED
 
 **Spec point:** RTN16g2  
 **What the spec requires:** Trigger FAILED state by sending a fatal ERROR message followed by closing the WebSocket (`send_to_client_and_close`), using error code 50000/statusCode 500.  
@@ -76,24 +93,8 @@ this file appear as sections below):
 **Tests affected:**
 - `RTN16g2 - createRecoveryKey returns null in inactive states and before first connect` (RTN16g2/recovery-key-null-inactive-0) — error code and send method changed.
 
----
+**Status:** Open SDK bug — ably-js is compliant; fix the SDK.
 
-## RTN16f — msgSerial not initialised from recovery key on connect
+## Mock Infrastructure Limitations
 
-**Spec point:** RTN16f  
-**What the spec requires:** When instantiated with the `recover` option, the SDK initialises its internal `msgSerial` counter to the value stored in the recovery key, so the first published message carries that serial.  
-**What the SDK does:** `ConnectionManager.onConnected()` resets `msgSerial` to 0 whenever `connection.id` is null on the fresh client (line 1316), even when the `recover` option is set. The recovered serial is discarded.  
-**Workaround in tests:** The spec-correct assertion (`assertEquals(42L, msgSerial)`) is gated behind `RUN_DEVIATIONS`. A regression guard assertion (`assertEquals(0L, msgSerial)`) runs by default to catch any unintentional change to the SDK's actual behaviour.  
-**Tests affected:**
-- `RTN16f - recover option initializes msgSerial from recoveryKey` (RTN16f/recover-initializes-msgserial-0) — `assertEquals(42L, ...)` gated; `assertEquals(0L, ...)` added as regression guard.
-
----
-
-
-# Objects deviations — moved
-
-All objects tiers (**unit, integration and proxy**) live in `:liveobjects`'s own test source set,
-and their deviation records (the typed-SDK / language adaptations, the former groups 3 & 4 as they
-applied to objects, and any objects integration/proxy entries) are in
-`liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/deviations.md`. This file keeps only the
-deviations for the realtime/rest tiers hosted in `:java`.
+*(none)*

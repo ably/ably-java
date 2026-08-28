@@ -29,8 +29,10 @@ import org.junit.Test
  */
 class LiveObjectTombstoneTest {
 
+  private lateinit var realtimeObject: DefaultRealtimeObject
+
   private fun rootMapWithNameEntry(): InternalLiveMap {
-    val realtimeObject = DefaultRealtimeObject("test", getMockAblyClientAdapter())
+    realtimeObject = DefaultRealtimeObject("test", getMockAblyClientAdapter())
     val map = InternalLiveMap.zeroValue("root", realtimeObject)
     map.data["name"] = LiveMapEntry(timeserial = "01", data = WireObjectData(string = "Alice"))
     map.siteTimeserials["site1"] = "00"
@@ -38,7 +40,10 @@ class LiveObjectTombstoneTest {
   }
 
   @After
-  fun tearDown() = unmockkAll() // getMockAblyClientAdapter uses mockkStatic - clean up global state
+  fun tearDown() {
+    realtimeObject.objectsPool.dispose() // the pool init starts a real GC coroutine
+    unmockkAll() // getMockAblyClientAdapter uses mockkStatic - clean up global state
+  }
 
   /**
    * @UTS objects/unit/RTLO4e10/object-delete-root-noop-0

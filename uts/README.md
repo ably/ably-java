@@ -234,7 +234,12 @@ tasks.withType<Test>().configureEach {
     jvmArgs("--add-opens", "java.base/java.lang=ALL-UNNAMED")
     // Propagate a local proxy-build override (see ProxyManager): -Duts.proxy.localPath=… or
     // $UTS_PROXY_LOCAL_PATH.
-    systemProperty("uts.proxy.localPath", …)
+    systemProperty(
+        "uts.proxy.localPath",
+        providers.systemProperty("uts.proxy.localPath")
+            .orElse(providers.environmentVariable("UTS_PROXY_LOCAL_PATH"))
+            .getOrElse(""),
+    )
 }
 
 tasks.register<Test>("runUtsUnitTests")        { filter { includeTestsMatching("io.ably.lib.uts.unit.*") } }

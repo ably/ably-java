@@ -726,7 +726,7 @@ reflection.
 
 The internal classes have `private constructor`s; each pairs with an `internal` companion factory that
 needs a `DefaultRealtimeObject`. Build one from the mocked adapter (helper already exists in
-`liveobjects/src/test/.../unit/TestHelpers.kt`):
+`liveobjects/src/test/kotlin/io/ably/lib/liveobjects/unit/TestHelpers.kt`):
 
 ```kotlin
 val ro = DefaultRealtimeObject("test", getMockAblyClientAdapter())

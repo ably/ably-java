@@ -7,15 +7,17 @@ import io.ably.lib.realtime.ChannelStateListener
 import io.ably.lib.realtime.ConnectionState
 import io.ably.lib.realtime.ConnectionStateListener
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
-import kotlin.coroutines.resume
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
+// tryResume/completeResume (the atomic single-winner resume) are @InternalCoroutinesApi.
+@OptIn(InternalCoroutinesApi::class)
 suspend fun awaitState(
   client: AblyRealtime,
   target: ConnectionState,
@@ -30,15 +32,16 @@ suspend fun awaitState(
       suspendCancellableCoroutine { cont ->
         lateinit var listener: ConnectionStateListener
         listener = ConnectionStateListener { change ->
-          if (change.current == target && cont.isActive) {
+          if (change.current == target) {
             client.connection.off(listener)
-            cont.resume(Unit)
+            // single-winner resume: the listener and the immediate check race on different threads
+            cont.tryResume(Unit)?.let(cont::completeResume)
           }
         }
         client.connection.on(listener)
-        if (client.connection.state == target && cont.isActive) {
+        if (client.connection.state == target) {
           client.connection.off(listener)
-          cont.resume(Unit)
+          cont.tryResume(Unit)?.let(cont::completeResume)
         }
         cont.invokeOnCancellation { client.connection.off(listener) }
       }
@@ -79,6 +82,7 @@ suspend fun <T> withRealTimeout(timeout: Duration, block: suspend () -> T): T =
     withTimeout(timeout) { block() }
   }
 
+@OptIn(InternalCoroutinesApi::class)
 suspend fun awaitChannelState(
   channel: Channel,
   target: ChannelState,
@@ -89,15 +93,16 @@ suspend fun awaitChannelState(
       suspendCancellableCoroutine { cont ->
         lateinit var listener: ChannelStateListener
         listener = ChannelStateListener { change ->
-          if (change.current == target && cont.isActive) {
+          if (change.current == target) {
             channel.off(listener)
-            cont.resume(Unit)
+            // single-winner resume: the listener and the immediate check race on different threads
+            cont.tryResume(Unit)?.let(cont::completeResume)
           }
         }
         channel.on(listener)
-        if (channel.state == target && cont.isActive) {
+        if (channel.state == target) {
           channel.off(listener)
-          cont.resume(Unit)
+          cont.tryResume(Unit)?.let(cont::completeResume)
         }
         cont.invokeOnCancellation { channel.off(listener) }
       }
