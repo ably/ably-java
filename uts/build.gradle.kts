@@ -1,25 +1,17 @@
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 
 plugins {
-    `java-library`                          // NEW — provides the `api` configuration. Previously
-                                            // arrived transitively via `java-test-fixtures`;
-                                            // kotlin.jvm alone applies only the plain `java` plugin.
-    alias(libs.plugins.kotlin.jvm)          // `java-test-fixtures` REMOVED
+    `java-library`
+    alias(libs.plugins.kotlin.jvm)
 }
 
 java {
-    // Declare Java-8 outgoing variants (org.gradle.jvm.version=8) so :java's 8-requesting resolvable
-    // configurations can consume project(":uts"). Only possible now that Phase 3 removed the
-    // :liveobjects (Java-21) test edge that previously forced this module's classpaths back to 21.
+    // Java-8 outgoing variants so :java (a Java-8 library) can consume this module on its classpath.
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 dependencies {
-    // The shared UTS test infra (src/main/kotlin/io/ably/lib/uts/infra/**) — this module's main
-    // artifact. Consumed by other modules via testImplementation(project(":uts")).
-    // INVARIANT (I1): :uts main (and its test config) has no :liveobjects dependency at all — the
-    // objects tiers that needed the runtime plugin moved to :liveobjects.
     // `api` for types that appear in infra signatures; `implementation` for internals.
     api(project(":java"))
     api(project(":network-client-core"))
@@ -36,13 +28,8 @@ dependencies {
     api(libs.junit.jupiter)
     api(libs.junit.jupiter.params)
     api(kotlin("test-junit5"))
-    api(libs.coroutine.core)      // promote from implementation (suspend-heavy public API anyway)
+    api(libs.coroutine.core)
     api(libs.coroutine.test)
-
-    // :uts's own smoke tests inherit the whole toolkit transitively from main's `api` above
-    // (a module's test classpath sees its own main api/implementation deps) — nothing to declare.
-    // Verified: the three smoke tests import only kotlin.test, JUnit Jupiter, coroutines and the
-    // infra itself; they use ktor only through the infra, never directly.
 }
 
 tasks.withType<Test>().configureEach {
