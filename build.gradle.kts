@@ -32,7 +32,7 @@ subprojects {
 
 /*
  * Release pre-flight: the split ships core, core-android, device and server in lockstep
- * (one version, one run — PDR-091b), so the set of published artifacts and their
+ * (one version, one run), so the set of published artifacts and their
  * coordinates are asserted here and the release workflow fails before anything is
  * uploaded if they drift. If you add or remove a published module, update this list
  * deliberately.
