@@ -792,6 +792,42 @@ RUN_DEVIATIONS=1 ./gradlew :uts:runUtsUnitTests --tests "*ConnectionRecoveryTest
 `runLiveObjectsUnitTests`); `runUtsIntegrationTests` runs in the `check-uts` job of
 `integration-test.yml` (alongside `check-liveobjects`).
 
+### Per-side package modes
+
+The suite constructs its clients through a single seam (`TestRealtimeClient` / `TestRestClient`
+in `infra/unit/ClientFactories.kt`), selected by the `uts.side` system property (or the
+`UTS_SIDE` environment variable):
+
+```bash
+./gradlew :uts:runUtsUnitTests                    # core (default): the core constructors
+./gradlew :uts:runUtsUnitTests -Duts.side=server  # io.ably.pubsub:server — the PubSubServer builders
+```
+
+The server builders only stamp the side-declaring agent entry (a versionless flag, per
+ably/ably-common#361) and pass everything else through — `DebugOptions` included, whose `copy()`
+override keeps the mock hooks — so every mode must pass identically. `SideModesTest` asserts each
+mode's stamp so a broken seam cannot silently degrade the server leg into a duplicate core run.
+CI runs both modes (`check.yml` and `integration-test.yml`).
+
+Unlike ably-js's UTS there is no `device` mode: `io.ably.pubsub:device` is an Android artifact,
+so its door cannot run on the JVM this suite uses. Its stamping contract is covered by the
+instrumentation tests in the `device` module (`emulate.yml`).
+
+**Token auth on the server leg.** Realtime rejects a token-authenticated connection that
+declares the server side through the agent entry alone (error 40167: on token auth the side
+must come from a signed `x-ably-clientType` token claim). The suite handles this per token
+format, with nothing skipped:
+
+- **JWTs** can carry the claim already: tests that authenticate the client under test with a
+  token mint one via `AblyJwt` (HS256, JDK crypto), adding `x-ably-clientType=server` on the
+  server leg (see `AuthReauthTest`).
+- **Native tokens** cannot carry the claim yet, so a client may not authenticate *itself* with
+  one while declaring the server side. `TokenRequestTest` therefore splits its clients across
+  the seam, matching how the feature is really used: the **minting** client (the
+  `createTokenRequest` surface under test) goes through the door on every leg, and the
+  **consuming** client — modelling the device the token was minted for — is always a plain
+  core client.
+
 Notes:
 - `ProxyManager` **advises** running proxy suites single-fork (`maxParallelForks = 1`) because they
   share the control port (10100). This is not currently set in `uts/build.gradle.kts`; it isn't
