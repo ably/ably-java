@@ -3,6 +3,7 @@ package io.ably.pubsub.uts.integration.proxy
 import io.ably.pubsub.realtime.ChannelState
 import io.ably.pubsub.realtime.ConnectionState
 import io.ably.pubsub.http.Auth
+import io.ably.pubsub.types.ClientOptions
 import io.ably.pubsub.uts.infra.awaitChannelState
 import io.ably.pubsub.uts.infra.awaitState
 import io.ably.pubsub.uts.infra.integration.AblyJwt
@@ -23,7 +24,6 @@ import org.junit.jupiter.api.TestInstance
 import java.util.Collections
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
