@@ -53,7 +53,7 @@ public class HttpAuth {
         Map<Type, String> sortedHeaders = new HashMap<>();
         for(String header : authenticateHeaders) {
             int delimiterIdx = header.indexOf(' ');
-            if(delimiterIdx == -1) { throw AblyException.fromErrorInfo(new ErrorInfo("Invalid authenticate header (no delimiter)", 40000, 400)); }
+            if(delimiterIdx == -1) { throw AblyException.fromErrorInfo(new ErrorInfo("Invalid authenticate header (no delimiter)", 400, 40000)); }
             String authType = header.substring(0,  delimiterIdx).trim();
             String authDetails = header.substring(delimiterIdx + 1).trim();
             sortedHeaders.put(Type.parse(authType), authDetails);
@@ -91,7 +91,7 @@ public class HttpAuth {
         String authDetails = authenticateHeaders.get(type = prefType);
         if(authDetails == null) {
             Entry<Type, String> firstEntry = authenticateHeaders.entrySet().iterator().next();
-            if(firstEntry == null) { throw AblyException.fromErrorInfo(new ErrorInfo("Invalid authenticate header (no entries)", 40000, 400)); }
+            if(firstEntry == null) { throw AblyException.fromErrorInfo(new ErrorInfo("Invalid authenticate header (no entries)", 400, 40000)); }
             type = firstEntry.getKey();
             authDetails = firstEntry.getValue();
         }

@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
@@ -44,6 +45,21 @@ public class HostsTest {
 
         // When
         new Hosts("overridden.ably.io", Defaults.HOST_REALTIME, options);
+    }
+
+    /**
+     * Configuration errors carry Ably code 40000 and HTTP status code 400.
+     */
+    @Test
+    public void hosts_invalid_options_error_codes() {
+        options.environment = "myenv";
+        try {
+            new Hosts("overridden.ably.io", Defaults.HOST_REALTIME, options);
+            fail("expected AblyException");
+        } catch (AblyException e) {
+            assertThat(e.errorInfo.code, is(40000));
+            assertThat(e.errorInfo.statusCode, is(400));
+        }
     }
 
     /**

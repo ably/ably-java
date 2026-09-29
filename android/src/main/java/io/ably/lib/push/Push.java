@@ -93,7 +93,7 @@ public class Push extends PushBase {
         Context applicationContext = rest.platform.getApplicationContext();
         if(applicationContext == null) {
             Log.e(TAG, "getApplicationContext(): Unable to get application context; not set");
-            throw AblyException.fromErrorInfo(new ErrorInfo("Unable to get application context; not set", 40000, 400));
+            throw AblyException.fromErrorInfo(new ErrorInfo("Unable to get application context; not set", 400, 40000));
         }
         return applicationContext;
     }
