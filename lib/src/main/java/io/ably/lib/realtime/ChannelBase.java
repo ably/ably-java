@@ -1219,13 +1219,13 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             if(KEY_UNTIL_ATTACH.equals(param.key)) {
                 if("true".equalsIgnoreCase(param.value)) {
                     if (channel.state != ChannelState.attached) {
-                        throw AblyException.fromErrorInfo(new ErrorInfo("option untilAttach requires the channel to be attached", 40000, 400));
+                        throw AblyException.fromErrorInfo(new ErrorInfo("option untilAttach requires the channel to be attached", 400, 40000));
                     }
 
                     params.add(new Param(KEY_FROM_SERIAL, channel.properties.attachSerial));
                 }
                 else if(!"false".equalsIgnoreCase(param.value)) {
-                    throw AblyException.fromErrorInfo(new ErrorInfo("option untilAttach is invalid. \"true\" or \"false\" expected", 40000, 400));
+                    throw AblyException.fromErrorInfo(new ErrorInfo("option untilAttach is invalid. \"true\" or \"false\" expected", 400, 40000));
                 }
             }
             else {

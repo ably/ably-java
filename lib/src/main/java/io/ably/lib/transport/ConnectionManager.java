@@ -944,7 +944,7 @@ public class ConnectionManager implements ConnectListener {
     public void ping(final CompletionListener listener) {
         HeartbeatWaiter waiter = new HeartbeatWaiter(listener);
         if(currentState.state != ConnectionState.connected) {
-            waiter.onError(new ErrorInfo("Unable to ping service; not connected", 40000, 400));
+            waiter.onError(new ErrorInfo("Unable to ping service; not connected", 400, 40000));
             return;
         }
         synchronized(heartbeatWaiters) {
@@ -1001,7 +1001,7 @@ public class ConnectionManager implements ConnectListener {
                 pending = clear();
             }
             if(pending) {
-                onError(new ErrorInfo("Timed out waiting for heartbeat response", 50000, 500));
+                onError(new ErrorInfo("Timed out waiting for heartbeat response", 500, 50000));
             } else {
                 onSuccess();
             }

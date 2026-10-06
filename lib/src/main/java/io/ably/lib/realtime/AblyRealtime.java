@@ -211,7 +211,7 @@ public class AblyRealtime extends AblyRest {
             if (existingChannel != null) {
                 if (channelOptions != null) {
                     if (existingChannel.shouldReattachToSetOptions(channelOptions)) {
-                        throw AblyException.fromErrorInfo(new ErrorInfo("Channels.get() cannot be used to set channel options that would cause the channel to reattach. Please, use Channel.setOptions() instead.", 40000, 400));
+                        throw AblyException.fromErrorInfo(new ErrorInfo("Channels.get() cannot be used to set channel options that would cause the channel to reattach. Please, use Channel.setOptions() instead.", 400, 40000));
                     }
                     existingChannel.setOptions(channelOptions);
                 }

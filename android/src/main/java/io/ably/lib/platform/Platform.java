@@ -27,7 +27,7 @@ public class Platform {
                 Log.v(TAG, "setAndroidContext(): existing applicationContext is compatible with that being set");
                 return;
             }
-            throw AblyException.fromErrorInfo(new ErrorInfo("Incompatible application context set", 40000, 400));
+            throw AblyException.fromErrorInfo(new ErrorInfo("Incompatible application context set", 400, 40000));
         } else {
             Log.v(TAG, "setAndroidContext(): there was no existing applicationContext");
         }

@@ -185,7 +185,7 @@ public class Auth {
          */
         public AuthOptions(String key) throws AblyException {
             if (key == null) {
-                throw AblyException.fromErrorInfo(new ErrorInfo("key string cannot be null", 40000, 400));
+                throw AblyException.fromErrorInfo(new ErrorInfo("key string cannot be null", 400, 40000));
             }
             if (key.isEmpty()) {
                 throw new IllegalArgumentException("Key string cannot be empty");

@@ -73,7 +73,7 @@ public class ActivationContext {
         String deviceIdentityToken = getLocalDevice().deviceIdentityToken;
         if(deviceIdentityToken == null) {
             Log.e(TAG, "getAbly(): unable to create Ably instance using deviceIdentityToken");
-            throw AblyException.fromErrorInfo(new ErrorInfo("Unable to get Ably library instance; no device identity token", 40000, 400));
+            throw AblyException.fromErrorInfo(new ErrorInfo("Unable to get Ably library instance; no device identity token", 400, 40000));
         }
         Log.v(TAG, "getAbly(): returning Ably instance using deviceIdentityToken");
         // TODO: We need to persist Ably client options such as the environment with `deviceIdentityToken` and use these options during initialization.

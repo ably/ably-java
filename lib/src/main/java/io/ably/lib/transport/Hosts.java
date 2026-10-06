@@ -49,10 +49,10 @@ public class Hosts {
         String[] tempFallbackHosts = options.fallbackHosts;
         if (options.fallbackHostsUseDefault) {
             if (options.fallbackHosts != null) {
-                throw AblyException.fromErrorInfo(new ErrorInfo("fallbackHosts and fallbackHostsUseDefault cannot both be set", 40000, 400));
+                throw AblyException.fromErrorInfo(new ErrorInfo("fallbackHosts and fallbackHostsUseDefault cannot both be set", 400, 40000));
             }
             if (options.port != 0 || options.tlsPort != 0) {
-                throw AblyException.fromErrorInfo(new ErrorInfo("fallbackHostsUseDefault cannot be set when port or tlsPort are set", 40000, 400));
+                throw AblyException.fromErrorInfo(new ErrorInfo("fallbackHostsUseDefault cannot be set when port or tlsPort are set", 400, 40000));
             }
             tempFallbackHosts = Defaults.HOST_FALLBACKS;
         }
@@ -68,7 +68,7 @@ public class Hosts {
             if (options.environment != null) {
                 /* TO3k2: It is never valid to provide both a restHost and environment value
                  * TO3k3: It is never valid to provide both a realtimeHost and environment value */
-                throw AblyException.fromErrorInfo(new ErrorInfo("cannot set both restHost/realtimeHost and environment options", 40000, 400));
+                throw AblyException.fromErrorInfo(new ErrorInfo("cannot set both restHost/realtimeHost and environment options", 400, 40000));
             }
         } else {
             this.primaryHost = isProduction ? defaultHost : options.environment + "-" + defaultHost;

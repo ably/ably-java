@@ -156,7 +156,7 @@ public class ErrorInfo {
             errorInfo = new ErrorInfo(throwable.getLocalizedMessage(), 500, 50000);
         }
         else {
-            errorInfo = new ErrorInfo("Unexpected exception: " + throwable.getLocalizedMessage(), 50000, 500);
+            errorInfo = new ErrorInfo("Unexpected exception: " + throwable.getLocalizedMessage(), 500, 50000);
         }
 
         return errorInfo;

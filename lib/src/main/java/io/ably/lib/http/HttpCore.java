@@ -93,17 +93,17 @@ public class HttpCore {
         if (proxyOptions != null) {
             String proxyHost = proxyOptions.host;
             if (proxyHost == null) {
-                throw AblyException.fromErrorInfo(new ErrorInfo("Unable to configure proxy without proxy host", 40000, 400));
+                throw AblyException.fromErrorInfo(new ErrorInfo("Unable to configure proxy without proxy host", 400, 40000));
             }
             int proxyPort = proxyOptions.port;
             if (proxyPort == 0) {
-                throw AblyException.fromErrorInfo(new ErrorInfo("Unable to configure proxy without proxy port", 40000, 400));
+                throw AblyException.fromErrorInfo(new ErrorInfo("Unable to configure proxy without proxy port", 400, 40000));
             }
             String proxyUser = proxyOptions.username;
             if (proxyUser != null) {
                 String proxyPassword = proxyOptions.password;
                 if (proxyPassword == null) {
-                    throw AblyException.fromErrorInfo(new ErrorInfo("Unable to configure proxy without proxy password", 40000, 400));
+                    throw AblyException.fromErrorInfo(new ErrorInfo("Unable to configure proxy without proxy password", 400, 40000));
                 }
                 proxyAuth = new HttpAuth(proxyUser, proxyPassword, proxyOptions.prefAuthType);
             }
