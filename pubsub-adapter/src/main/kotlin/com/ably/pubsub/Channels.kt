@@ -39,7 +39,7 @@ public interface Channels<ChannelType> : Iterable<ChannelType> {
   /**
    * Releases a [Channel] object, deleting it, and enabling it to be garbage collected.
    * It also removes any listeners associated with the channel.
-   * To release a channel, the [ChannelState] must be `INITIALIZED`, `DETACHED`, or `FAILED`.
+   * A realtime channel can only be released when it is in the `INITIALIZED`, `DETACHED`, or `FAILED` state.
    * <p>
    * Spec: RSN4, RTS4
    * @param name The channel name.

@@ -59,9 +59,8 @@ abstract class IntegrationTest {
   @After
   fun afterEach() {
     for (ablyRealtime in realtimeClients.values) {
-      for ((channelName, channel) in ablyRealtime.channels.entrySet()) {
+      for (channel in ablyRealtime.channels.values()) {
         channel.off()
-        ablyRealtime.channels.release(channelName)
       }
       ablyRealtime.close()
     }
